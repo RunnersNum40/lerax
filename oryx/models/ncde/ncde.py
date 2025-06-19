@@ -80,8 +80,6 @@ class AbstractNeuralCDE[
             stepsize_controller = diffrax.ConstantStepSize()
             dt0 = jnp.nanmean(jnp.diff(ts))
 
-        print(f"ts: {ts}, coeffs: {coeffs}")
-
         control = diffrax.CubicInterpolation(ts, coeffs)
         term = diffrax.ControlTerm(self.term, control).to_ode()
         saveat = diffrax.SaveAt(ts=ts)
@@ -281,7 +279,7 @@ class MLPNeuralCDE(AbstractNeuralCDE):
         field_final_activation: Callable[
             [Float[Array, " width"]], Float[Array, " width"]
         ] = jnn.tanh,
-        inital_state_activation: Callable[
+        initial_state_activation: Callable[
             [Float[Array, " width"]], Float[Array, " width"]
         ] = jnn.relu,
         intial_state_final_activation: Callable[
@@ -329,7 +327,7 @@ class MLPNeuralCDE(AbstractNeuralCDE):
             width_size=width_size,
             depth=depth,
             key=initial_key,
-            activation=inital_state_activation,
+            activation=initial_state_activation,
             final_activation=intial_state_final_activation,
         )
 
