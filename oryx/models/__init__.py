@@ -1,3 +1,8 @@
+"""Oryx models
+
+Models take inputs and produce outputs, and may have state.
+"""
+
 from oryx.models.mlp import MLPModel
 from oryx.models.model import AbstractModel, AbstractStatefulModel
 from oryx.models.ncde import (
