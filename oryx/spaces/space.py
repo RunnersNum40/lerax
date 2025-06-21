@@ -32,7 +32,7 @@ class AbstractSpace[T](eqx.Module, strict=True):
         """Returns a string representation of the space."""
 
 
-class Discrete(AbstractSpace[Int[Array, ""]]):
+class Discrete(AbstractSpace[Int[Array, ""]], strict=True):
     """A space of finite discrete values.
 
     A finite closed set of integers.
@@ -66,7 +66,7 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
         return f"Discrete({self._n}, start={self.start})"
 
 
-class Box(AbstractSpace[Float[Array, " ..."]]):
+class Box(AbstractSpace[Float[Array, " ..."]], strict=True):
     """A space of continuous values.
 
     A continuous closed set of floats.
@@ -152,7 +152,7 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
         return f"Box(low={self._low}, high={self._high})"
 
 
-class Tuple(AbstractSpace[tuple[Any, ...]]):
+class Tuple(AbstractSpace[tuple[Any, ...]], strict=True):
     """A cartesian product of spaces."""
 
     spaces: tuple[AbstractSpace, ...]
@@ -195,7 +195,7 @@ class Tuple(AbstractSpace[tuple[Any, ...]]):
         return len(self.spaces)
 
 
-class Dict(AbstractSpace[dict[str, Any]]):
+class Dict(AbstractSpace[dict[str, Any]], strict=True):
     """A dictionary of spaces."""
 
     spaces: dict[str, AbstractSpace]
@@ -237,7 +237,7 @@ class Dict(AbstractSpace[dict[str, Any]]):
         return f"Dict({', '.join(f'{key}: {repr(space)}' for key, space in self.spaces.items())})"
 
 
-class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]]):
+class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]], strict=True):
     """Cartesian product of discrete spaces."""
 
     ns: Int[Array, " n"]

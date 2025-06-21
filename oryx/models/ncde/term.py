@@ -17,7 +17,7 @@ class AbstractNCDETerm(eqx.Module, strict=True):
         """Vector field value."""
 
 
-class TensorMLP(eqx.Module):
+class TensorMLP(eqx.Module, strict=True):
     """Modification of the MLP class from Equinox to handle tensors as input and output."""
 
     in_shape: tuple[int, ...] | Literal["scalar"]
