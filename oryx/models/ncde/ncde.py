@@ -35,7 +35,8 @@ class AbstractNeuralCDE[
     ],
     strict=True,
 ):
-    """Abstract base class for Neural Controlled Differential Equations (NCDEs).
+    """
+    Abstract base class for Neural Controlled Differential Equations (NCDEs).
 
     x is used to denote the input, t is the time, z is the latent state, and y is the
     output. _s is used to denote all states of a variable (e.g. zs is the latent states
@@ -184,7 +185,8 @@ class AbstractNeuralCDE[
         x1: Float[Array, " in_size"],
         inference: bool | None = None,
     ) -> tuple[eqx.nn.State, Float[Array, " out_size"]]:
-        """Compute the next state and output given the current state and input.
+        """
+        Compute the next state and output given the current state and input.
 
         :param state: The current state.
         :param t1: The current time.

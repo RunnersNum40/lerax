@@ -5,7 +5,8 @@ from jaxtyping import Float, Key
 
 
 class AbstractPolicy(eqx.Module, strict=True):
-    """Base class for policies.
+    """
+    Base class for policies.
 
     Policies map from observations to actions.
     """

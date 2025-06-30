@@ -1,4 +1,5 @@
-"""Oryx models
+"""
+Oryx models
 
 Models take inputs and produce outputs, and may have state.
 """

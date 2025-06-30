@@ -10,7 +10,8 @@ from .base_policy import AbstractPolicy
 
 
 class AbstractActorCriticPolicy(AbstractPolicy, strict=True):
-    """Abstract base class for actor-critic algorithm policies.
+    """
+    Abstract base class for actor-critic algorithm policies.
 
     Has both a value and action prediction.
     """

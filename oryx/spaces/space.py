@@ -33,7 +33,8 @@ class AbstractSpace[T](eqx.Module, strict=True):
 
 
 class Discrete(AbstractSpace[Int[Array, ""]], strict=True):
-    """A space of finite discrete values.
+    """
+    A space of finite discrete values.
 
     A finite closed set of integers.
     """
@@ -67,7 +68,8 @@ class Discrete(AbstractSpace[Int[Array, ""]], strict=True):
 
 
 class Box(AbstractSpace[Float[Array, " ..."]], strict=True):
-    """A space of continuous values.
+    """
+    A space of continuous values.
 
     A continuous closed set of floats.
     """

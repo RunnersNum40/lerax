@@ -1,4 +1,5 @@
-"""Oryx spaces
+"""
+Oryx spaces
 
 AbstractSpace, Box, Dict, Discrete, MultiDiscrete, Tuple
 """
