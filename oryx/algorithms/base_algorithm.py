@@ -6,17 +6,19 @@ from typing import Callable
 import equinox as eqx
 from jaxtyping import Key
 
+from oryx.env import AbstractEnv
 from oryx.policies import AbstractPolicy
 from oryx.spaces import AbstractSpace
 
 
-class AbstractAlgorithm(eqx.Module, strict=True):
+class AbstractAlgorithm[ActType, ObsType](eqx.Module, strict=True):
     """Base class for RL algorithms."""
 
     policy: eqx.AbstractVar[AbstractPolicy]
+    env: eqx.AbstractVar[AbstractEnv[ActType, ObsType]]
 
-    observation_space: eqx.AbstractVar[AbstractSpace]
-    action_space: eqx.AbstractVar[AbstractSpace]
+    observation_space: eqx.AbstractVar[AbstractSpace[ActType]]
+    action_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
     @abstractmethod
     def learn(
@@ -27,13 +29,13 @@ class AbstractAlgorithm(eqx.Module, strict=True):
         progress_bar: bool = False,
         tb_log_name: str,
         log_interval: int = 100,
-    ) -> AbstractAlgorithm:
+    ) -> AbstractAlgorithm[ActType, ObsType]:
         """Return a trained model."""
 
     # TODO: Properly type the load method.
     @classmethod
     @abstractmethod
-    def load(cls, path, *args, **kwargs) -> AbstractAlgorithm:
+    def load(cls, path, *args, **kwargs) -> AbstractAlgorithm[ActType, ObsType]:
         """Load a model from a file."""
 
     # TODO: Properly type the save method.
