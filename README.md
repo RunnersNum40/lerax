@@ -23,14 +23,32 @@ In addition, the NDE code is heavily inspired by the work of [Patrick Kidger](ht
 
 - Get it working!
   - Environment implementations
+    - Custom environments
     - Wrappers for other libraries
+      - Gymnax
+      - Gymnasium
   - Wrappers
   - Policies
   - Algorithms
     - PPO
-- Examples
-- Use it for research
+- Logging
+  - Code flow logging
+  - Training logging
+- Documentation
+  - Standardize docstring formats
+  - Write documentation for all public APIs
+  - Publish docs
+  - Examples
+- Testing
+  - More thorough unit testing
+  - Integration testing
+  - Runtime jaxtyping
+- Use it
+  - Personal research
 - Optimise for performance under JIT compilation
-- Sharding support for distributed training
-- Expand RL variants to include more algorithms
-- Create a more comprehensive set of environments
+  - Good vectorization support
+  - Sharding support for distributed training
+- Round out features
+  - Rendering support
+  - Expand RL variants to include more algorithms
+  - Create a more comprehensive set of environments
