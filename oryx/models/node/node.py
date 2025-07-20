@@ -8,7 +8,7 @@ from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Key
 
-from ..model import AbstractModel
+from ..base_model import AbstractModel
 from .term import AbstractNODETerm, MLPNODETerm
 
 

@@ -9,7 +9,7 @@ from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Int, Key, PyTree, Shaped
 
-from ..model import AbstractStatefulModel
+from ..base_model import AbstractStatefulModel
 from .term import AbstractNCDETerm, MLPNCDETerm
 
 type Coeffs = tuple[

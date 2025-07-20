@@ -4,7 +4,7 @@ import equinox as eqx
 from jax import nn as jnn
 from jaxtyping import Array, Float, Key
 
-from .model import AbstractModel
+from .base_model import AbstractModel
 
 
 class MLPModel(

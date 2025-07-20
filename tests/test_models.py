@@ -4,8 +4,8 @@ import pytest
 from jax import numpy as jnp
 from jax import random as jr
 
+from oryx.models.base_model import AbstractModel, AbstractStatefulModel
 from oryx.models.mlp import MLPModel
-from oryx.models.model import AbstractModel, AbstractStatefulModel
 from oryx.models.ncde.ncde import MLPNeuralCDE
 from oryx.models.ncde.term import AbstractNCDETerm, MLPNCDETerm
 from oryx.models.node.node import MLPNeuralODE
