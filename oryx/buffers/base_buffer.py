@@ -1,9 +1,14 @@
-import equinox as eqx
+from __future__ import annotations
 
-from oryx.spaces import AbstractSpace
+from abc import abstractmethod
+
+import equinox as eqx
 
 
 class AbstractBuffer(eqx.Module, strict=True):
     """Base class for buffers."""
 
-    observation_space: eqx.AbstractVar[AbstractSpace]
+    @property
+    @abstractmethod
+    def shape(self) -> tuple[int, ...]:
+        """Return the shape of the buffer."""
