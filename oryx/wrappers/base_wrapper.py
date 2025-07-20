@@ -1,6 +1,7 @@
 from abc import abstractmethod
 
 import equinox as eqx
+from jax import random as jr
 from jaxtyping import Array, Bool, Float, Key
 
 from oryx.env import AbstractEnv, AbstractEnvLike
@@ -29,7 +30,7 @@ class AbstractObservationWrapper[WrapperObsType, ActType, ObsType](
         self, state: eqx.nn.State, *, key: Key | None
     ) -> tuple[eqx.nn.State, WrapperObsType, dict]:
         if key is not None:
-            env_key, wrapper_key = key.split(2)
+            env_key, wrapper_key = jr.split(key, 2)
         else:
             env_key, wrapper_key = None, None
 
@@ -101,7 +102,7 @@ class AbstractActionWrapper[WrapperActType, ActType, ObsType](
         eqx.nn.State, ObsType, Float[Array, ""], Bool[Array, ""], Bool[Array, ""], dict
     ]:
         if key is not None:
-            env_key, wrapper_key = key.split(2)
+            env_key, wrapper_key = jr.split(key, 2)
         else:
             env_key, wrapper_key = None, None
 
@@ -152,7 +153,7 @@ class AbstractRewardWrapper[ActType, ObsType](
         eqx.nn.State, ObsType, Float[Array, ""], Bool[Array, ""], Bool[Array, ""], dict
     ]:
         if key is not None:
-            env_key, wrapper_key = key.split(2)
+            env_key, wrapper_key = jr.split(key, 2)
         else:
             env_key, wrapper_key = None, None
 
