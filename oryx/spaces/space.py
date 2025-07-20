@@ -87,11 +87,11 @@ class Box(AbstractSpace[Float[Array, " ..."]], strict=True):
         low = jnp.asarray(low)
         high = jnp.asarray(high)
         if shape is None:
-            low = jnp.broadcast_to(low, high.shape)
-            high = jnp.broadcast_to(high, low.shape)
+            low, high = jnp.broadcast_arrays(low, high)
             shape = low.shape
+            # TODO: Add warning if both shapes change
 
-        assert low.shape == high.shape, "low and high must have the same shape"
+        assert low.shape == high.shape, "Box low and high must have the same shape"
 
         self._shape = shape
         self._low = low
