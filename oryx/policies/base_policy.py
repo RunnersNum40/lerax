@@ -1,10 +1,10 @@
 from abc import abstractmethod
 
 import equinox as eqx
-from jaxtyping import Float, Key
+from jaxtyping import Key
 
 
-class AbstractPolicy(eqx.Module, strict=True):
+class AbstractPolicy[ActType, ObsType](eqx.Module, strict=True):
     """
     Base class for policies.
 
@@ -15,6 +15,6 @@ class AbstractPolicy(eqx.Module, strict=True):
 
     @abstractmethod
     def predict(
-        self, state: eqx.nn.State, observation, *, key: Key | None = None
-    ) -> tuple[eqx.nn.State, Float]:
+        self, state: eqx.nn.State, observation: ObsType, *, key: Key | None = None
+    ) -> tuple[eqx.nn.State, ActType]:
         """Choose an action from an observation."""
