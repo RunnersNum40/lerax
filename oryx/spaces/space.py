@@ -7,7 +7,7 @@ from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
 
-class AbstractSpace[T](eqx.Module, strict=True):
+class AbstractSpace[SampleType](eqx.Module, strict=True):
     """
     Abstract base class for defining a space.
 
@@ -20,7 +20,7 @@ class AbstractSpace[T](eqx.Module, strict=True):
         """Returns the shape of the space as an immutable property."""
 
     @abstractmethod
-    def sample(self, key: Key) -> T:
+    def sample(self, key: Key) -> SampleType:
         """Returns a random sample from the space."""
 
     @abstractmethod
@@ -238,6 +238,12 @@ class Dict(AbstractSpace[dict[str, Any]], strict=True):
     def __repr__(self) -> str:
         return f"Dict({', '.join(f'{key}: {repr(space)}' for key, space in self.spaces.items())})"
 
+    def __getitem__(self, index: str) -> AbstractSpace:
+        return self.spaces[index]
+
+    def __len__(self) -> int:
+        return len(self.spaces)
+
 
 class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]], strict=True):
     """Cartesian product of discrete spaces."""
@@ -274,3 +280,63 @@ class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]], strict=True):
 
     def __repr__(self) -> str:
         return f"MultiDiscrete({self.ns}, starts={self.starts})"
+
+
+class MultiBinary(AbstractSpace[Bool[Array, " n"]], strict=True):
+    """A space of binary values."""
+
+    n: int
+
+    def __init__(self, n: int):
+        assert n > 0, "n must be positive"
+        self.n = n
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        return (self.n,)
+
+    def sample(self, key: Key) -> Bool[Array, " n"]:
+        return jr.bernoulli(key, shape=self.shape)
+
+    def contains(self, x: Any) -> Bool[Array, ""]:
+        if not isinstance(x, jnp.ndarray):
+            return jnp.array(False)
+
+        if x.shape != self.shape:
+            return jnp.array(False)
+
+        return jnp.all((x == 0) | (x == 1), axis=0)
+
+    def __repr__(self) -> str:
+        return f"MultiBinary({self.n})"
+
+
+class OneOf(AbstractSpace):
+    """An exclusive tuple of multiple spaces."""
+
+    spaces: tuple[AbstractSpace, ...]
+
+    def __init__(self, spaces: tuple[AbstractSpace, ...]):
+        assert len(spaces) > 0, "spaces must be non-empty"
+
+        self.spaces = spaces
+
+    def sample(self, key: Key):
+        space_key, sample_key = jr.split(key, 2)
+        subspace_idx = jr.randint(
+            space_key, shape=(), minval=0, maxval=len(self.spaces)
+        )
+        subspace = self.spaces[subspace_idx]
+        return subspace.sample(sample_key)
+
+    def contains(self, x: Any) -> Bool[Array, ""]:
+        return jnp.array(any(space.contains(x) for space in self.spaces))
+
+    def __repr__(self) -> str:
+        return f"OneOf({', '.join(repr(space) for space in self.spaces)})"
+
+    def __getitem__(self, index: int) -> AbstractSpace:
+        return self.spaces[index]
+
+    def __len__(self) -> int:
+        return len(self.spaces)
