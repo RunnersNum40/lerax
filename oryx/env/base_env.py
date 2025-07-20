@@ -5,16 +5,18 @@ from abc import abstractmethod
 import equinox as eqx
 from jaxtyping import Array, Bool, Float, Key
 
-from oryx.spaces.space import AbstractSpace
+from oryx.spaces import AbstractSpace
 
 
-class AbstractEnv[ActType, ObsType](eqx.Module, strict=True):
-    """Base class for RL environments"""
+class AbstractEnvLike[ActType, ObsType](eqx.Module, strict=True):
+    """Base class for RL environments or wrappers that behave like environments"""
 
     state_index: eqx.AbstractVar[eqx.nn.StateIndex]
 
     @abstractmethod
-    def reset(self, state: eqx.nn.State, *, key: Key | None) -> eqx.nn.State:
+    def reset(
+        self, state: eqx.nn.State, *, key: Key | None
+    ) -> tuple[eqx.nn.State, ObsType, dict]:
         """Reset the environment to an initial state"""
 
     @abstractmethod
@@ -50,6 +52,15 @@ class AbstractEnv[ActType, ObsType](eqx.Module, strict=True):
     @abstractmethod
     def observation_space(self) -> AbstractSpace[ObsType]:
         """Return the observation space of the environment"""
+
+    @property
+    @abstractmethod
+    def unwrapped(self) -> AbstractEnv[ActType, ObsType]:
+        """Return the unwrapped environment"""
+
+
+class AbstractEnv[ActType, ObsType](AbstractEnvLike[ActType, ObsType], strict=True):
+    """Base class for RL environments"""
 
     @property
     def unwrapped(self) -> AbstractEnv[ActType, ObsType]:
