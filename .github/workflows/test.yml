@@ -26,7 +26,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install .[test]
+      - name: Lint
+        run: ruff check
       - name: Run Type Checking
         run: pyright
       - name: Run tests
-        run: pytest
+        run: pytest -n auto

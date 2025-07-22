@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "pyright"]
+test = ["pytest", "pytest-xdist", "pyright"]
 
 [build-system]
 requires = ["hatchling"]
@@ -29,7 +29,7 @@ addopts = ["--import-mode=importlib", "-Werror"]
 
 [tool.ruff.lint]
 fixable = ["I001", "F401"]
-ignore = ["E402", "E721", "E731", "E741", "F722"]
+ignore = ["E402", "E721", "E731", "E741", "F722", "E501"]
 select = ["E", "F", "I001"]
 
 [tool.pyright]
