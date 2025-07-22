@@ -39,13 +39,6 @@ class AbstractDistribution[SampleType](eqx.Module, strict=True):
         """Compute the mode of the distribution."""
         return self.distribution.mode()
 
-
-class AbstractSampleLogProbDistribution[SampleType](
-    AbstractDistribution[SampleType], strict=True
-):
-
-    distribution: eqx.AbstractVar[distributions.AbstractSampleLogProbDistribution]
-
     def sample_and_log_prob(self, key: Key) -> tuple[SampleType, Float[Array, ""]]:
         """Return a sample and its log probability."""
         return self.distribution.sample_and_log_prob(key)
@@ -61,13 +54,8 @@ class AbstractTransformedDistribution[SampleType](
     def bijector(self) -> bijectors.AbstractBijector:
         return self.distribution.bijector
 
-    def sample_and_log_prob(self, key: Key) -> tuple[SampleType, Float[Array, ""]]:
-        """Return a sample and its log probability."""
-        # FIX: Fix typing for sample_and_log_prob
-        return self.distribution.sample_and_log_prob(key)  # pyright: ignore
 
-
-class Bernoulli(AbstractSampleLogProbDistribution[Bool[Array, " dims"]], strict=True):
+class Bernoulli(AbstractDistribution[Bool[Array, " dims"]], strict=True):
 
     distribution: distributions.Bernoulli
 
@@ -87,7 +75,7 @@ class Bernoulli(AbstractSampleLogProbDistribution[Bool[Array, " dims"]], strict=
         return self.distribution.probs
 
 
-class Categorical(AbstractSampleLogProbDistribution[Int[Array, ""]], strict=True):
+class Categorical(AbstractDistribution[Int[Array, ""]], strict=True):
 
     distribution: distributions.Categorical
 
@@ -107,7 +95,7 @@ class Categorical(AbstractSampleLogProbDistribution[Int[Array, ""]], strict=True
         return self.distribution.probs
 
 
-class Normal(AbstractSampleLogProbDistribution[Float[Array, " dims"]], strict=True):
+class Normal(AbstractDistribution[Float[Array, " dims"]], strict=True):
 
     distribution: distributions.Normal
 
@@ -203,7 +191,6 @@ class SquashedMultivariateNormalDiag(
 
 __all__ = [
     "AbstractDistribution",
-    "AbstractSampleLogProbDistribution",
     "Bernoulli",
     "Categorical",
     "Normal",
