@@ -7,14 +7,14 @@ from jax import random as jr
 from oryx.models.base_model import (
     AbstractModel,
     AbstractStatefulModel,
-    AbstractStochasticStatefulModel,
-    AbstractStochaticModel,
 )
 from oryx.models.flatten import Flatten
 from oryx.models.mlp import MLP
 from oryx.models.ncde.ncde import MLPNeuralCDE
 from oryx.models.ncde.term import AbstractNCDETerm, MLPNCDETerm
 from oryx.models.node.node import MLPNeuralODE
+
+# TODO: Add tests for stochastic models
 
 
 def test_cannot_instantiate_abstractmodel_directly():
