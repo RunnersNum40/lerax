@@ -39,9 +39,9 @@ class AbstractEnvLike[ActType, ObsType](eqx.Module, strict=True):
     def render(self, state: eqx.nn.State):
         """Render a frame from a state"""
 
+    @abstractmethod
     def close(self):
         """Close the environment"""
-        pass
 
     @property
     @abstractmethod
