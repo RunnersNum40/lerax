@@ -7,19 +7,22 @@ from oryx.distributions import (
     AbstractSampleLogProbDistribution,
     AbstractTransformedDistribution,
 )
-from oryx.spaces import AbstractSpace
 
-from .base_policy import AbstractPolicy
+from ..base_policy import AbstractPolicy
 
 
+# TODO: Break out stateful and non-stateful policies
 class AbstractActorCriticPolicy[FeatureType, ActType, ObsType](
     AbstractPolicy[ActType, ObsType], strict=True
 ):
-    """Base class for actor-critic policies."""
+    """
+    Base class for actor-critic policies.
+
+    For now all policies are treated as stateful, meaning they maintain an internal
+    state. Non-stateful policies can simplly ignore the state during implementation.
+    """
 
     state_index: eqx.AbstractVar[eqx.nn.StateIndex]
-    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
-    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
     @abstractmethod
     def extract_features(
