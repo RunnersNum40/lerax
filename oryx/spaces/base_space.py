@@ -82,7 +82,7 @@ class Box(AbstractSpace[Float[Array, " ..."]], strict=True):
         self,
         low: Float[ArrayLike, " ..."],
         high: Float[ArrayLike, " ..."],
-        shape: tuple[int, ...] | None,
+        shape: tuple[int, ...] | None = None,
     ):
         low = jnp.asarray(low)
         high = jnp.asarray(high)
