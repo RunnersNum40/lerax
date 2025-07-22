@@ -52,3 +52,4 @@ In addition, the NDE code is heavily inspired by the work of [Patrick Kidger](ht
   - Rendering support
   - Expand RL variants to include more algorithms
   - Create a more comprehensive set of environments
+- Migrate from tensorboard to aim

@@ -7,7 +7,14 @@ description = "Deep Reinforcement Learning with JAX and Equinox."
 readme = "README.md"
 requires-python = ">=3.13"
 authors = [{ name = "Theodore Pinkerton", email = "p_t@fastmail.net" }]
-dependencies = ["jax", "equinox", "optax", "diffrax", "distreqx"]
+dependencies = [
+  "jax",
+  "equinox",
+  "optax",
+  "diffrax",
+  "distreqx",
+  "tensorboardX",
+]
 
 [project.optional-dependencies]
 test = ["pytest", "pyright"]
