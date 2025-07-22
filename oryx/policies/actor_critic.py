@@ -17,6 +17,7 @@ class AbstractActorCriticPolicy[FeatureType, ActType, ObsType](
 ):
     """Base class for actor-critic policies."""
 
+    state_index: eqx.AbstractVar[eqx.nn.StateIndex]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 

@@ -26,6 +26,8 @@ class AbstractObservationWrapper[WrapperObsType, ActType, ObsType](
 ):
     """Base class for environment observation wrappers"""
 
+    env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
+
     def reset(
         self, state: eqx.nn.State, *, key: Key | None
     ) -> tuple[eqx.nn.State, WrapperObsType, dict]:
@@ -87,6 +89,8 @@ class AbstractActionWrapper[WrapperActType, ActType, ObsType](
 ):
     """Base class for environment action wrappers"""
 
+    env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
+
     def reset(
         self, state: eqx.nn.State, *, key: Key | None
     ) -> tuple[eqx.nn.State, ObsType, dict]:
@@ -137,6 +141,8 @@ class AbstractRewardWrapper[ActType, ObsType](
     AbstractWrapper[ActType, ObsType, ActType, ObsType], strict=True
 ):
     """Base class for environment reward wrappers"""
+
+    env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
 
     def reset(
         self, state: eqx.nn.State, *, key: Key | None

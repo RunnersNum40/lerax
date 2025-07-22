@@ -4,16 +4,16 @@ from typing import Concatenate
 import equinox as eqx
 
 
-class AbstractModel[**P, T](eqx.Module, strict=True):
+class AbstractModel[**InType, OutType](eqx.Module, strict=True):
     """Base class for models that take inputs and produce outputs."""
 
     @abstractmethod
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
+    def __call__(self, *args: InType.args, **kwargs: InType.kwargs) -> OutType:
         """Return an output given an input."""
 
 
-class AbstractStatefulModel[**P, *T](
-    AbstractModel[Concatenate[eqx.nn.State, P], tuple[eqx.nn.State, *T]],
+class AbstractStatefulModel[**InType, *OutType](
+    AbstractModel[Concatenate[eqx.nn.State, InType], tuple[eqx.nn.State, *OutType]],
     strict=True,
 ):
     """Base class for models with state."""
@@ -22,6 +22,6 @@ class AbstractStatefulModel[**P, *T](
 
     @abstractmethod
     def __call__(
-        self, state: eqx.nn.State, *args: P.args, **kwargs: P.kwargs
-    ) -> tuple[eqx.nn.State, *T]:
+        self, state: eqx.nn.State, *args: InType.args, **kwargs: InType.kwargs
+    ) -> tuple[eqx.nn.State, *OutType]:
         """Return an output given inputs and the state."""

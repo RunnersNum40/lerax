@@ -62,6 +62,8 @@ class AbstractEnvLike[ActType, ObsType](eqx.Module, strict=True):
 class AbstractEnv[ActType, ObsType](AbstractEnvLike[ActType, ObsType], strict=True):
     """Base class for RL environments"""
 
+    state_index: eqx.AbstractVar[eqx.nn.StateIndex]
+
     @property
     def unwrapped(self) -> AbstractEnv[ActType, ObsType]:
         """Return the unwrapped environment"""
