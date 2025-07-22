@@ -27,6 +27,10 @@ class AbstractStatefulModel[**InType, *OutType](
     ) -> tuple[eqx.nn.State, *OutType]:
         """Return an output given inputs and the state."""
 
+    @abstractmethod
+    def reset(self, state: eqx.nn.State) -> eqx.nn.State:
+        """Reset the state of the model to its initial state."""
+
 
 class AbstractStochaticModel[**InType, OutType](
     AbstractModel[

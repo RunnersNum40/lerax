@@ -53,6 +53,9 @@ def test_instantiate_stateful():
         def __call__(self, state):
             return state, None
 
+        def reset(self, state):
+            return state
+
     model, state = eqx.nn.make_with_state(StatefulModel)()
     state, _ = model(state)
 

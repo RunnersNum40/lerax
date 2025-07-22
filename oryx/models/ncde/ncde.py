@@ -263,6 +263,10 @@ class AbstractNeuralCDE[
 
         return zs
 
+    def reset(self, state: eqx.nn.State) -> eqx.nn.State:
+        """Reset the state to an empty state."""
+        return state.set(self.state_index, self.empty_state())
+
 
 class MLPNeuralCDE(AbstractNeuralCDE):
 
@@ -377,10 +381,4 @@ class MLPNeuralCDE(AbstractNeuralCDE):
             final_activation=output_final_activation,
         )
 
-        self.state_index = eqx.nn.StateIndex(self._empty_state())
-
-    def _empty_state(self) -> CDEState:
-        times = jnp.full((self.state_size,), jnp.nan)
-        inputs = jnp.full((self.state_size, self.in_size), jnp.nan)
-        states = jnp.full((self.state_size, self.latent_size), jnp.nan)
-        return times, inputs, states
+        self.state_index = eqx.nn.StateIndex(self.empty_state())
