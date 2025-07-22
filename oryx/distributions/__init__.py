@@ -63,7 +63,7 @@ class AbstractTransformedDistribution[SampleType](
 
     def sample_and_log_prob(self, key: Key) -> tuple[SampleType, Float[Array, ""]]:
         """Return a sample and its log probability."""
-        # TODO: Fix typing for sample_and_log_prob
+        # FIX: Fix typing for sample_and_log_prob
         return self.distribution.sample_and_log_prob(key)  # pyright: ignore
 
 
@@ -165,6 +165,7 @@ class MultivariateNormalDiag(AbstractDistribution[Float[Array, " dims"]], strict
 class SquashedMultivariateNormalDiag(
     AbstractTransformedDistribution[Float[Array, " dims"]], strict=True
 ):
+    """Multivariate Normal with squashing bijector for bounded outputs."""
 
     distribution: distributions.Transformed
 
@@ -172,11 +173,32 @@ class SquashedMultivariateNormalDiag(
         self,
         loc: Float[Array, " dims"],
         scale_diag: Float[Array, " dims"],
+        high: Float[Array, " dims"] | None = None,
+        low: Float[Array, " dims"] | None = None,
     ):
-        mvn = distributions.MultivariateNormalDiag(loc=loc, scale_diag=scale_diag)
-        tanh = bijectors.Tanh()
+        """
+        Initialize a SquashedMultivariateNormalDiag distribution.
 
-        self.distribution = distributions.Transformed(mvn, tanh)
+        Either both high and low must be provided for bounded squashing or neither.
+        If neither are provided, the distribution will use a Tanh bijector for squashing
+        between -1 and 1.
+        """
+        mvn = distributions.MultivariateNormalDiag(loc=loc, scale_diag=scale_diag)
+
+        if high is not None or low is not None:
+            assert (
+                high is not None and low is not None
+            ), "Both high and low must be provided for bounded squashing."
+
+            sigmoid = bijectors.Sigmoid()
+            scale = bijectors.DiagLinear(high - low)
+            shift = bijectors.Shift((high - low) / 2.0)
+            chain = bijectors.Chain((sigmoid, scale, shift))
+            self.distribution = distributions.Transformed(mvn, chain)
+
+        else:
+            tanh = bijectors.Tanh()
+            self.distribution = distributions.Transformed(mvn, tanh)
 
 
 __all__ = [
