@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-xdist", "pyright"]
+test = ["pytest", "pytest-xdist", "pyright", "ruff"]
 
 [build-system]
 requires = ["hatchling"]
