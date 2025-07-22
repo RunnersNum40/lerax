@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, NamedTuple
 
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Float
@@ -6,13 +6,15 @@ from jaxtyping import Array, ArrayLike, Float
 from oryx.spaces import Box
 
 
+class RescaleResult(NamedTuple):
+    box: Box
+    forward: Callable[[Float[ArrayLike, " ..."]], Float[Array, " ..."]]
+    backward: Callable[[Float[ArrayLike, " ..."]], Float[Array, " ..."]]
+
+
 def rescale_box(
     box: Box, min: Float[ArrayLike, " ..."], max: Float[ArrayLike, " ..."]
-) -> tuple[
-    Box,
-    Callable[[Float[ArrayLike, " ..."]], Float[Array, " ..."]],
-    Callable[[Float[ArrayLike, " ..."]], Float[Array, " ..."]],
-]:
+) -> RescaleResult:
     """
     Return functions to rescale one box space to another.
 
@@ -55,4 +57,4 @@ def rescale_box(
         sample = jnp.asarray(sample)
         return (sample - intercept) / gradient
 
-    return new_box, forward, backward
+    return RescaleResult(new_box, forward, backward)
