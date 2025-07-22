@@ -18,7 +18,9 @@ class AbstractNCDETerm(eqx.Module, strict=True):
 
 
 class TensorMLP(eqx.Module, strict=True):
-    """Modification of the MLP class from Equinox to handle tensors as input and output."""
+    """
+    Modification of the MLP class from Equinox to handle tensors as input and output.
+    """
 
     in_shape: tuple[int, ...] | Literal["scalar"]
     out_shape: tuple[int, ...] | Literal["scalar"]

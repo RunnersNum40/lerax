@@ -4,9 +4,7 @@ from jaxtyping import Array, Float
 from .base_model import AbstractModel
 
 
-class Flatten(
-    AbstractModel[[Float[Array, " ..."]], Float[Array, " out_size"]], strict=True
-):
+class Flatten(AbstractModel[[Array], Float[Array, " out_size"]], strict=True):
     """Warps the JAX `jnp.ravel` function to flatten an input array."""
 
     def __call__(self, x: Float[Array, " ..."]) -> Float[Array, " out_size"]:

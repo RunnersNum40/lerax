@@ -27,8 +27,8 @@ type CDEState = tuple[
 
 
 class AbstractNeuralCDE[
-    T: Callable[[Array], Float[Array, " latent_size"]],
-    P: Callable[[Array], Float[Array, " latent_size"]],
+    LatentType: Callable[[Array], Float[Array, " latent_size"]],
+    OutputType: Callable[[Array], Float[Array, " latent_size"]],
 ](
     AbstractStatefulModel[
         [Float[Array, ""], Float[Array, " in_size"]], Float[Array, " out_size"]
@@ -58,8 +58,8 @@ class AbstractNeuralCDE[
     latent_size: eqx.AbstractVar[int]
     out_size: eqx.AbstractVar[int]
 
-    initial: eqx.AbstractVar[T]
-    output: eqx.AbstractVar[P]
+    initial: eqx.AbstractVar[LatentType]
+    output: eqx.AbstractVar[OutputType]
     time_in_input: eqx.AbstractVar[bool]
 
     state_size: eqx.AbstractVar[int]
@@ -268,7 +268,7 @@ class AbstractNeuralCDE[
         return state.set(self.state_index, self.empty_state())
 
 
-class MLPNeuralCDE(AbstractNeuralCDE):
+class MLPNeuralCDE(AbstractNeuralCDE, strict=True):
 
     term: MLPNCDETerm
     solver: type[diffrax.AbstractSolver]
