@@ -4,15 +4,21 @@ Oryx models
 Models take inputs and produce outputs, and may have state.
 """
 
-from oryx.models.base_model import AbstractModel, AbstractStatefulModel
-from oryx.models.mlp import MLPModel
-from oryx.models.ncde import (
+from .base_model import (
+    AbstractModel,
+    AbstractStatefulModel,
+    AbstractStochasticStatefulModel,
+    AbstractStochaticModel,
+)
+from .flatten import Flatten
+from .mlp import MLP
+from .ncde import (
     AbstractNCDETerm,
     AbstractNeuralCDE,
     MLPNCDETerm,
     MLPNeuralCDE,
 )
-from oryx.models.node import (
+from .node import (
     AbstractNeuralODE,
     AbstractNODETerm,
     MLPNeuralODE,
@@ -22,6 +28,9 @@ from oryx.models.node import (
 __all__ = [
     "AbstractModel",
     "AbstractStatefulModel",
+    "AbstractStochasticStatefulModel",
+    "AbstractStochaticModel",
+    "Flatten",
     "AbstractNeuralODE",
     "AbstractNODETerm",
     "MLPNeuralODE",
@@ -30,5 +39,5 @@ __all__ = [
     "AbstractNCDETerm",
     "MLPNeuralCDE",
     "MLPNCDETerm",
-    "MLPModel",
+    "MLP",
 ]

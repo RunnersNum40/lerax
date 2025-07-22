@@ -4,8 +4,14 @@ import pytest
 from jax import numpy as jnp
 from jax import random as jr
 
-from oryx.models.base_model import AbstractModel, AbstractStatefulModel
-from oryx.models.mlp import MLPModel
+from oryx.models.base_model import (
+    AbstractModel,
+    AbstractStatefulModel,
+    AbstractStochasticStatefulModel,
+    AbstractStochaticModel,
+)
+from oryx.models.flatten import Flatten
+from oryx.models.mlp import MLP
 from oryx.models.ncde.ncde import MLPNeuralCDE
 from oryx.models.ncde.term import AbstractNCDETerm, MLPNCDETerm
 from oryx.models.node.node import MLPNeuralODE
@@ -54,7 +60,7 @@ def test_instantiate_stateful():
 def test_mlpmodel_forward_shape_and_determinism():
     key = jr.key(0)
     in_size, out_size = 7, 4
-    m = MLPModel(in_size=in_size, out_size=out_size, width_size=10, depth=2, key=key)
+    m = MLP(in_size=in_size, out_size=out_size, width_size=10, depth=2, key=key)
     x = jnp.zeros(in_size)
     y1 = m(x)
     y2 = m(x)
@@ -65,14 +71,14 @@ def test_mlpmodel_forward_shape_and_determinism():
 
 def test_mlpmodel_wrong_input_shape_raises():
     key = jr.key(1)
-    m = MLPModel(in_size=5, out_size=3, width_size=8, depth=1, key=key)
+    m = MLP(in_size=5, out_size=3, width_size=8, depth=1, key=key)
     x_bad = jnp.ones((6,))
     with pytest.raises(Exception):
         _ = m(x_bad)
 
 
 @pytest.mark.parametrize("time_in_input", [True, False])
-def test_mlpneuralode_solve_and_call(time_in_input):
+def test_mlpneuralode_solve_and_call(time_in_input: bool):
     key = jr.key(4)
     in_size, out_size, latent_size = 3, 2, 4
     model = MLPNeuralODE(
@@ -138,7 +144,7 @@ def test_subclass_without_call_fails_ncdeterm():
 
 
 @pytest.mark.parametrize("add_time", [True, False])
-def test_mlpncdeterm_output_shape(add_time):
+def test_mlpncdeterm_output_shape(add_time: bool):
     key = jr.key(6)
     input_size, data_size = 3, 5
     term = MLPNCDETerm(
@@ -157,7 +163,7 @@ def test_mlpncdeterm_output_shape(add_time):
 
 
 @pytest.mark.parametrize("inference", [True, False])
-def test_mlpneuralcde(inference):
+def test_mlpneuralcde(inference: bool):
     key = jr.key(7)
     in_size, out_size, latent_size, state_size = 4, 2, 6, 4
     model, state = eqx.nn.make_with_state(MLPNeuralCDE)(
@@ -191,7 +197,7 @@ def test_mlpneuralcde(inference):
 
 
 @pytest.mark.parametrize("time_in_input", [True, False])
-def test_ncde_z0_and_coeffs_shapes(time_in_input):
+def test_ncde_z0_and_coeffs_shapes(time_in_input: bool):
     key = jr.key(0)
     in_size, latent_size = 3, 5
     model = MLPNeuralCDE(
@@ -219,7 +225,7 @@ def test_ncde_z0_and_coeffs_shapes(time_in_input):
 
 
 @pytest.mark.parametrize("inference", [True, False])
-def test_ncde_solve_output_shape(inference):
+def test_ncde_solve_output_shape(inference: bool):
     key = jr.key(1)
     in_size, latent_size = 2, 4
     model = MLPNeuralCDE(
@@ -242,7 +248,7 @@ def test_ncde_solve_output_shape(inference):
 
 
 @pytest.mark.parametrize("inference", [True, False])
-def test_ncde_state_rollover(inference):
+def test_ncde_state_rollover(inference: bool):
     key = jr.key(2)
     in_size, out_size, latent_size = 2, 1, 3
     model, state = eqx.nn.make_with_state(MLPNeuralCDE)(
@@ -266,3 +272,17 @@ def test_ncde_state_rollover(inference):
     assert not jnp.isnan(ts).any()
     assert jnp.allclose(ts, jnp.array([1.0, 2.0, 3.0]))
     assert model.t1(state) == 3.0
+
+
+@pytest.mark.parametrize("dims", range(4))
+def test_flatten_model(dims: int):
+    model = Flatten()
+
+    input_shape = (2,) * dims
+    input_data = jnp.ones(input_shape)
+
+    output = model(input_data)
+
+    assert isinstance(output, jnp.ndarray)
+    assert output.shape == (2**dims,)
+    assert jnp.array_equal(output, jnp.ones((2**dims,)))

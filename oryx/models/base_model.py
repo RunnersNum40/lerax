@@ -2,6 +2,7 @@ from abc import abstractmethod
 from typing import Concatenate
 
 import equinox as eqx
+from jaxtyping import Key
 
 
 class AbstractModel[**InType, OutType](eqx.Module, strict=True):
@@ -23,5 +24,43 @@ class AbstractStatefulModel[**InType, *OutType](
     @abstractmethod
     def __call__(
         self, state: eqx.nn.State, *args: InType.args, **kwargs: InType.kwargs
+    ) -> tuple[eqx.nn.State, *OutType]:
+        """Return an output given inputs and the state."""
+
+
+class AbstractStochaticModel[**InType, OutType](
+    AbstractModel[
+        Concatenate[Key, InType],
+        OutType,
+    ],
+    strict=True,
+):
+    """Base class for stochastic models that take inputs and produce outputs."""
+
+    # TODO: Revisit this if Python ever adds support for concatenating keyword
+    # parameters, I'd rather key as a keyword to fit the style of the library
+    @abstractmethod
+    def __call__(
+        self, key: Key, *args: InType.args, **kwargs: InType.kwargs
+    ) -> OutType:
+        """Return an output given an input."""
+
+
+class AbstractStochasticStatefulModel[**InType, *OutType](
+    AbstractStatefulModel[
+        Concatenate[Key, InType],
+        *OutType,
+    ],
+    AbstractStochaticModel[
+        Concatenate[eqx.nn.State, InType],
+        tuple[eqx.nn.State, *OutType],
+    ],
+    strict=True,
+):
+    """Base class for stochastic models with state."""
+
+    @abstractmethod
+    def __call__(
+        self, state: eqx.nn.State, key: Key, *args: InType.args, **kwargs: InType.kwargs
     ) -> tuple[eqx.nn.State, *OutType]:
         """Return an output given inputs and the state."""
