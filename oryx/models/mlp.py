@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Literal
 
 import equinox as eqx
 from jax import nn as jnn
@@ -14,13 +14,13 @@ class MLP(
 
     mlp: eqx.nn.MLP
 
-    in_size: int
-    out_size: int
+    in_size: int | Literal["scalar"]
+    out_size: int | Literal["scalar"]
 
     def __init__(
         self,
-        in_size: int,
-        out_size: int,
+        in_size: int | Literal["scalar"],
+        out_size: int | Literal["scalar"],
         width_size: int,
         depth: int,
         activation: Callable[
