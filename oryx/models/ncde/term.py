@@ -7,7 +7,7 @@ from jax import numpy as jnp
 from jaxtyping import Array, Float, Key, ScalarLike
 
 
-class AbstractNCDETerm(eqx.Module, strict=True):
+class AbstractNCDETerm(eqx.Module):
     """Base class for a neural ODE vector field term."""
 
     @abstractmethod
@@ -17,7 +17,7 @@ class AbstractNCDETerm(eqx.Module, strict=True):
         """Vector field value."""
 
 
-class TensorMLP(eqx.Module, strict=True):
+class TensorMLP(eqx.Module):
     """
     Modification of the MLP class from Equinox to handle tensors as input and output.
     """
@@ -79,7 +79,7 @@ class TensorMLP(eqx.Module, strict=True):
         return x
 
 
-class MLPNCDETerm(AbstractNCDETerm, strict=True):
+class MLPNCDETerm(AbstractNCDETerm):
     add_time: bool
     tensor_mlp: TensorMLP
 

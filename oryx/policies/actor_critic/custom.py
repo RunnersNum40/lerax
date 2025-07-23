@@ -5,7 +5,7 @@ from typing import cast
 import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Float, Integer, Key
+from jaxtyping import Array, Float, Integer, Key, Real
 
 from oryx.distributions import (
     AbstractDistribution,
@@ -23,8 +23,8 @@ from .actor_critic import AbstractActorCriticPolicy
 class CustomActorCriticPolicy[
     FeatureType: Array,
     ActType: (Float[Array, " dims"], Integer[Array, ""]),
-    ObsType: Float[Array, "..."],
-](AbstractActorCriticPolicy[FeatureType, ActType, ObsType], strict=True):
+    ObsType: Real[Array, "..."],
+](AbstractActorCriticPolicy[FeatureType, ActType, ObsType]):
     """
     Actor-critic policy with custom feature extractor, value model, and action model.
 

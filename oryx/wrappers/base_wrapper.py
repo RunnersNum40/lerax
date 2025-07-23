@@ -9,7 +9,7 @@ from oryx.spaces import AbstractSpace
 
 
 class AbstractWrapper[WrapperActType, WrapperObsType, ActType, ObsType](
-    AbstractEnvLike[WrapperActType, WrapperObsType], strict=True
+    AbstractEnvLike[WrapperActType, WrapperObsType]
 ):
     """Base class for environment wrappers"""
 
@@ -22,7 +22,7 @@ class AbstractWrapper[WrapperActType, WrapperObsType, ActType, ObsType](
 
 
 class AbstractObservationWrapper[WrapperObsType, ActType, ObsType](
-    AbstractWrapper[ActType, WrapperObsType, ActType, ObsType], strict=True
+    AbstractWrapper[ActType, WrapperObsType, ActType, ObsType]
 ):
     """Base class for environment observation wrappers"""
 
@@ -85,7 +85,7 @@ class AbstractObservationWrapper[WrapperObsType, ActType, ObsType](
 
 
 class AbstractActionWrapper[WrapperActType, ActType, ObsType](
-    AbstractWrapper[WrapperActType, ObsType, ActType, ObsType], strict=True
+    AbstractWrapper[WrapperActType, ObsType, ActType, ObsType]
 ):
     """Base class for environment action wrappers"""
 
@@ -138,7 +138,7 @@ class AbstractActionWrapper[WrapperActType, ActType, ObsType](
 
 
 class AbstractRewardWrapper[ActType, ObsType](
-    AbstractWrapper[ActType, ObsType, ActType, ObsType], strict=True
+    AbstractWrapper[ActType, ObsType, ActType, ObsType]
 ):
     """Base class for environment reward wrappers"""
 

@@ -5,7 +5,7 @@ from abc import abstractmethod
 import equinox as eqx
 
 
-class AbstractBuffer(eqx.Module, strict=True):
+class AbstractBuffer(eqx.Module):
     """Base class for buffers."""
 
     @property

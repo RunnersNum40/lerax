@@ -12,7 +12,7 @@ from distreqx import bijectors, distributions
 from jaxtyping import Array, Bool, Float, Integer, Key
 
 
-class AbstractDistribution[SampleType](eqx.Module, strict=True):
+class AbstractDistribution[SampleType](eqx.Module):
     """Base class for all distributions in Oryx."""
 
     distribution: eqx.AbstractVar[distributions.AbstractDistribution]
@@ -46,9 +46,7 @@ class AbstractDistribution[SampleType](eqx.Module, strict=True):
         return self.distribution.sample_and_log_prob(key)
 
 
-class AbstractTransformedDistribution[SampleType](
-    AbstractDistribution[SampleType], strict=True
-):
+class AbstractTransformedDistribution[SampleType](AbstractDistribution[SampleType]):
 
     distribution: eqx.AbstractVar[distributions.AbstractTransformed]
 
@@ -57,7 +55,7 @@ class AbstractTransformedDistribution[SampleType](
         return self.distribution.bijector
 
 
-class Bernoulli(AbstractDistribution[Bool[Array, " dims"]], strict=True):
+class Bernoulli(AbstractDistribution[Bool[Array, " dims"]]):
 
     distribution: distributions.Bernoulli
 
@@ -77,7 +75,7 @@ class Bernoulli(AbstractDistribution[Bool[Array, " dims"]], strict=True):
         return self.distribution.probs
 
 
-class Categorical(AbstractDistribution[Integer[Array, ""]], strict=True):
+class Categorical(AbstractDistribution[Integer[Array, ""]]):
 
     distribution: distributions.Categorical
 
@@ -97,7 +95,7 @@ class Categorical(AbstractDistribution[Integer[Array, ""]], strict=True):
         return self.distribution.probs
 
 
-class Normal(AbstractDistribution[Float[Array, " dims"]], strict=True):
+class Normal(AbstractDistribution[Float[Array, " dims"]]):
 
     distribution: distributions.Normal
 
@@ -120,9 +118,7 @@ class Normal(AbstractDistribution[Float[Array, " dims"]], strict=True):
         return self.distribution.scale
 
 
-class SquashedNormal(
-    AbstractTransformedDistribution[Float[Array, " dims"]], strict=True
-):
+class SquashedNormal(AbstractTransformedDistribution[Float[Array, " dims"]]):
 
     distribution: distributions.Transformed
 
@@ -136,7 +132,7 @@ class SquashedNormal(
         self.distribution = distributions.Transformed(normal, tanh)
 
 
-class MultivariateNormalDiag(AbstractDistribution[Float[Array, " dims"]], strict=True):
+class MultivariateNormalDiag(AbstractDistribution[Float[Array, " dims"]]):
 
     distribution: distributions.MultivariateNormalDiag
 
@@ -164,7 +160,7 @@ class MultivariateNormalDiag(AbstractDistribution[Float[Array, " dims"]], strict
 
 
 class SquashedMultivariateNormalDiag(
-    AbstractTransformedDistribution[Float[Array, " dims"]], strict=True
+    AbstractTransformedDistribution[Float[Array, " dims"]]
 ):
     """Multivariate Normal with squashing bijector for bounded outputs."""
 

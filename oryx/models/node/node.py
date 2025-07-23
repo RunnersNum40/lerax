@@ -16,7 +16,6 @@ class AbstractNeuralODE(
     AbstractModel[
         [Float[Array, " n"], Float[Array, " data_size"]], Float[Array, " n data_size"]
     ],
-    strict=True,
 ):
     """Neural ODE model"""
 
@@ -56,7 +55,7 @@ class AbstractNeuralODE(
 class AbstractLatentNeuralODE[
     T: Callable[[Array], Float[Array, " latent_size"]],
     P: Callable[[Array], Float[Array, " latent_size"]],
-](AbstractNeuralODE, strict=True):
+](AbstractNeuralODE):
 
     in_size: eqx.AbstractVar[int]
     latent_size: eqx.AbstractVar[int]
@@ -79,7 +78,7 @@ class AbstractLatentNeuralODE[
         return jax.vmap(self.output)(self.solve(ts, z0))
 
 
-class MLPNeuralODE(AbstractLatentNeuralODE[eqx.nn.MLP, eqx.nn.MLP], strict=True):
+class MLPNeuralODE(AbstractLatentNeuralODE[eqx.nn.MLP, eqx.nn.MLP]):
     """MLP based neural ODE."""
 
     term: MLPNODETerm

@@ -7,7 +7,7 @@ from jax import numpy as jnp
 from jaxtyping import Array, Float, Key, ScalarLike
 
 
-class AbstractNODETerm(eqx.Module, strict=True):
+class AbstractNODETerm(eqx.Module):
     """Base class for a neural ODE vector field term."""
 
     @abstractmethod
@@ -17,7 +17,7 @@ class AbstractNODETerm(eqx.Module, strict=True):
         """Vector field value."""
 
 
-class MLPNODETerm(AbstractNODETerm, strict=True):
+class MLPNODETerm(AbstractNODETerm):
     add_time: bool
     mlp: eqx.nn.MLP
 

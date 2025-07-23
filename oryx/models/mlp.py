@@ -7,9 +7,7 @@ from jaxtyping import Array, Float, Key
 from .base_model import AbstractModel
 
 
-class MLP(
-    AbstractModel[[Float[Array, " in_size"]], Float[Array, " out_size"]], strict=True
-):
+class MLP(AbstractModel[[Float[Array, " in_size"]], Float[Array, " out_size"]]):
     """Wrapper around eqx.nn.MLP."""
 
     mlp: eqx.nn.MLP

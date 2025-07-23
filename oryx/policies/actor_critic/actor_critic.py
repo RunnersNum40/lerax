@@ -12,7 +12,7 @@ from ..base_policy import AbstractPolicy
 
 # TODO: Break out stateful and non-stateful policies
 class AbstractActorCriticPolicy[FeatureType, ActType, ObsType](
-    AbstractPolicy[ActType, ObsType], strict=True
+    AbstractPolicy[ActType, ObsType]
 ):
     """
     Base class for actor-critic policies.

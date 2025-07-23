@@ -33,7 +33,6 @@ class AbstractNeuralCDE[
     AbstractStatefulModel[
         [Float[Array, ""], Float[Array, " in_size"]], Float[Array, " out_size"]
     ],
-    strict=True,
 ):
     """
     Abstract base class for Neural Controlled Differential Equations (NCDEs).
@@ -268,7 +267,7 @@ class AbstractNeuralCDE[
         return state.set(self.state_index, self.empty_state())
 
 
-class MLPNeuralCDE(AbstractNeuralCDE, strict=True):
+class MLPNeuralCDE(AbstractNeuralCDE):
 
     term: MLPNCDETerm
     solver: type[diffrax.AbstractSolver]

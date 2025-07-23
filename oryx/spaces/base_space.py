@@ -7,7 +7,7 @@ from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
 
-class AbstractSpace[SampleType](eqx.Module, strict=True):
+class AbstractSpace[SampleType](eqx.Module):
     """
     Abstract base class for defining a space.
 
@@ -32,7 +32,7 @@ class AbstractSpace[SampleType](eqx.Module, strict=True):
         """Returns a string representation of the space."""
 
 
-class Discrete(AbstractSpace[Int[Array, ""]], strict=True):
+class Discrete(AbstractSpace[Int[Array, ""]]):
     """
     A space of finite discrete values.
 
@@ -67,7 +67,7 @@ class Discrete(AbstractSpace[Int[Array, ""]], strict=True):
         return f"Discrete({self._n}, start={self.start})"
 
 
-class Box(AbstractSpace[Float[Array, " ..."]], strict=True):
+class Box(AbstractSpace[Float[Array, " ..."]]):
     """
     A space of continuous values.
 
@@ -154,7 +154,7 @@ class Box(AbstractSpace[Float[Array, " ..."]], strict=True):
         return f"Box(low={self._low}, high={self._high})"
 
 
-class Tuple(AbstractSpace[tuple[Any, ...]], strict=True):
+class Tuple(AbstractSpace[tuple[Any, ...]]):
     """A cartesian product of spaces."""
 
     spaces: tuple[AbstractSpace, ...]
@@ -197,7 +197,7 @@ class Tuple(AbstractSpace[tuple[Any, ...]], strict=True):
         return len(self.spaces)
 
 
-class Dict(AbstractSpace[dict[str, Any]], strict=True):
+class Dict(AbstractSpace[dict[str, Any]]):
     """A dictionary of spaces."""
 
     spaces: dict[str, AbstractSpace]
@@ -245,7 +245,7 @@ class Dict(AbstractSpace[dict[str, Any]], strict=True):
         return len(self.spaces)
 
 
-class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]], strict=True):
+class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]]):
     """Cartesian product of discrete spaces."""
 
     ns: Int[Array, " n"]
@@ -282,7 +282,7 @@ class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]], strict=True):
         return f"MultiDiscrete({self.ns}, starts={self.starts})"
 
 
-class MultiBinary(AbstractSpace[Bool[Array, " n"]], strict=True):
+class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
     """A space of binary values."""
 
     n: int

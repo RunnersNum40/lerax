@@ -4,7 +4,7 @@ import equinox as eqx
 from jaxtyping import Key
 
 
-class AbstractPolicy[ActType, ObsType](eqx.Module, strict=True):
+class AbstractPolicy[ActType, ObsType](eqx.Module):
     """
     Base class for policies.
 

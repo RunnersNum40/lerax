@@ -12,7 +12,7 @@ from .utils import rescale_box
 
 
 class AbstractTransformActionWrapper[WrapperActType, ActType, ObsType](
-    AbstractActionWrapper[WrapperActType, ActType, ObsType], strict=True
+    AbstractActionWrapper[WrapperActType, ActType, ObsType]
 ):
     """
     Base class for wrappers that apply a function to the action before passing it to
@@ -35,7 +35,7 @@ class AbstractTransformActionWrapper[WrapperActType, ActType, ObsType](
 
 
 class TransformActionWrapper[WrapperActType, ActType, ObsType](
-    AbstractActionWrapper[WrapperActType, ActType, ObsType], strict=True
+    AbstractActionWrapper[WrapperActType, ActType, ObsType]
 ):
     """Apply a function to the action before passing it to the environment"""
 
@@ -56,7 +56,6 @@ class TransformActionWrapper[WrapperActType, ActType, ObsType](
 
 class ClipActionWrapper[ObsType](
     AbstractTransformActionWrapper[Float[Array, " ..."], Float[Array, " ..."], ObsType],
-    strict=True,
 ):
     """
     Clip the action to be within the environment's action_space before passing it to
@@ -86,7 +85,6 @@ class ClipActionWrapper[ObsType](
 
 class RescaleActionWrapper[ObsType](
     AbstractTransformActionWrapper[Float[Array, " ..."], Float[Array, " ..."], ObsType],
-    strict=True,
 ):
     """Affinely rescale a box action to a different range"""
 

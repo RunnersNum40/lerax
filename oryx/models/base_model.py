@@ -7,7 +7,7 @@ import equinox as eqx
 from jaxtyping import Key
 
 
-class AbstractModel[**InType, OutType](eqx.Module, strict=True):
+class AbstractModel[**InType, OutType](eqx.Module):
     """Base class for models that take inputs and produce outputs."""
 
     @abstractmethod
@@ -17,7 +17,6 @@ class AbstractModel[**InType, OutType](eqx.Module, strict=True):
 
 class AbstractStatefulModel[**InType, *OutType](
     AbstractModel[Concatenate[eqx.nn.State, InType], tuple[eqx.nn.State, *OutType]],
-    strict=True,
 ):
     """Base class for models with state."""
 
@@ -39,7 +38,6 @@ class AbstractStochaticModel[**InType, OutType](
         Concatenate[Key, InType],
         OutType,
     ],
-    strict=True,
 ):
     """Base class for stochastic models that take inputs and produce outputs."""
 
@@ -61,7 +59,6 @@ class AbstractStochasticStatefulModel[**InType, *OutType](
         Concatenate[eqx.nn.State, InType],
         tuple[eqx.nn.State, *OutType],
     ],
-    strict=True,
 ):
     """Base class for stochastic models with state."""
 

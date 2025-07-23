@@ -8,7 +8,7 @@ from jaxtyping import Array, Bool, Float, Key
 from oryx.spaces import AbstractSpace
 
 
-class AbstractEnvLike[ActType, ObsType](eqx.Module, strict=True):
+class AbstractEnvLike[ActType, ObsType](eqx.Module):
     """Base class for RL environments or wrappers that behave like environments"""
 
     state_index: eqx.AbstractVar[eqx.nn.StateIndex]
@@ -59,7 +59,7 @@ class AbstractEnvLike[ActType, ObsType](eqx.Module, strict=True):
         """Return the unwrapped environment"""
 
 
-class AbstractEnv[ActType, ObsType](AbstractEnvLike[ActType, ObsType], strict=True):
+class AbstractEnv[ActType, ObsType](AbstractEnvLike[ActType, ObsType]):
     """Base class for RL environments"""
 
     state_index: eqx.AbstractVar[eqx.nn.StateIndex]

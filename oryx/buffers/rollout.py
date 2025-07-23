@@ -13,7 +13,7 @@ from jaxtyping import Array, ArrayLike, Bool, Float, Key, PyTree
 from .base_buffer import AbstractBuffer
 
 
-class RolloutBuffer[ActType, ObsType](AbstractBuffer, strict=True):
+class RolloutBuffer[ActType, ObsType](AbstractBuffer):
     """
     RolloutBuffer used by on-policy algorithms.
 
