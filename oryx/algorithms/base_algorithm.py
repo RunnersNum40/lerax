@@ -6,19 +6,15 @@ from typing import Callable
 import equinox as eqx
 from jaxtyping import Key
 
-from oryx.env import AbstractEnv
+from oryx.env import AbstractEnvLike
 from oryx.policies import AbstractPolicy
-from oryx.spaces import AbstractSpace
 
 
-class AbstractAlgorithm[ActType, ObsType](eqx.Module, strict=True):
+class AbstractAlgorithm[ActType, ObsType](eqx.Module):
     """Base class for RL algorithms."""
 
     policy: eqx.AbstractVar[AbstractPolicy]
-    env: eqx.AbstractVar[AbstractEnv[ActType, ObsType]]
-
-    observation_space: eqx.AbstractVar[AbstractSpace[ActType]]
-    action_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+    env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
 
     @abstractmethod
     def learn(
@@ -27,7 +23,7 @@ class AbstractAlgorithm[ActType, ObsType](eqx.Module, strict=True):
         *,
         key: Key | None = None,
         progress_bar: bool = False,
-        tb_log_name: str,
+        tb_log_name: str | None = None,
         log_interval: int = 100,
     ) -> AbstractAlgorithm[ActType, ObsType]:
         """Return a trained model."""
