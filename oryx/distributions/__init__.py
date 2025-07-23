@@ -5,9 +5,11 @@ Wrapper around distreqx.distributions to allow for easier imports, extended typi
 future expansion.
 """
 
+from __future__ import annotations
+
 import equinox as eqx
 from distreqx import bijectors, distributions
-from jaxtyping import Array, Bool, Float, Int, Key
+from jaxtyping import Array, Bool, Float, Integer, Key
 
 
 class AbstractDistribution[SampleType](eqx.Module, strict=True):
@@ -75,7 +77,7 @@ class Bernoulli(AbstractDistribution[Bool[Array, " dims"]], strict=True):
         return self.distribution.probs
 
 
-class Categorical(AbstractDistribution[Int[Array, ""]], strict=True):
+class Categorical(AbstractDistribution[Integer[Array, ""]], strict=True):
 
     distribution: distributions.Categorical
 
@@ -104,6 +106,9 @@ class Normal(AbstractDistribution[Float[Array, " dims"]], strict=True):
         loc: Float[Array, " dims"],
         scale: Float[Array, " dims"],
     ):
+        if loc.shape != scale.shape:
+            raise ValueError("loc and scale must have the same shape.")
+
         self.distribution = distributions.Normal(loc=loc, scale=scale)
 
     @property
@@ -122,6 +127,9 @@ class SquashedNormal(
     distribution: distributions.Transformed
 
     def __init__(self, loc: Float[Array, " dims"], scale: Float[Array, " dims"]):
+        if loc.shape != scale.shape:
+            raise ValueError("loc and scale must have the same shape.")
+
         normal = distributions.Normal(loc=loc, scale=scale)
         tanh = bijectors.Tanh()
 
@@ -137,6 +145,11 @@ class MultivariateNormalDiag(AbstractDistribution[Float[Array, " dims"]], strict
         loc: Float[Array, " dims"] | None = None,
         scale_diag: Float[Array, " dims"] | None = None,
     ):
+        if (loc is not None and scale_diag is not None) and (
+            loc.shape != scale_diag.shape
+        ):
+            raise ValueError("loc and scale_diag must have the same shape.")
+
         self.distribution = distributions.MultivariateNormalDiag(
             loc=loc, scale_diag=scale_diag
         )
@@ -196,3 +209,21 @@ __all__ = [
     "Normal",
     "MultivariateNormalDiag",
 ]
+
+if __name__ == "__main__":
+    from jaxtyping import Real
+
+    class Check[T: Real[Array, " ..."]]:
+        def __init__(self, dist: AbstractDistribution[T]):
+            self.dist = dist
+
+        def check(self) -> T:
+            return self.dist.sample(key=None)
+
+    FloatCheck = Check[Float[Array, " ..."]]
+    IntegerCheck = Check[Integer[Array, " ..."]]
+    ArrayCheck = Check[Array]
+
+    FloatCheck(Categorical(None))
+    IntegerCheck(Categorical(None))
+    ArrayCheck(Categorical(None))

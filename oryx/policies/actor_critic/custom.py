@@ -1,11 +1,14 @@
+from __future__ import annotations
+
+from typing import cast
+
 import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Float, Key
+from jaxtyping import Array, Float, Integer, Key
 
 from oryx.distributions import (
-    AbstractSampleLogProbDistribution,
-    AbstractTransformedDistribution,
+    AbstractDistribution,
     Categorical,
     SquashedMultivariateNormalDiag,
 )
@@ -17,9 +20,11 @@ from .actor_critic import AbstractActorCriticPolicy
 
 
 # TODO: Support other action spaces
-class CustomActorCriticPolicy(
-    AbstractActorCriticPolicy[Float, Float, Float], strict=True
-):
+class CustomActorCriticPolicy[
+    FeatureType: Array,
+    ActType: (Float[Array, " dims"], Integer[Array, ""]),
+    ObsType: Float[Array, "..."],
+](AbstractActorCriticPolicy[FeatureType, ActType, ObsType], strict=True):
     """
     Actor-critic policy with custom feature extractor, value model, and action model.
 
@@ -33,63 +38,93 @@ class CustomActorCriticPolicy(
 
     state_index: eqx.nn.StateIndex[None]
 
-    feature_extractor: AbstractModel[[Float], Float]
-    value_model: AbstractModel[[Float], Float[Array, ""]]
-    action_model: AbstractModel[[Float], Float]
+    feature_extractor: (
+        AbstractModel[[ObsType], FeatureType]
+        | AbstractStatefulModel[[ObsType], FeatureType]
+    )
+    value_model: (
+        AbstractModel[[FeatureType], Float[Array, ""]]
+        | AbstractStatefulModel[[FeatureType], Float[Array, ""]]
+    )
+    action_model: (
+        AbstractModel[[FeatureType], ActType]
+        | AbstractStatefulModel[[FeatureType], ActType]
+    )
     log_std: Float[Array, " action_size"]
 
-    env: AbstractEnvLike[Float, Float]
+    env: AbstractEnvLike[ActType, ObsType]
 
     def __init__(
         self,
-        env: AbstractEnvLike[Float, Float],
+        env: AbstractEnvLike[ActType, ObsType],
         *,
-        feature_extractor: AbstractModel[[Float], Float] | None = None,
+        feature_extractor: (
+            AbstractModel[[ObsType], FeatureType]
+            | AbstractStatefulModel[[ObsType], FeatureType]
+            | None
+        ) = None,
         feature_size: int | None = None,
-        value_model: AbstractModel[[Float], Float[Array, ""]] | None = None,
-        action_model: AbstractModel[[Float], Float] | None = None,
+        value_model: (
+            AbstractModel[[FeatureType], Float[Array, ""]]
+            | AbstractStatefulModel[[FeatureType], Float[Array, ""]]
+            | None
+        ) = None,
+        action_model: (
+            AbstractModel[[FeatureType], ActType]
+            | AbstractStatefulModel[[FeatureType], ActType]
+            | None
+        ) = None,
         key: Key,
     ):
         self.env = env
 
+        # TODO: Maybe cast is not needed here
         if feature_extractor is None:
-            feature_extractor = Flatten()
+            self.feature_extractor = cast(
+                AbstractModel[[ObsType], FeatureType], Flatten()
+            )
             feature_size = int(jnp.prod(jnp.asarray(env.observation_space.shape)))
         elif feature_size is None:
             raise ValueError("Custom feature extractor must specify feature_size")
-
-        self.feature_extractor = feature_extractor
+        else:
+            self.feature_extractor = feature_extractor
 
         if value_model is None:
             key, value_model_key = jr.split(key, 2)
-            value_model = MLP(
-                in_size=feature_size,
-                out_size="scalar",
-                width_size=128,
-                depth=4,
-                key=value_model_key,
+            self.value_model = cast(
+                AbstractModel[[FeatureType], Float[Array, ""]],
+                MLP(
+                    in_size=feature_size,
+                    out_size="scalar",
+                    width_size=128,
+                    depth=4,
+                    key=value_model_key,
+                ),
             )
-
-        self.value_model = value_model
+        else:
+            self.value_model = value_model
 
         if action_model is None:
             key, action_model_key = jr.split(key, 2)
-            action_model = MLP(
-                in_size=feature_size,
-                out_size=int(jnp.prod(jnp.asarray(env.action_space.shape))),
-                width_size=128,
-                depth=4,
-                key=action_model_key,
+            self.action_model = cast(
+                AbstractModel[[FeatureType], ActType],
+                MLP(
+                    in_size=feature_size,
+                    out_size=int(jnp.prod(jnp.asarray(env.action_space.shape))),
+                    width_size=128,
+                    depth=4,
+                    key=action_model_key,
+                ),
             )
             self.log_std = jnp.zeros(env.action_space.shape)
-
-        self.action_model = action_model
+        else:
+            self.action_model = action_model
 
         self.state_index = eqx.nn.StateIndex(None)
 
     def extract_features(
-        self, state: eqx.nn.State, observation: Float
-    ) -> tuple[eqx.nn.State, Float]:
+        self, state: eqx.nn.State, observation: ObsType
+    ) -> tuple[eqx.nn.State, FeatureType]:
         if isinstance(self.feature_extractor, AbstractStatefulModel):
             substate = state.substate(self.feature_extractor)
             substate, features = self.feature_extractor(substate, observation)
@@ -100,11 +135,9 @@ class CustomActorCriticPolicy(
 
         return state, features
 
-    def action_dist_from_features(self, state: eqx.nn.State, features: Float) -> tuple[
-        eqx.nn.State,
-        AbstractSampleLogProbDistribution[Float]
-        | AbstractTransformedDistribution[Float],
-    ]:
+    def action_dist_from_features(
+        self, state: eqx.nn.State, features: FeatureType
+    ) -> tuple[eqx.nn.State, AbstractDistribution[ActType]]:
         if isinstance(self.action_model, AbstractStatefulModel):
             substate = state.substate(self.action_model)
             substate, action = self.action_model(substate, features)
@@ -130,12 +163,11 @@ class CustomActorCriticPolicy(
         return state, action_distribution
 
     def value_from_features(
-        self, state: eqx.nn.State, features: Float
+        self, state: eqx.nn.State, features: FeatureType
     ) -> tuple[eqx.nn.State, Float[Array, ""]]:
         if isinstance(self.value_model, AbstractStatefulModel):
             substate = state.substate(self.value_model)
-            # FIX: Typing not working here for some reason
-            substate, value = self.value_model(substate, features)  # pyright: ignore
+            substate, value = self.value_model(substate, features)
             state = state.update(substate)
 
         else:

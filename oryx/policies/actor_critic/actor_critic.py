@@ -1,12 +1,11 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 
 import equinox as eqx
 from jaxtyping import Array, Float, Key
 
-from oryx.distributions import (
-    AbstractSampleLogProbDistribution,
-    AbstractTransformedDistribution,
-)
+from oryx.distributions import AbstractDistribution
 
 from ..base_policy import AbstractPolicy
 
@@ -35,8 +34,7 @@ class AbstractActorCriticPolicy[FeatureType, ActType, ObsType](
         self, state: eqx.nn.State, features: FeatureType
     ) -> tuple[
         eqx.nn.State,
-        AbstractSampleLogProbDistribution[ActType]
-        | AbstractTransformedDistribution[ActType],
+        AbstractDistribution[ActType],
     ]:
         """Return an action distribution from features."""
 
