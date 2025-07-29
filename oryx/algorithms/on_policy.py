@@ -17,28 +17,35 @@ from oryx.policies import AbstractActorCriticPolicy
 from .base_algorithm import AbstractAlgorithm
 
 
+class StepCarry[ObsType](eqx.Module):
+    """Carry for the step function."""
+
+    next_obs: ObsType
+    next_termination: Bool[Array, ""]
+    next_truncation: Bool[Array, ""]
+
+
 class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, ObsType]):
     """Base class for on policy algorithms."""
 
+    state_index: eqx.AbstractVar[eqx.nn.StateIndex]
     env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
     policy: eqx.AbstractVar[AbstractActorCriticPolicy[Float, ActType, ObsType]]
 
     def step(
         self,
         state: eqx.nn.State,
-        previous: RolloutBuffer[ActType, ObsType],
+        previous: StepCarry[ObsType],
         *,
         key: Key,
         tb_writer: SummaryWriter | None = None,
-    ) -> tuple[eqx.nn.State, RolloutBuffer[ActType, ObsType]]:
+    ) -> tuple[eqx.nn.State, StepCarry[ObsType], RolloutBuffer[ActType, ObsType]]:
         """Perform a single step in the environment."""
-        observation = previous.observations
-
         action_key, env_key, reset_key = jr.split(key, 3)
 
         policy_state = state.substate(self.policy)
         policy_state, action, value, log_prob = self.policy(
-            policy_state, observation, key=action_key
+            policy_state, previous.next_obs, key=action_key
         )
         state = state.update(policy_state)
 
@@ -50,7 +57,9 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
 
         # TODO: Add TensorBoard logging
 
-        def reset_env() -> tuple[eqx.nn.State, ObsType, dict]:
+        def reset_env() -> (
+            tuple[eqx.nn.State, ObsType, Bool[Array, ""], Bool[Array, ""], dict]
+        ):
             env_state = state.substate(self.env)
             env_state, observation, info = self.env.reset(env_state, key=reset_key)
             _state = state.update(env_state)  # _ prefix to avoid shadowing `state`
@@ -59,29 +68,35 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
             policy_state = self.policy.reset(policy_state)
             _state = _state.update(policy_state)
 
-            return _state, observation, info
+            return _state, observation, jnp.asarray(False), jnp.asarray(False), info
 
-        def identity() -> tuple[eqx.nn.State, ObsType, dict]:
-            return state, observation, info
+        def identity() -> (
+            tuple[eqx.nn.State, ObsType, Bool[Array, ""], Bool[Array, ""], dict]
+        ):
+            return state, observation, termination, truncation, info
 
-        done = previous.terminations | previous.truncations
+        done = previous.next_termination | previous.next_truncation
 
-        state, observation, info = lax.cond(
+        state, observation, termination, truncation, info = lax.cond(
             done,
             reset_env,
             identity,
             state,
         )
 
-        return state, RolloutBuffer(
-            observations=observation,
-            actions=action,
-            rewards=reward,
-            terminations=termination,
-            truncations=truncation,
-            log_probs=log_prob,
-            values=value,
-            states=state,
+        return (
+            state,
+            StepCarry(observation, termination, truncation),
+            RolloutBuffer(
+                observations=previous.next_obs,
+                actions=action,
+                rewards=reward,
+                terminations=previous.termination,
+                truncations=previous.truncation,
+                log_probs=log_prob,
+                values=value,
+                states=state,
+            ),
         )
 
     def collect_rollout(
