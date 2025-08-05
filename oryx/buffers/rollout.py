@@ -82,10 +82,14 @@ class RolloutBuffer[ActType, ObsType](AbstractBuffer):
         self.values = jnp.asarray(values)
         self.states = states
         self.returns = (
-            jnp.asarray(returns) if returns else jnp.full_like(values, jnp.nan)
+            jnp.asarray(returns)
+            if returns is not None
+            else jnp.full_like(values, jnp.nan)
         )
         self.advantages = (
-            jnp.asarray(advantages) if advantages else jnp.full_like(values, jnp.nan)
+            jnp.asarray(advantages)
+            if advantages is not None
+            else jnp.full_like(values, jnp.nan)
         )
 
     @eqx.filter_jit
@@ -119,7 +123,7 @@ class RolloutBuffer[ActType, ObsType](AbstractBuffer):
         )
 
         next_non_terminal = jnp.concatenate(
-            [1.0 - dones, jnp.array([1.0 - done])], axis=0
+            [1.0 - dones[1:], jnp.array([1.0 - done])], axis=0
         )
 
         deltas = self.rewards + gamma * next_values * next_non_terminal - self.values
