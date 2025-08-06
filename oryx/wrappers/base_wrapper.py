@@ -62,10 +62,7 @@ class AbstractObservationWrapper[WrapperObsType, ActType, ObsType](
     def reset(
         self, state: eqx.nn.State, *, key: Key
     ) -> tuple[eqx.nn.State, WrapperObsType, dict]:
-        if key is not None:
-            env_key, wrapper_key = jr.split(key, 2)
-        else:
-            env_key, wrapper_key = None, None
+        env_key, wrapper_key = jr.split(key, 2)
 
         substate = state.substate(self.env)
         substate, obs, info = self.env.reset(substate, key=env_key)
@@ -83,7 +80,7 @@ class AbstractObservationWrapper[WrapperObsType, ActType, ObsType](
         Bool[Array, ""],
         dict,
     ]:
-        env_key, wrapper_key = key.split(2)
+        env_key, wrapper_key = jr.split(key, 2)
 
         substate = state.substate(self.env)
         substate, obs, reward, termination, truncation, info = self.env.step(
