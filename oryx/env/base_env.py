@@ -15,13 +15,13 @@ class AbstractEnvLike[ActType, ObsType](eqx.Module):
 
     @abstractmethod
     def reset(
-        self, state: eqx.nn.State, *, key: Key | None
+        self, state: eqx.nn.State, *, key: Key
     ) -> tuple[eqx.nn.State, ObsType, dict]:
         """Reset the environment to an initial state"""
 
     @abstractmethod
     def step(
-        self, state: eqx.nn.State, action: ActType, *, key: Key | None
+        self, state: eqx.nn.State, action: ActType, *, key: Key
     ) -> tuple[
         eqx.nn.State, ObsType, Float[Array, ""], Bool[Array, ""], Bool[Array, ""], dict
     ]:
