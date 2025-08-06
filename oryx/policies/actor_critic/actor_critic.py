@@ -10,7 +10,7 @@ from oryx.distributions import AbstractDistribution
 from ..base_policy import AbstractPolicy
 
 
-# TODO: Break out stateful and non-stateful policies
+# TODO: Add support for split actor and critic observations
 class AbstractActorCriticPolicy[FeatureType, ActType, ObsType](
     AbstractPolicy[ActType, ObsType]
 ):

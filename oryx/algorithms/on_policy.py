@@ -46,6 +46,19 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
     num_steps: eqx.AbstractVar[int]
     batch_size: eqx.AbstractVar[int]
 
+    def __check_init__(self):
+        """
+        Check invariants.
+
+        Called automatically after the object is initialized by Equinox.
+        """
+        if (self.env.action_space != self.policy.action_space) or (
+            self.env.observation_space != self.policy.observation_space
+        ):
+            raise ValueError(
+                "The action and observation spaces of the environment and policy must match."
+            )
+
     def step(
         self,
         policy: AbstractActorCriticPolicy[Float, ActType, ObsType],

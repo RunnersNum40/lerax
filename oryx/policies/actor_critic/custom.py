@@ -15,6 +15,7 @@ from oryx.distributions import (
 from oryx.env import AbstractEnvLike
 from oryx.models import MLP, AbstractModel, AbstractStatefulModel, Flatten
 from oryx.spaces import Box, Discrete
+from oryx.spaces.base_space import AbstractSpace
 
 from .actor_critic import AbstractActorCriticPolicy
 
@@ -121,6 +122,14 @@ class CustomActorCriticPolicy[
             self.action_model = action_model
 
         self.state_index = eqx.nn.StateIndex(None)
+
+    @property
+    def action_space(self) -> AbstractSpace[ActType]:
+        return self.env.action_space
+
+    @property
+    def observation_space(self) -> AbstractSpace[ObsType]:
+        return self.env.observation_space
 
     def extract_features(
         self, state: eqx.nn.State, observation: ObsType

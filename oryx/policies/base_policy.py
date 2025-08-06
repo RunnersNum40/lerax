@@ -3,7 +3,11 @@ from abc import abstractmethod
 import equinox as eqx
 from jaxtyping import Key
 
+from oryx.spaces.base_space import AbstractSpace
 
+
+# TODO: Break out stateful and non-stateful policies
+# TODO: Break out stochastic and non-stochastic policies
 class AbstractPolicy[ActType, ObsType](eqx.Module):
     """
     Base class for policies.
@@ -12,6 +16,16 @@ class AbstractPolicy[ActType, ObsType](eqx.Module):
     """
 
     state_index: eqx.AbstractVar[eqx.nn.StateIndex]
+
+    @property
+    @abstractmethod
+    def action_space(self) -> AbstractSpace[ActType]:
+        """The action space of the policy."""
+
+    @property
+    @abstractmethod
+    def observation_space(self) -> AbstractSpace[ObsType]:
+        """The observation space of the policy."""
 
     @abstractmethod
     def predict(
