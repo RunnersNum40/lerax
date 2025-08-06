@@ -1,16 +1,12 @@
-from collections.abc import Callable
-from functools import wraps
+import threading
+from functools import partial, wraps
+from typing import Any, Callable
 
 import equinox as eqx
 import jax
+import numpy as np
 from jax import lax
-from rich.progress import (
-    BarColumn,
-    Progress,
-    TaskProgressColumn,
-    TextColumn,
-    TimeRemainingColumn,
-)
+from jax import numpy as jnp
 
 
 def clone_state(state: eqx.nn.State) -> eqx.nn.State:
@@ -65,12 +61,48 @@ def filter_scan[Carry, X, Y](
     return carry, y
 
 
-def create_progress_bar() -> Progress:
-    """Create a Rich progress bar with a specific format."""
+def debug_wrapper[**InType](
+    func: Callable[InType, Any], ordered: bool = False, thread: bool = False
+) -> Callable[InType, None]:
+    """
+    Return a JIT‑safe version of *func*.
 
-    return Progress(
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        TimeRemainingColumn(),
-    )
+    :param func: The function to wrap.
+    :param ordered: If True, the callback will be executed in the order of the arguments
+    :param thread: If True, the callback will be executed in a separate thread.
+    """
+    if ordered and thread:
+        # TODO: Add a warning or error here
+        pass
+
+    def _callback(*args: InType.args, **kwargs: InType.kwargs) -> None:
+        if thread:
+            threading.Thread(target=func, args=args, kwargs=kwargs, daemon=True).start()
+        else:
+            func(*args, **kwargs)
+
+    @wraps(func)
+    def wrapped(*args: InType.args, **kwargs: InType.kwargs) -> None:
+        jax.debug.callback(_callback, *args, **kwargs, ordered=ordered)
+
+    return wrapped
+
+
+def debug_with_numpy_wrapper[**InType](
+    func: Callable[InType, Any], ordered: bool = False, thread: bool = False
+) -> Callable[InType, None]:
+    """
+    Like `debug_wrapper` but converts every jax.Array/`jnp.ndarray` argument
+    to a plain numpy.ndarray` before calling *func*.
+    """
+
+    @partial(debug_wrapper, ordered=ordered, thread=thread)
+    @wraps(func)
+    def wrapped(*args: InType.args, **kwargs: InType.kwargs) -> None:
+        args, kwargs = jax.tree_util.tree_map(
+            lambda x: np.asarray(x) if isinstance(x, (jax.Array, jnp.ndarray)) else x,
+            (args, kwargs),
+        )
+        func(*args, **kwargs)
+
+    return wrapped
