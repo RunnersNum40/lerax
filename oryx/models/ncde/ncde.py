@@ -190,7 +190,7 @@ class AbstractNeuralCDE[
         :param state: The current state.
         :param t1: The current time.
         :param x1: The current input.
-        :param backwards_mode: Whether to compute the output using the full history of
+        :param inference: Whether to compute the output using the full history of
             inputs or starting from the cached state. Used to get a better gradient for
             back propagation through time.
         """
@@ -207,8 +207,7 @@ class AbstractNeuralCDE[
             sliced_ts = lax.dynamic_slice(ts, (slice_index,), (2,))
             sliced_xs = lax.dynamic_slice(xs, (slice_index, 0), (2, self.in_size))
 
-            coeffs = self.coeffs(sliced_ts, sliced_xs)
-            z1 = self.solve(sliced_ts, z0, jax.tree.map(lambda x: x, coeffs))[1]
+            z1 = self.solve(sliced_ts, z0, self.coeffs(sliced_ts, sliced_xs))[1]
 
         zs = zs.at[self.latest_index(ts)].set(z1)
         state = state.set(self.state_index, (ts, xs, zs))

@@ -86,6 +86,17 @@ class AbstractActorCriticPolicy[FeatureType, ActType, ObsType](
         state, features = self.extract_features(state, observation)
         return self.value_from_features(state, features)
 
+    def evaluate_action(
+        self, state: eqx.nn.State, observation: ObsType, action: ActType
+    ) -> tuple[eqx.nn.State, Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
+        """Evaluate an action given an observation."""
+        state, features = self.extract_features(state, observation)
+        state, action_dist = self.action_dist_from_features(state, features)
+        state, value = self.value_from_features(state, features)
+        log_prob = action_dist.log_prob(action).squeeze()
+
+        return state, value, log_prob, action_dist.entropy().squeeze()
+
     @abstractmethod
     def reset(self, state: eqx.nn.State) -> eqx.nn.State:
         """Reset the policy state."""
