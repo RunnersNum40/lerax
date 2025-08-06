@@ -249,8 +249,10 @@ class Dict(AbstractSpace[dict[str, Any]]):
 
     def sample(self, key: Key) -> dict[str, Any]:
         return {
-            space: self.spaces[space].sample(key)
-            for space, key in zip(self.spaces.keys(), jr.split(key, len(self.spaces)))
+            space_key: self.spaces[space_key].sample(rng_key)
+            for space_key, rng_key in zip(
+                self.spaces.keys(), jr.split(key, len(self.spaces))
+            )
         }
 
     def contains(self, x: Any) -> bool:
