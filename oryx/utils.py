@@ -1,7 +1,16 @@
 from collections.abc import Callable
+from functools import wraps
 
 import equinox as eqx
 import jax
+from jax import lax
+from rich.progress import (
+    BarColumn,
+    Progress,
+    TaskProgressColumn,
+    TextColumn,
+    TimeRemainingColumn,
+)
 
 
 def clone_state(state: eqx.nn.State) -> eqx.nn.State:
@@ -15,6 +24,7 @@ def clone_state(state: eqx.nn.State) -> eqx.nn.State:
     return state_clone
 
 
+@wraps(lax.scan)
 def filter_scan[Carry, X, Y](
     f: Callable[[Carry, X], tuple[Carry, Y]],
     init: Carry,
@@ -41,7 +51,7 @@ def filter_scan[Carry, X, Y](
         )
         return carry_arr, y
 
-    carry_arr, y = jax.lax.scan(
+    carry_arr, y = lax.scan(
         f=_f,
         init=init_arr,
         xs=xs,
@@ -53,3 +63,14 @@ def filter_scan[Carry, X, Y](
 
     carry = eqx.combine(carry_arr, static)
     return carry, y
+
+
+def create_progress_bar() -> Progress:
+    """Create a Rich progress bar with a specific format."""
+
+    return Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TimeRemainingColumn(),
+    )
