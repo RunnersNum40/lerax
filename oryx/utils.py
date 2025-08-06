@@ -40,7 +40,7 @@ def filter_scan[Carry, X, Y](
         carry, y = f(carry, x)
         carry_arr, _static = eqx.partition(carry, eqx.is_array)
 
-        eqx.error_if(
+        carry_arr = eqx.error_if(
             carry_arr,
             _static != static,
             "Non-array carry of filter_scan must not change.",
@@ -88,20 +88,22 @@ def debug_wrapper[**InType](
     return wrapped
 
 
-def debug_with_numpy_wrapper[**InType](
-    func: Callable[InType, Any], ordered: bool = False, thread: bool = False
-) -> Callable[InType, None]:
+def debug_with_numpy_wrapper(
+    func: Callable[..., Any], ordered: bool = False, thread: bool = False
+) -> Callable[..., None]:
     """
     Like `debug_wrapper` but converts every jax.Array/`jnp.ndarray` argument
     to a plain numpy.ndarray` before calling *func*.
+
+    It is impossible with Python's current type system to express the transformation so
+    parameter information is lost.
     """
 
     @partial(debug_wrapper, ordered=ordered, thread=thread)
     @wraps(func)
-    def wrapped(*args: InType.args, **kwargs: InType.kwargs) -> None:
-        args, kwargs = jax.tree_util.tree_map(
-            lambda x: np.asarray(x) if isinstance(x, (jax.Array, jnp.ndarray)) else x,
-            (args, kwargs),
+    def wrapped(*args, **kwargs) -> None:
+        args, kwargs = jax.tree.map(
+            lambda x: np.asarray(x) if isinstance(x, jnp.ndarray) else x, (args, kwargs)
         )
         func(*args, **kwargs)
 
