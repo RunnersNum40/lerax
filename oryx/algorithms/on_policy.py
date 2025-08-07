@@ -3,7 +3,6 @@ from __future__ import annotations
 from abc import abstractmethod
 
 import equinox as eqx
-import jax
 import optax
 from jax import lax
 from jax import numpy as jnp

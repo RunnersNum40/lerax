@@ -2,7 +2,6 @@ from typing import Callable
 
 import diffrax
 import equinox as eqx
-import jax
 from jax import lax
 from jax import nn as jnn
 from jax import numpy as jnp

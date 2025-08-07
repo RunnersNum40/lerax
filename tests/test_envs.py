@@ -4,7 +4,7 @@ import equinox as eqx
 import jax.numpy as jnp
 import pytest
 from jax import random as jr
-from jaxtyping import Array, Bool, Float
+from jaxtyping import Array, Float
 
 from oryx.env.base_env import AbstractEnv, AbstractEnvLike
 from oryx.spaces import Box
