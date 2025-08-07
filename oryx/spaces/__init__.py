@@ -14,6 +14,7 @@ from .base_space import (
     OneOf,
     Tuple,
 )
+from .utils import flatten
 
 __all__ = [
     "AbstractSpace",
@@ -24,4 +25,5 @@ __all__ = [
     "MultiDiscrete",
     "OneOf",
     "Tuple",
+    "flatten",
 ]
