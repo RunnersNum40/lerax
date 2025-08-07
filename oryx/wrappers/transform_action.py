@@ -7,41 +7,41 @@ from jaxtyping import Array, Float, Key
 from oryx.env import AbstractEnvLike
 from oryx.spaces import AbstractSpace, Box
 
-from .base_wrapper import AbstractActionWrapper
+from .base_wrapper import AbstractTransformActionWrapper
 from .utils import rescale_box
 
 
-class AbstractTransformActionWrapper[WrapperActType, ActType, ObsType](
-    AbstractActionWrapper[WrapperActType, ActType, ObsType]
+class AbstractPureTransformActionWrapper[WrapperActType, ActType, ObsType](
+    AbstractTransformActionWrapper[WrapperActType, ActType, ObsType]
 ):
     """
-    Base class for wrappers that apply a function to the action before passing it to
+    Base class for wrappers that apply a pure function to the action before passing it to
     the environment
     """
 
     env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
     func: eqx.AbstractVar[Callable[[WrapperActType], ActType]]
-    _action_space: eqx.AbstractVar[AbstractSpace[WrapperActType]]
+    wrapper_action_space: eqx.AbstractVar[AbstractSpace[WrapperActType]]
 
     def action(
-        self, state: eqx.nn.State, action: WrapperActType, *, key: Key | None
+        self, state: eqx.nn.State, action: WrapperActType, *, key: Key
     ) -> tuple[eqx.nn.State, ActType]:
         transformed_action = self.func(action)
         return state, transformed_action
 
     @property
     def action_space(self) -> AbstractSpace[WrapperActType]:
-        return self._action_space
+        return self.wrapper_action_space
 
 
-class TransformActionWrapper[WrapperActType, ActType, ObsType](
-    AbstractTransformActionWrapper[WrapperActType, ActType, ObsType]
+class TransformAction[WrapperActType, ActType, ObsType](
+    AbstractPureTransformActionWrapper[WrapperActType, ActType, ObsType]
 ):
     """Apply a function to the action before passing it to the environment"""
 
     env: AbstractEnvLike[ActType, ObsType]
     func: Callable[[WrapperActType], ActType]
-    _action_space: AbstractSpace[WrapperActType]
+    wrapper_action_space: AbstractSpace[WrapperActType]
 
     def __init__(
         self,
@@ -51,11 +51,13 @@ class TransformActionWrapper[WrapperActType, ActType, ObsType](
     ):
         self.env = env
         self.func = func
-        self._action_space = action_space
+        self.wrapper_action_space = action_space
 
 
-class ClipActionWrapper[ObsType](
-    AbstractTransformActionWrapper[Float[Array, " ..."], Float[Array, " ..."], ObsType],
+class ClipAction[ObsType](
+    AbstractPureTransformActionWrapper[
+        Float[Array, " ..."], Float[Array, " ..."], ObsType
+    ],
 ):
     """
     Clip the action to be within the environment's action_space before passing it to
@@ -64,7 +66,7 @@ class ClipActionWrapper[ObsType](
 
     env: AbstractEnvLike[Float[Array, " ..."], ObsType]
     func: Callable[[Float[Array, " ..."]], Float[Array, " ..."]]
-    _action_space: Box
+    wrapper_action_space: Box
 
     def __init__(self, env: AbstractEnvLike[Float[Array, " ..."], ObsType]):
         if not isinstance(env.action_space, Box):
@@ -80,17 +82,19 @@ class ClipActionWrapper[ObsType](
 
         self.env = env
         self.func = clip
-        self._action_space = action_space
+        self.wrapper_action_space = action_space
 
 
-class RescaleActionWrapper[ObsType](
-    AbstractTransformActionWrapper[Float[Array, " ..."], Float[Array, " ..."], ObsType],
+class RescaleAction[ObsType](
+    AbstractPureTransformActionWrapper[
+        Float[Array, " ..."], Float[Array, " ..."], ObsType
+    ],
 ):
     """Affinely rescale a box action to a different range"""
 
     env: AbstractEnvLike[Float[Array, " ..."], ObsType]
     func: Callable[[Float[Array, " ..."]], Float[Array, " ..."]]
-    _action_space: Box
+    wrapper_action_space: Box
 
     def __init__(
         self,
@@ -107,4 +111,4 @@ class RescaleActionWrapper[ObsType](
 
         self.env = env
         self.func = rescale
-        self._action_space = action_space
+        self.wrapper_action_space = action_space

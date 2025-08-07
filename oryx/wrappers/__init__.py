@@ -1,27 +1,19 @@
 from .base_wrapper import (
-    AbstractActionWrapper,
-    AbstractObservationWrapper,
-    AbstractRewardWrapper,
     AbstractWrapper,
 )
 from .misc import (
-    EpisodeStatisticsWrapper,
+    EpisodeStatistics,
 )
 from .transform_action import (
-    AbstractTransformActionWrapper,
-    ClipActionWrapper,
-    RescaleActionWrapper,
-    TransformActionWrapper,
+    ClipAction,
+    RescaleAction,
+    TransformAction,
 )
 
 __all__ = [
     "AbstractWrapper",
-    "AbstractObservationWrapper",
-    "AbstractActionWrapper",
-    "AbstractRewardWrapper",
-    "AbstractTransformActionWrapper",
-    "TransformActionWrapper",
-    "ClipActionWrapper",
-    "RescaleActionWrapper",
-    "EpisodeStatisticsWrapper",
+    "TransformAction",
+    "ClipAction",
+    "RescaleAction",
+    "EpisodeStatistics",
 ]

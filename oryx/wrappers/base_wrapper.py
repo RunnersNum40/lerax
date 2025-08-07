@@ -52,8 +52,40 @@ class AbstractNoRenderOrCloseWrapper[WrapperActType, WrapperObsType, ActType, Ob
     env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
 
 
-class AbstractObservationWrapper[WrapperObsType, ActType, ObsType](
-    AbstractNoRenderOrCloseWrapper[ActType, WrapperObsType, ActType, ObsType]
+class AbstractNoActionSpaceWrapper[WrapperObsType, ActType, ObsType](
+    AbstractWrapper[ActType, WrapperObsType, ActType, ObsType]
+):
+    """A wrapper that does not affect the action space"""
+
+    env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
+
+    @property
+    def action_space(self) -> AbstractSpace[ActType]:
+        return self.env.action_space
+
+
+class AbstractNoObservationSpaceWrapper[WrapperActType, ActType, ObsType](
+    AbstractWrapper[WrapperActType, ObsType, ActType, ObsType]
+):
+    """A wrapper that does not affect the observation space"""
+
+    env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
+
+    @property
+    def observation_space(self) -> AbstractSpace[ObsType]:
+        return self.env.observation_space
+
+
+class AbstractNoActionOrObservationSpaceWrapper[ActType, ObsType](
+    AbstractNoActionSpaceWrapper[ObsType, ActType, ObsType],
+    AbstractNoObservationSpaceWrapper[ActType, ActType, ObsType],
+):
+    """A wrapper that does not affect the action or observation space"""
+
+
+class AbstractTransformObservationWrapper[WrapperObsType, ActType, ObsType](
+    AbstractNoRenderOrCloseWrapper[ActType, WrapperObsType, ActType, ObsType],
+    AbstractNoActionSpaceWrapper[WrapperObsType, ActType, ObsType],
 ):
     """Base class for environment observation wrappers"""
 
@@ -82,13 +114,13 @@ class AbstractObservationWrapper[WrapperObsType, ActType, ObsType](
     ]:
         env_key, wrapper_key = jr.split(key, 2)
 
-        substate = state.substate(self.env)
-        substate, obs, reward, termination, truncation, info = self.env.step(
-            substate, action, key=env_key
+        env_state = state.substate(self.env)
+        env_state, obs, reward, termination, truncation, info = self.env.step(
+            env_state, action, key=env_key
         )
         state, obs = self.observation(state, obs, key=wrapper_key)
 
-        state = state.update(substate)
+        state = state.update(env_state)
 
         return state, obs, reward, termination, truncation, info
 
@@ -98,13 +130,10 @@ class AbstractObservationWrapper[WrapperObsType, ActType, ObsType](
     ) -> tuple[eqx.nn.State, WrapperObsType]:
         """Transform the wrapped environment observation"""
 
-    @property
-    def action_space(self) -> AbstractSpace[ActType]:
-        return self.env.action_space
 
-
-class AbstractActionWrapper[WrapperActType, ActType, ObsType](
-    AbstractNoRenderOrCloseWrapper[WrapperActType, ObsType, ActType, ObsType]
+class AbstractTransformActionWrapper[WrapperActType, ActType, ObsType](
+    AbstractNoRenderOrCloseWrapper[WrapperActType, ObsType, ActType, ObsType],
+    AbstractNoObservationSpaceWrapper[WrapperActType, ActType, ObsType],
 ):
     """Base class for environment action wrappers"""
 
@@ -128,27 +157,24 @@ class AbstractActionWrapper[WrapperActType, ActType, ObsType](
 
         state, transformed_action = self.action(state, action, key=wrapper_key)
 
-        substate = state.substate(self.env)
-        substate, obs, reward, termination, truncation, info = self.env.step(
-            substate, transformed_action, key=env_key
+        env_state = state.substate(self.env)
+        env_state, obs, reward, termination, truncation, info = self.env.step(
+            env_state, transformed_action, key=env_key
         )
-        state = state.update(substate)
+        state = state.update(env_state)
 
         return state, obs, reward, termination, truncation, info
 
     @abstractmethod
     def action(
-        self, state: eqx.nn.State, action: WrapperActType, *, key: Key | None
+        self, state: eqx.nn.State, action: WrapperActType, *, key: Key
     ) -> tuple[eqx.nn.State, ActType]:
         """Transform the action to the wrapped environment"""
 
-    @property
-    def observation_space(self) -> AbstractSpace[ObsType]:
-        return self.env.observation_space
 
-
-class AbstractRewardWrapper[ActType, ObsType](
-    AbstractNoRenderOrCloseWrapper[ActType, ObsType, ActType, ObsType]
+class AbstractTransformRewardWrapper[ActType, ObsType](
+    AbstractNoRenderOrCloseWrapper[ActType, ObsType, ActType, ObsType],
+    AbstractNoActionOrObservationSpaceWrapper[ActType, ObsType],
 ):
     """Base class for environment reward wrappers"""
 
@@ -170,11 +196,11 @@ class AbstractRewardWrapper[ActType, ObsType](
     ]:
         env_key, wrapper_key = jr.split(key, 2)
 
-        substate = state.substate(self.env)
-        substate, obs, reward, termination, truncation, info = self.env.step(
-            substate, action, key=env_key
+        env_state = state.substate(self.env)
+        env_state, obs, reward, termination, truncation, info = self.env.step(
+            env_state, action, key=env_key
         )
-        state = state.update(substate)
+        state = state.update(env_state)
 
         reward = self.reward(state, reward, key=wrapper_key)
 
@@ -185,11 +211,3 @@ class AbstractRewardWrapper[ActType, ObsType](
         self, state: eqx.nn.State, reward: Float[Array, ""], *, key: Key
     ) -> Float[Array, ""]:
         """Transform the reward from the wrapped environment"""
-
-    @property
-    def action_space(self) -> AbstractSpace[ActType]:
-        return self.env.action_space
-
-    @property
-    def observation_space(self) -> AbstractSpace[ObsType]:
-        return self.env.observation_space

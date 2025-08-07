@@ -11,10 +11,10 @@ from jaxtyping import Array, Float, Int
 from oryx.env import AbstractEnv
 from oryx.spaces import Box
 from oryx.wrappers import (
-    ClipActionWrapper,
-    EpisodeStatisticsWrapper,
-    RescaleActionWrapper,
-    TransformActionWrapper,
+    ClipAction,
+    EpisodeStatistics,
+    RescaleAction,
+    TransformAction,
 )
 from oryx.wrappers.utils import rescale_box
 
@@ -120,7 +120,7 @@ def test_transform_action_wrapper_passes_func():
         return 2 * a
 
     env, state = eqx.nn.make_with_state(EchoEnv)()
-    wrapper = TransformActionWrapper(
+    wrapper = TransformAction(
         env=env,
         func=func,
         action_space=Box(-jnp.inf, jnp.inf),
@@ -138,7 +138,7 @@ def test_clip_action_wrapper_clips_values_and_space(low, high):
     reset_key, step_key = jr.split(jr.key(1), 2)
 
     env, state = eqx.nn.make_with_state(EchoEnv)(action_space=Box(low, high))
-    wrapper = ClipActionWrapper(env=env)
+    wrapper = ClipAction(env=env)
 
     over_action = jnp.array(high) + 1
     expected = jnp.clip(over_action, low, high)
@@ -163,7 +163,7 @@ def test_rescale_action_wrapper_affine(action, expected):
     env, state = eqx.nn.make_with_state(EchoEnv)(
         action_space=Box(0.0, 10.0), observation_space=Box(0.0, 10.0)
     )
-    wrapper = RescaleActionWrapper(env=env)
+    wrapper = RescaleAction(env=env)
 
     state, _, _ = wrapper.reset(state, key=reset_key)
     state, obs, *_ = wrapper.step(state, action, key=step_key)
@@ -195,7 +195,7 @@ def test_episode_statistics_wrapper_reset_counters():
     """After reset, stats must be zeroed."""
     env_key, reset_key = jr.split(jr.key(4), 2)
     env = FiniteEpisodeEnv(key=env_key)
-    wrapper, state = eqx.nn.make_with_state(EpisodeStatisticsWrapper)(env=env)
+    wrapper, state = eqx.nn.make_with_state(EpisodeStatistics)(env=env)
 
     state, _, info = wrapper.reset(state, key=reset_key)
 
@@ -210,7 +210,7 @@ def test_episode_statistics_wrapper_accumulates_scan():
     env_key, reset_key, key0 = jr.split(jr.key(5), 3)
     env = FiniteEpisodeEnv(key=env_key)
 
-    wrapper, state = eqx.nn.make_with_state(EpisodeStatisticsWrapper)(env=env)
+    wrapper, state = eqx.nn.make_with_state(EpisodeStatistics)(env=env)
     state, _, _ = wrapper.reset(state, key=reset_key)
 
     def step_fn(carry, _):
@@ -238,9 +238,9 @@ def test_episode_statistics_wrapper_accumulates_scan():
 def test_nested_wrapper_unwrapped_returns_base():
     base_env, _ = eqx.nn.make_with_state(EchoEnv)()
 
-    clip_env = ClipActionWrapper(env=base_env)
+    clip_env = ClipAction(env=base_env)
 
-    outer = EpisodeStatisticsWrapper(env=clip_env)
+    outer = EpisodeStatistics(env=clip_env)
 
     assert (
         outer.unwrapped is base_env

@@ -11,8 +11,6 @@ from .base_wrapper import AbstractNoRenderOrCloseWrapper
 
 
 class LogState(eqx.Module):
-    """A simple class to log the state of the environment."""
-
     episode_length: Int[Array, ""]
     episode_reward: Float[Array, ""]
     episode_done: Bool[Array, ""]
@@ -36,7 +34,7 @@ class LogState(eqx.Module):
         )
 
 
-class EpisodeStatisticsWrapper[ActType, ObsType](
+class EpisodeStatistics[ActType, ObsType](
     AbstractNoRenderOrCloseWrapper[ActType, ObsType, ActType, ObsType]
 ):
     state_index: eqx.nn.StateIndex[LogState]
@@ -71,11 +69,11 @@ class EpisodeStatisticsWrapper[ActType, ObsType](
     ) -> tuple[
         eqx.nn.State, ObsType, Float[Array, ""], Bool[Array, ""], Bool[Array, ""], dict
     ]:
-        substate = state.substate(self.env)
-        substate, obs, reward, termination, truncation, info = self.env.step(
-            substate, action, key=key
+        env_state = state.substate(self.env)
+        env_state, obs, reward, termination, truncation, info = self.env.step(
+            env_state, action, key=key
         )
-        state = state.update(substate)
+        state = state.update(env_state)
 
         log_state = state.get(self.state_index)
         log_state = log_state.update(reward, jnp.logical_or(termination, truncation))
