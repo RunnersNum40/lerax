@@ -156,11 +156,15 @@ class RolloutBuffer[ActType, ObsType](AbstractBuffer):
         the same as a list of butches, but rather a single buffer where each batch is a
         slice of the original data.
         """
-        # TODO: Add warning if batch_size does not divide the number of samples
         if key is None:
             indices = jnp.arange(self.shape[0])
         else:
             indices = jr.permutation(key, self.shape[0])
+
+        if self.shape[0] % batch_size != 0:
+            # TODO: Add warning if batch_size does not divide the number of samples
+            indices = indices[: self.shape[0] - self.shape[0] % batch_size]
+
         indices = indices.reshape(-1, batch_size)
 
         return jax.tree.map(partial(jnp.take, indices=indices, axis=0), self)
