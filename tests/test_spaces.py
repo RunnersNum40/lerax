@@ -99,7 +99,7 @@ def test_multibinary():
     c = MultiBinary(3)
 
     sample = a.sample(key)
-    assert jnp.all((sample == 0) | (sample == 1)), "sample values must be binary"
+    assert jnp.all(jnp.logical_or(sample == 0, sample == 1)), "sample must be binary"
     assert a.contains(sample), "contains should accept own sample"
     assert not a.contains(jnp.array([0, 1, 2, 1])), "non-binary entry must be rejected"
 
