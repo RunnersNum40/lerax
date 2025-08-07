@@ -11,8 +11,6 @@ from oryx.spaces import AbstractSpace
 class AbstractEnvLike[ActType, ObsType](eqx.Module):
     """Base class for RL environments or wrappers that behave like environments"""
 
-    state_index: eqx.AbstractVar[eqx.nn.StateIndex]
-
     @abstractmethod
     def reset(
         self, state: eqx.nn.State, *, key: Key
