@@ -8,7 +8,7 @@ import optax
 from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key, ScalarLike
+from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key, Scalar, ScalarLike
 from rich.progress import (
     BarColumn,
     Progress,
@@ -53,7 +53,7 @@ class JITSummaryWriter:
 
     def add_dict(
         self,
-        scalars: dict[str, ScalarLike],
+        scalars: dict[str, Scalar],
         *,
         global_step: Int[ArrayLike, ""] | None = None,
         walltime: Float[ArrayLike, ""] | None = None,
@@ -61,12 +61,9 @@ class JITSummaryWriter:
         """
         Log a dictionary of **scalar** values.
         """
-        tags, values = zip(*scalars.items())
 
-        def add(tag: str, val: Float[ArrayLike, ""]):
-            self.add_scalar(tag, val, global_step, walltime)
-
-        jax.vmap(add)(tags, values)
+        for tag, value in scalars.items():
+            self.add_scalar(tag, value, global_step=global_step, walltime=walltime)
 
 
 class JITProgressBar:
@@ -282,7 +279,7 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
     ) -> tuple[
         eqx.nn.State,
         AbstractActorCriticPolicy[Float, ActType, ObsType],
-        dict[str, ScalarLike],
+        dict[str, Scalar],
     ]:
         """
         Train the policy using the rollout buffer.
