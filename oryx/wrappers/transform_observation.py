@@ -1,0 +1,140 @@
+from __future__ import annotations
+
+from abc import abstractmethod
+from typing import Callable
+
+import equinox as eqx
+from jax import numpy as jnp
+from jax import random as jr
+from jaxtyping import Array, Bool, Float, Key
+
+from oryx.env import AbstractEnvLike
+from oryx.spaces import AbstractSpace, Box
+
+from .base_wrapper import (
+    AbstractNoActionSpaceWrapper,
+    AbstractNoRenderOrCloseWrapper,
+)
+from .utils import rescale_box
+
+
+class AbstractTransformObservationWrapper[WrapperObsType, ActType, ObsType](
+    AbstractNoRenderOrCloseWrapper[ActType, WrapperObsType, ActType, ObsType],
+    AbstractNoActionSpaceWrapper[WrapperObsType, ActType, ObsType],
+):
+    """Base class for environment observation wrappers"""
+
+    env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
+
+    def reset(
+        self, state: eqx.nn.State, *, key: Key
+    ) -> tuple[eqx.nn.State, WrapperObsType, dict]:
+        env_key, wrapper_key = jr.split(key, 2)
+
+        substate = state.substate(self.env)
+        substate, obs, info = self.env.reset(substate, key=env_key)
+        state, obs = self.observation(state, obs, key=wrapper_key)
+
+        state = state.update(substate)
+
+        return state, obs, info
+
+    def step(self, state: eqx.nn.State, action: ActType, *, key: Key) -> tuple[
+        eqx.nn.State,
+        WrapperObsType,
+        Float[Array, ""],
+        Bool[Array, ""],
+        Bool[Array, ""],
+        dict,
+    ]:
+        env_key, wrapper_key = jr.split(key, 2)
+
+        env_state = state.substate(self.env)
+        env_state, obs, reward, termination, truncation, info = self.env.step(
+            env_state, action, key=env_key
+        )
+        state, obs = self.observation(state, obs, key=wrapper_key)
+
+        state = state.update(env_state)
+
+        return state, obs, reward, termination, truncation, info
+
+    @abstractmethod
+    def observation(
+        self, state: eqx.nn.State, obs: ObsType, *, key: Key
+    ) -> tuple[eqx.nn.State, WrapperObsType]:
+        """Transform the wrapped environment observation"""
+
+
+class AbstractPureObservationWrapper[WrapperObsType, ActType, ObsType](
+    AbstractTransformObservationWrapper[WrapperObsType, ActType, ObsType]
+):
+    """
+    Apply a *pure* function to every observation that leaves the environment.
+    """
+
+    env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
+    func: eqx.AbstractVar[Callable[[ObsType], WrapperObsType]]
+    wrapper_observation_space: eqx.AbstractVar[AbstractSpace[WrapperObsType]]
+
+    def observation(
+        self, state: eqx.nn.State, obs: ObsType, *, key: Key
+    ) -> tuple[eqx.nn.State, WrapperObsType]:
+        return state, self.func(obs)
+
+    @property
+    def observation_space(self) -> AbstractSpace[WrapperObsType]:
+        return self.wrapper_observation_space
+
+
+class ClipObservation[ActType](
+    AbstractPureObservationWrapper[Float[Array, " ..."], ActType, Float[Array, " ..."]],
+):
+    """
+    Clips every observation to the environment's observation space.
+    """
+
+    env: AbstractEnvLike[ActType, Float[Array, " ..."]]
+    func: Callable[[Float[Array, " ..."]], Float[Array, " ..."]]
+    wrapper_observation_space: Box
+
+    def __init__(self, env: AbstractEnvLike[ActType, Float[Array, " ..."]]):
+        if not isinstance(env.observation_space, Box):
+            raise ValueError(
+                "ClipObservation only supports `Box` observation spaces "
+                f" not {type(env.observation_space)}"
+            )
+
+        self.env = env
+        self.func = lambda x: jnp.clip(
+            x, env.observation_space.low, env.observation_space.high
+        )
+        self.wrapper_observation_space = env.observation_space
+
+
+class RescaleObservation[ActType](
+    AbstractPureObservationWrapper[Float[Array, " ..."], ActType, Float[Array, " ..."]],
+):
+    """Affinely rescale a box observation to a different range"""
+
+    env: AbstractEnvLike[ActType, Float[Array, " ..."]]
+    func: Callable[[Float[Array, " ..."]], Float[Array, " ..."]]
+    wrapper_observation_space: Box
+
+    def __init__(
+        self,
+        env: AbstractEnvLike[ActType, Float[Array, " ..."]],
+        min: Float[Array, " ..."] = jnp.array(-1.0),
+        max: Float[Array, " ..."] = jnp.array(1.0),
+    ):
+        if not isinstance(env.observation_space, Box):
+            raise ValueError(
+                "RescaleObservation only supports `Box` observation spaces "
+                f" not {type(env.action_space)}"
+            )
+
+        new_box, forward, _ = rescale_box(env.observation_space, min, max)
+
+        self.env = env
+        self.func = forward
+        self.wrapper_observation_space = new_box

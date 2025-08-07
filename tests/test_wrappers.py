@@ -12,8 +12,13 @@ from oryx.env import AbstractEnv
 from oryx.spaces import Box
 from oryx.wrappers import (
     ClipAction,
+    ClipObservation,
+    ClipReward,
     EpisodeStatistics,
+    Identity,
     RescaleAction,
+    RescaleObservation,
+    TimeLimit,
     TransformAction,
 )
 from oryx.wrappers.utils import rescale_box
@@ -50,11 +55,8 @@ class EchoEnv(AbstractEnv[Float[Array, " n"], Float[Array, " n"]]):
             {},
         )
 
-    def render(self, state):
-        pass
-
-    def close(self):
-        pass
+    def render(self, state): ...
+    def close(self): ...
 
     @property
     def action_space(self):
@@ -95,11 +97,8 @@ class FiniteEpisodeEnv(AbstractEnv[Float[Array, ""], Float[Array, ""]]):
             {},
         )
 
-    def render(self, state):
-        pass
-
-    def close(self):
-        pass
+    def render(self, state): ...
+    def close(self): ...
 
     @property
     def action_space(self):
@@ -110,8 +109,51 @@ class FiniteEpisodeEnv(AbstractEnv[Float[Array, ""], Float[Array, ""]]):
         return Box(-jnp.inf, jnp.inf)
 
 
-def test_transform_action_wrapper_passes_func():
-    """The wrapper must forward `func(action)` to the env."""
+class PassThroughEnv(AbstractEnv[Float[Array, ""], Float[Array, ""]]):
+    """
+    Deterministic scalar environment that echoes the action as the reward and
+    always returns observation = 0.0.
+    """
+
+    state_index: eqx.nn.StateIndex[None]
+
+    def __init__(self):
+        self.state_index = eqx.nn.StateIndex(None)
+
+    def reset(self, state, *, key):
+        return state, jnp.asarray(0.0), {}
+
+    def step(self, state, action, *, key):
+        return (
+            state,
+            jnp.asarray(0.0),
+            jnp.asarray(action),
+            jnp.asarray(False),
+            jnp.asarray(False),
+            {},
+        )
+
+    def render(self, state): ...
+    def close(self): ...
+
+    @property
+    def action_space(self):
+        return Box(-jnp.inf, jnp.inf)
+
+    @property
+    def observation_space(self):
+        return Box(-jnp.inf, jnp.inf)
+
+
+def test_nested_wrapper_unwrapped():
+    env, _ = eqx.nn.make_with_state(EchoEnv)()
+
+    wrapper = Identity(Identity(env))
+
+    assert wrapper.unwrapped is env, "unwrapped must return the original env instance"
+
+
+def test_transform_action():
     reset_key, step_key = jr.split(jr.key(0), 2)
 
     action = jnp.array(1.0)
@@ -133,9 +175,9 @@ def test_transform_action_wrapper_passes_func():
 
 
 @pytest.mark.parametrize("low, high", [([-1.0, -1.0], [1.0, 1.0])])
-def test_clip_action_wrapper_clips_values_and_space(low, high):
+def test_clip_action(low, high):
     low, high = jnp.asarray(low), jnp.asarray(high)
-    reset_key, step_key = jr.split(jr.key(1), 2)
+    reset_key, step_key = jr.split(jr.key(9), 2)
 
     env, state = eqx.nn.make_with_state(EchoEnv)(action_space=Box(low, high))
     wrapper = ClipAction(env=env)
@@ -156,9 +198,8 @@ def test_clip_action_wrapper_clips_values_and_space(low, high):
     "action, expected",
     [(-1.0, 0.0), (0.0, 5.0), (1.0, 10.0)],
 )
-def test_rescale_action_wrapper_affine(action, expected):
-    key = jr.key(2)
-    reset_key, step_key = jr.split(key, 2)
+def test_rescale_action(action, expected):
+    reset_key, step_key = jr.split(jr.key(0), 2)
 
     env, state = eqx.nn.make_with_state(EchoEnv)(
         action_space=Box(0.0, 10.0), observation_space=Box(0.0, 10.0)
@@ -179,8 +220,7 @@ def test_rescale_action_wrapper_affine(action, expected):
     )
 
 
-def test_rescale_box_roundtrip():
-    """Utility functions must invert each other."""
+def test_rescale_box():
     orig = Box(0.0, 10.0)
     _, forward, backward = rescale_box(orig, -1.0, 1.0)
 
@@ -191,27 +231,17 @@ def test_rescale_box_roundtrip():
     ), "forward∘backward should be identity"
 
 
-def test_episode_statistics_wrapper_reset_counters():
-    """After reset, stats must be zeroed."""
-    env_key, reset_key = jr.split(jr.key(4), 2)
+def test_episode_statistics():
+    env_key, reset_key, key0 = jr.split(jr.key(0), 3)
     env = FiniteEpisodeEnv(key=env_key)
-    wrapper, state = eqx.nn.make_with_state(EpisodeStatistics)(env=env)
 
+    wrapper, state = eqx.nn.make_with_state(EpisodeStatistics)(env=env)
     state, _, info = wrapper.reset(state, key=reset_key)
 
     ep = info["episode"]
     assert (
         ep["length"] == 0 and ep["reward"] == 0 and not bool(ep["done"])
     ), "Counters should start at zero"
-
-
-def test_episode_statistics_wrapper_accumulates_scan():
-    """Counters grow until termination flag is raised (scan version)."""
-    env_key, reset_key, key0 = jr.split(jr.key(5), 3)
-    env = FiniteEpisodeEnv(key=env_key)
-
-    wrapper, state = eqx.nn.make_with_state(EpisodeStatistics)(env=env)
-    state, _, _ = wrapper.reset(state, key=reset_key)
 
     def step_fn(carry, _):
         state, key = carry
@@ -235,13 +265,85 @@ def test_episode_statistics_wrapper_accumulates_scan():
     ), "Episode stats should reflect accumulated steps/rewards and signal done"
 
 
-def test_nested_wrapper_unwrapped_returns_base():
-    base_env, _ = eqx.nn.make_with_state(EchoEnv)()
+@pytest.mark.parametrize("low, high", [([-1.0, -1.0], [1.0, 1.0])])
+def test_clip_observation(low, high):
+    low, high = jnp.asarray(low), jnp.asarray(high)
+    over_val = jnp.array(high) + 2.0
 
-    clip_env = ClipAction(env=base_env)
+    reset_key, step_key = jr.split(jr.key(0), 2)
 
-    outer = EpisodeStatistics(env=clip_env)
+    base_env, state = eqx.nn.make_with_state(EchoEnv)(
+        action_space=Box(low, high),
+        observation_space=Box(low, high),
+    )
+    wrapper = ClipObservation(env=base_env)
 
-    assert (
-        outer.unwrapped is base_env
-    ), "unwrapped must return the original env instance"
+    state, _, _ = wrapper.reset(state, key=reset_key)
+    state, obs, *_ = wrapper.step(state, over_val, key=step_key)
+
+    assert jnp.allclose(
+        obs, jnp.clip(over_val, low, high)
+    ), "Observation should be element-wise clipped"
+
+    assert wrapper.observation_space == base_env.observation_space
+
+
+@pytest.mark.parametrize("raw, expected", [(0.0, -1.0), (5.0, 0.0), (10.0, 1.0)])
+def test_rescale_observation(raw, expected):
+    reset_key, step_key = jr.split(jr.key(0), 2)
+
+    base_env, state = eqx.nn.make_with_state(EchoEnv)(
+        action_space=Box(0.0, 10.0),
+        observation_space=Box(0.0, 10.0),
+    )
+    wrapper = RescaleObservation(env=base_env)
+
+    state, _, _ = wrapper.reset(state, key=reset_key)
+    state, obs, *_ = wrapper.step(state, jnp.asarray(raw), key=step_key)
+
+    assert pytest.approx(float(obs)) == expected
+
+    assert jnp.allclose(wrapper.observation_space.low, -1.0)
+    assert jnp.allclose(wrapper.observation_space.high, 1.0)
+
+
+@pytest.mark.parametrize(
+    "action, min_, max_, expected",
+    [
+        (-5.0, -1.0, 1.0, -1.0),
+        (0.0, -1.0, 1.0, 0.0),
+        (7.5, -1.0, 1.0, 1.0),
+    ],
+)
+def test_clip_reward(action, min_, max_, expected):
+    reset_key, step_key = jr.split(jr.key(0), 2)
+
+    base_env, state = eqx.nn.make_with_state(PassThroughEnv)()
+    wrapper = ClipReward(env=base_env, min=min_, max=max_)
+
+    state, _, _ = wrapper.reset(state, key=reset_key)
+    state, _, reward, *_ = wrapper.step(state, jnp.asarray(action), key=step_key)
+
+    assert pytest.approx(float(reward)) == expected, "Reward not correctly clipped"
+
+
+def test_time_limit(steps=2):
+    reset_key, step_key = jr.split(jr.key(0), 2)
+
+    env = EchoEnv()
+    wrapper, state = eqx.nn.make_with_state(TimeLimit)(env=env, max_episode_steps=steps)
+
+    state, _, _ = wrapper.reset(state, key=reset_key)
+
+    for i in range(1, steps * 2 + 1):
+        state, _, _, _, truncation, _ = wrapper.step(
+            state, jnp.asarray(0.0), key=step_key
+        )
+
+        if i % steps == 0:
+            assert truncation, "Should truncate after max_episode_steps"
+        else:
+            assert not truncation, "Should not truncate before max_episode_steps"
+
+        if truncation:
+            state, _, _ = wrapper.reset(state, key=reset_key)

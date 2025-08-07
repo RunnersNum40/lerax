@@ -7,7 +7,32 @@ from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 from oryx.env import AbstractEnvLike
 from oryx.spaces import AbstractSpace
 
-from .base_wrapper import AbstractNoRenderOrCloseWrapper
+from .base_wrapper import (
+    AbstractNoActionOrObservationSpaceWrapper,
+    AbstractNoRenderOrCloseWrapper,
+)
+
+
+class Identity[ActType, ObsType](
+    AbstractNoRenderOrCloseWrapper[ActType, ObsType, ActType, ObsType],
+    AbstractNoActionOrObservationSpaceWrapper[ActType, ObsType],
+):
+    env: AbstractEnvLike[ActType, ObsType]
+
+    def __init__(self, env: AbstractEnvLike[ActType, ObsType]):
+        self.env = env
+
+    def reset(
+        self, state: eqx.nn.State, *, key: Key
+    ) -> tuple[eqx.nn.State, ObsType, dict]:
+        return self.env.reset(state, key=key)
+
+    def step(
+        self, state: eqx.nn.State, action: ActType, *, key: Key
+    ) -> tuple[
+        eqx.nn.State, ObsType, Float[Array, ""], Bool[Array, ""], Bool[Array, ""], dict
+    ]:
+        return self.env.step(state, action, key=key)
 
 
 class LogState(eqx.Module):
@@ -94,3 +119,47 @@ class EpisodeStatistics[ActType, ObsType](
     @property
     def observation_space(self) -> AbstractSpace[ObsType]:
         return self.env.observation_space
+
+
+class TimeLimit[ActType, ObsType](
+    AbstractNoActionOrObservationSpaceWrapper[ActType, ObsType],
+    AbstractNoRenderOrCloseWrapper[ActType, ObsType, ActType, ObsType],
+):
+
+    state_index: eqx.nn.StateIndex[Int[Array, ""]]
+    env: AbstractEnvLike[ActType, ObsType]
+    max_episode_steps: Int[Array, ""]
+
+    def __init__(self, env: AbstractEnvLike[ActType, ObsType], max_episode_steps: int):
+        self.env = env
+        self.state_index = eqx.nn.StateIndex(jnp.array(0))
+        self.max_episode_steps = jnp.asarray(max_episode_steps)
+
+    def reset(
+        self, state: eqx.nn.State, *, key: Key
+    ) -> tuple[eqx.nn.State, ObsType, dict]:
+        env_state = state.substate(self.env)
+        env_state, obs, info = self.env.reset(env_state, key=key)
+        state = state.update(env_state)
+
+        state = state.set(self.state_index, jnp.array(0))
+
+        return state, obs, info
+
+    def step(
+        self, state: eqx.nn.State, action: ActType, *, key: Key
+    ) -> tuple[
+        eqx.nn.State, ObsType, Float[Array, ""], Bool[Array, ""], Bool[Array, ""], dict
+    ]:
+        env_state = state.substate(self.env)
+        env_state, obs, reward, termination, truncation, info = self.env.step(
+            env_state, action, key=key
+        )
+        state = state.update(env_state)
+
+        step_count = state.get(self.state_index) + 1
+        state = state.set(self.state_index, step_count)
+
+        truncation = jnp.logical_or(truncation, step_count >= self.max_episode_steps)
+
+        return state, obs, reward, termination, truncation, info
