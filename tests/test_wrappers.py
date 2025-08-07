@@ -15,6 +15,7 @@ from oryx.wrappers import (
     ClipObservation,
     ClipReward,
     EpisodeStatistics,
+    FlattenObservation,
     Identity,
     RescaleAction,
     RescaleObservation,
@@ -347,3 +348,28 @@ def test_time_limit(steps=2):
 
         if truncation:
             state, _, _ = wrapper.reset(state, key=reset_key)
+
+
+def test_flatten_observation():
+    reset_key, step_key = jr.split(jr.key(0), 2)
+
+    obs_shape = (2, 3)
+    base_env, state = eqx.nn.make_with_state(EchoEnv)(
+        action_space=Box(-jnp.inf, jnp.inf, shape=obs_shape),
+        observation_space=Box(-jnp.inf, jnp.inf, shape=obs_shape),
+    )
+    wrapper = FlattenObservation(env=base_env)
+
+    expected_flat_dim = int(jnp.prod(jnp.asarray(obs_shape)))
+    assert wrapper.observation_space == Box(
+        -jnp.inf, jnp.inf, shape=(expected_flat_dim,)
+    )
+
+    state, obs, _ = wrapper.reset(state, key=reset_key)
+    assert obs.shape == (expected_flat_dim,)
+
+    action = jnp.arange(expected_flat_dim).reshape(obs_shape)
+    state, obs_step, *_ = wrapper.step(state, action, key=step_key)
+
+    assert obs_step.shape == (expected_flat_dim,)
+    assert jnp.array_equal(obs_step, action.ravel()), "Flattening mismatch"

@@ -9,7 +9,7 @@ from jax import random as jr
 from jaxtyping import Array, Bool, Float, Key
 
 from oryx.env import AbstractEnvLike
-from oryx.spaces import AbstractSpace, Box
+from oryx.spaces import AbstractSpace, Box, flat_dim, flatten
 
 from .base_wrapper import (
     AbstractNoActionSpaceWrapper,
@@ -70,7 +70,7 @@ class AbstractPureObservationWrapper[WrapperObsType, ActType, ObsType](
     AbstractTransformObservationWrapper[WrapperObsType, ActType, ObsType]
 ):
     """
-    Apply a *pure* function to every observation that leaves the environment.
+    Apply a pure function to every observation that leaves the environment.
     """
 
     env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
@@ -106,8 +106,8 @@ class ClipObservation[ActType](
             )
 
         self.env = env
-        self.func = lambda x: jnp.clip(
-            x, env.observation_space.low, env.observation_space.high
+        self.func = lambda obs: jnp.clip(
+            obs, env.observation_space.low, env.observation_space.high
         )
         self.wrapper_observation_space = env.observation_space
 
@@ -138,3 +138,20 @@ class RescaleObservation[ActType](
         self.env = env
         self.func = forward
         self.wrapper_observation_space = new_box
+
+
+class FlattenObservation[ActType, ObsType](
+    AbstractPureObservationWrapper[Float[Array, " flat"], ActType, ObsType]
+):
+    """Flatten the observation space into a 1-D array."""
+
+    env: AbstractEnvLike[ActType, ObsType]
+    func: Callable[[ObsType], Float[Array, " flat"]]
+    wrapper_observation_space: Box
+
+    def __init__(self, env: AbstractEnvLike[ActType, ObsType]):
+        self.env = env
+        self.func = lambda obs: flatten(self.env.observation_space, obs)
+        self.wrapper_observation_space = Box(
+            -jnp.inf, jnp.inf, shape=(flat_dim(env.observation_space),)
+        )

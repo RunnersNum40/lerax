@@ -1,4 +1,5 @@
-import jax.numpy as jnp
+import pytest
+from jax import numpy as jnp
 from jax import random as jr
 
 from oryx.spaces import (
@@ -9,6 +10,7 @@ from oryx.spaces import (
     MultiDiscrete,
     OneOf,
     Tuple,
+    flat_dim,
     flatten,
 )
 
@@ -126,7 +128,7 @@ def test_oneof():
     assert a != c, "different sub-spaces => inequality"
 
 
-def test_flatten_exhaustive():
+def test_flatten():
     key = jr.key(0)
 
     box_space = Box(-1.0, 1.0, shape=(2, 3))
@@ -186,3 +188,33 @@ def test_flatten_exhaustive():
         + flat_dict.size
     )
     assert total_flat_len == total_expected_len
+
+
+@pytest.mark.parametrize(
+    "space",
+    [
+        Box(-1.0, 1.0, shape=(2, 3)),
+        Discrete(7, start=0),
+        MultiBinary(5),
+        MultiDiscrete((2, 3, 4), starts=(0, 1, 0)),
+        Tuple(
+            (
+                Box(0.0, 1.0, shape=(2,)),
+                Discrete(3),
+                MultiBinary(2),
+            )
+        ),
+        Dict(
+            {
+                "b": Box(-1.0, 1.0, shape=(2,)),
+                "a": Discrete(4),
+            }
+        ),
+    ],
+)
+def test_flat_dim(space):
+    key = jr.key(0)
+    sample = space.sample(key)
+    flat = flatten(space, sample)
+    assert flat.ndim == 1, "flatten must return a 1-D array"
+    assert flat.size == flat_dim(space), f"flat_dim mismatch for {space!r}"

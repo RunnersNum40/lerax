@@ -56,3 +56,23 @@ def flatten(
         raise NotImplementedError("Flattening is currenty not implemented for OneOf")
 
     raise NotImplementedError(f"Flattening not implemented for space {type(space)}.")
+
+
+def flat_dim(space: AbstractSpace) -> int:
+    """Return the length of flatten(space, sample) without needing a sample."""
+    if isinstance(space, Discrete):
+        return 1
+
+    if isinstance(space, (Box, MultiBinary, MultiDiscrete)):
+        return int(jnp.prod(jnp.asarray(space.shape)))
+
+    if isinstance(space, TupleSpace):
+        return sum(flat_dim(s) for s in space.spaces)
+
+    if isinstance(space, DictSpace):
+        return sum(flat_dim(space.spaces[k]) for k in sorted(space.spaces))
+
+    if isinstance(space, OneOf):
+        raise NotImplementedError("flat_dim is not currenty implemented for OneOf")
+
+    raise NotImplementedError(f"flat_dim not implemented for space {type(space)}")

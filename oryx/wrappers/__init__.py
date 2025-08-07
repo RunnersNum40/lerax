@@ -13,6 +13,7 @@ from .transform_action import (
 )
 from .transform_observation import (
     ClipObservation,
+    FlattenObservation,
     RescaleObservation,
 )
 from .transform_reward import (
@@ -28,6 +29,7 @@ __all__ = [
     "RescaleAction",
     "EpisodeStatistics",
     "ClipObservation",
+    "FlattenObservation",
     "RescaleObservation",
     "ClipReward",
 ]
