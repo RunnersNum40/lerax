@@ -5,8 +5,7 @@ import jax
 import optax
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Float, Key
-from tensorboardX import SummaryWriter
+from jaxtyping import Array, Float, Key, Scalar
 
 from oryx.buffers import RolloutBuffer
 from oryx.env import AbstractEnvLike
@@ -187,6 +186,7 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         entropy_loss = jnp.mean(entropy)
 
         # TODO: Add state magnitude loss
+        # manitude loss is proportional to the squared L2 norm of the latent state of the policy
         state_magnitude_loss = jnp.array(0.0)
 
         loss = (
@@ -218,21 +218,15 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         (_, stats), grads = self.ppo_loss_grad(policy, rollout_buffer)
 
         opt_state = state.get(self.state_index)
-
-        def apply_gradients():
-            updates, _opt_state = self.optimizer.update(grads, opt_state)
-            return eqx.apply_updates(policy, updates), _opt_state
-
-        def identity():
-            return policy, opt_state
+        updates, opt_state = self.optimizer.update(grads, opt_state)
+        policy = eqx.apply_updates(policy, updates)
+        state = state.set(self.state_index, opt_state)
 
         flat_grads = jnp.concatenate(
             jax.tree.flatten(jax.tree.map(jnp.ravel, grads))[0]
         )
         nan_in_grads = jnp.any(jnp.isnan(flat_grads))
-
-        policy, opt_state = jax.lax.cond(nan_in_grads, identity, apply_gradients)
-        state = state.set(self.state_index, opt_state)
+        stats = eqx.error_if(stats, nan_in_grads, "NaN in gradients")
 
         return state, policy, stats
 
@@ -266,7 +260,7 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         (state, policy), stats = filter_scan(
             batch_scan,
             (state, policy),
-            rollout_buffer.batches(self.num_steps // self.num_mini_batches, key=key),
+            rollout_buffer.batches(self.batch_size, key=key),
         )
 
         stats = jax.tree.map(jnp.mean, stats)
@@ -280,8 +274,11 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         rollout_buffer: RolloutBuffer[ActType, ObsType],
         *,
         key: Key,
-        tb_writer: SummaryWriter | None = None,
-    ) -> tuple[eqx.nn.State, AbstractActorCriticPolicy[Float, ActType, ObsType]]:
+    ) -> tuple[
+        eqx.nn.State,
+        AbstractActorCriticPolicy[Float, ActType, ObsType],
+        dict[str, Scalar],
+    ]:
         def epoch_scan(
             carry: tuple[
                 eqx.nn.State, AbstractActorCriticPolicy[Float, ActType, ObsType], Key
@@ -305,8 +302,22 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         )
 
         stats = jax.tree.map(jnp.mean, stats)
+        variance = jnp.var(rollout_buffer.rewards)
+        explained_variance = 1 - jnp.var(
+            rollout_buffer.returns - rollout_buffer.values
+        ) / (variance + jnp.finfo(rollout_buffer.returns.dtype).tiny)
+        log = {
+            "loss/approx_kl": stats.approx_kl,
+            "loss/total": stats.total_loss,
+            "loss/policy": stats.policy_loss,
+            "loss/value": stats.value_loss,
+            "loss/entropy": stats.entropy_loss,
+            "loss/state_magnitude": stats.state_magnitude_loss,
+            "stats/variance": variance,
+            "stats/explained_variance": explained_variance,
+        }
 
-        return state, policy
+        return state, policy, log
 
     @classmethod
     def load(cls, path: str) -> PPO[ActType, ObsType]:

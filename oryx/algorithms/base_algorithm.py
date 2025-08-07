@@ -24,9 +24,8 @@ class AbstractAlgorithm[ActType, ObsType](eqx.Module):
         total_timesteps: int,
         *,
         key: Key,
-        progress_bar: bool = False,
+        show_progress_bar: bool = False,
         tb_log_name: str | None = None,
-        log_interval: int = 100,
     ):
         """Return a trained model."""
 

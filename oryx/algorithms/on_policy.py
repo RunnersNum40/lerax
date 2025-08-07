@@ -3,10 +3,20 @@ from __future__ import annotations
 from abc import abstractmethod
 
 import equinox as eqx
+import jax
+import optax
 from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Bool, Float, Int, Key
+from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key, ScalarLike
+from rich.progress import (
+    BarColumn,
+    Progress,
+    TaskID,
+    TaskProgressColumn,
+    TextColumn,
+    TimeRemainingColumn,
+)
 from tensorboardX import SummaryWriter
 
 from oryx.buffers import RolloutBuffer
@@ -15,7 +25,81 @@ from oryx.policies import AbstractActorCriticPolicy
 from oryx.utils import clone_state, debug_with_numpy_wrapper, filter_scan
 
 from .base_algorithm import AbstractAlgorithm
-from .utils import create_progress_bar
+
+
+class JITSummaryWriter:
+    """
+    A wrapper around `tensorboardX.SummaryWriter` with a JIT compatible interface.
+    """
+
+    summary_writer: SummaryWriter
+
+    def __init__(self, log_dir: str | None = None):
+        self.summary_writer = SummaryWriter(log_dir=log_dir)
+
+    def add_scalar(
+        self,
+        tag: str,
+        scalar_value: ScalarLike,
+        global_step: Int[ArrayLike, ""] | None = None,
+        walltime: Float[ArrayLike, ""] | None = None,
+    ):
+        """
+        Add a scalar value to the summary writer.
+        """
+        debug_with_numpy_wrapper(self.summary_writer.add_scalar, thread=True)(
+            tag, scalar_value, global_step, walltime
+        )
+
+    def add_dict(
+        self,
+        scalars: dict[str, ScalarLike],
+        *,
+        global_step: Int[ArrayLike, ""] | None = None,
+        walltime: Float[ArrayLike, ""] | None = None,
+    ) -> None:
+        """
+        Log a dictionary of **scalar** values.
+        """
+        tags, values = zip(*scalars.items())
+
+        def add(tag: str, val: Float[ArrayLike, ""]):
+            self.add_scalar(tag, val, global_step, walltime)
+
+        jax.vmap(add)(tags, values)
+
+
+class JITProgressBar:
+    progress_bar: Progress
+    task: TaskID
+
+    def __init__(self, name: str, total: int | None):
+        self.progress_bar = Progress(
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            TimeRemainingColumn(),
+        )
+        self.task = self.progress_bar.add_task(name, total=total)
+
+    def update(
+        self,
+        total: Float[ArrayLike, ""] | None = None,
+        completed: Float[ArrayLike, ""] | None = None,
+        advance: Float[ArrayLike, ""] | None = None,
+        description: str | None = None,
+        visible: Bool[ArrayLike, ""] | None = None,
+        refresh: Bool[ArrayLike, ""] = False,
+    ) -> None:
+        debug_with_numpy_wrapper(self.progress_bar.update)(
+            self.task,
+            total=total,
+            completed=completed,
+            advance=advance,
+            description=description,
+            visible=visible,
+            refresh=refresh,
+        )
 
 
 class StepCarry[ObsType](eqx.Module):
@@ -37,7 +121,7 @@ class IterationCarry[ActType, ObsType](eqx.Module):
 class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, ObsType]):
     """Base class for on policy algorithms."""
 
-    state_index: eqx.AbstractVar[eqx.nn.StateIndex]
+    state_index: eqx.AbstractVar[eqx.nn.StateIndex[optax.OptState]]
     env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
     policy: eqx.AbstractVar[AbstractActorCriticPolicy[Float, ActType, ObsType]]
 
@@ -66,7 +150,7 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         carry: StepCarry[ObsType],
         *,
         key: Key,
-    ) -> tuple[eqx.nn.State, StepCarry[ObsType], RolloutBuffer[ActType, ObsType]]:
+    ) -> tuple[eqx.nn.State, StepCarry[ObsType], RolloutBuffer[ActType, ObsType], dict]:
         """
         Perform a single step in the environment.
         """
@@ -91,19 +175,37 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         def reset_env() -> (
             tuple[eqx.nn.State, ObsType, Bool[Array, ""], Bool[Array, ""], dict]
         ):
+            """
+            Reset the environment and policy states.
+
+            This is called when the episode is done.
+            """
             env_state = state.substate(self.env)
-            env_state, observation, info = self.env.reset(env_state, key=reset_key)
-            _state = state.update(env_state)  # _ prefix to avoid shadowing `state`
+            env_state, reset_observation, reset_info = self.env.reset(
+                env_state, key=reset_key
+            )
+            reset_state = state.update(env_state)
 
             policy_state = state.substate(self.policy)
             policy_state = policy.reset(policy_state)
-            _state = _state.update(policy_state)
+            reset_state = reset_state.update(policy_state)
 
-            return _state, observation, jnp.asarray(False), jnp.asarray(False), info
+            return (
+                reset_state,
+                reset_observation,
+                jnp.asarray(False),
+                jnp.asarray(False),
+                reset_info,
+            )
 
         def identity() -> (
             tuple[eqx.nn.State, ObsType, Bool[Array, ""], Bool[Array, ""], dict]
         ):
+            """
+            Return the current state.
+
+            Matches the signature of `reset_env` for use in `lax.cond`.
+            """
             return state, observation, termination, truncation, info
 
         done = jnp.logical_or(termination, truncation)
@@ -128,6 +230,7 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
                 values=value,
                 states=state.substate(self.policy),
             ),
+            info,
         )
 
     def collect_rollout(
@@ -137,7 +240,6 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         carry: StepCarry[ObsType],
         *,
         key: Key,
-        tb_writer: SummaryWriter | None = None,
     ) -> tuple[eqx.nn.State, StepCarry[ObsType], RolloutBuffer[ActType, ObsType]]:
         """
         Collect a rollout from the environment and store it in a buffer.
@@ -152,8 +254,8 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         ]:
             state, previous, key = carry
             step_key, carry_key = jr.split(key, 2)
-            state, previous, rollout = self.step(
-                policy, state, previous, key=step_key, tb_writer=tb_writer
+            state, previous, rollout, info = self.step(
+                policy, state, previous, key=step_key
             )
             return (state, previous, carry_key), rollout
 
@@ -177,8 +279,11 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         rollout_buffer: RolloutBuffer[ActType, ObsType],
         *,
         key: Key,
-        tb_writer: SummaryWriter | None = None,
-    ) -> tuple[eqx.nn.State, AbstractActorCriticPolicy[Float, ActType, ObsType]]:
+    ) -> tuple[
+        eqx.nn.State,
+        AbstractActorCriticPolicy[Float, ActType, ObsType],
+        dict[str, ScalarLike],
+    ]:
         """
         Train the policy using the rollout buffer.
         """
@@ -206,6 +311,8 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         carry: IterationCarry[ActType, ObsType],
         *,
         key: Key,
+        progress_bar: JITProgressBar | None,
+        tb_writer: JITSummaryWriter | None,
     ) -> tuple[eqx.nn.State, IterationCarry[ActType, ObsType]]:
         """
         Perform a single iteration of the algorithm.
@@ -217,7 +324,21 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
             carry.step_carry,
             key=rollout_key,
         )
-        state, policy = self.train(state, carry.policy, rollout_buffer, key=train_key)
+        state, policy, log = self.train(
+            state, carry.policy, rollout_buffer, key=train_key
+        )
+
+        if progress_bar is not None:
+            progress_bar.update(advance=self.num_steps)
+        if tb_writer is not None:
+            optimizer_state = state.get(self.state_index)
+            learning_rate = optimizer_state["adam"].hyperparams[  # pyright: ignore
+                "learning_rate"
+            ]
+            log["loss/learning_rate"] = learning_rate
+
+            tb_writer.add_dict(log, global_step=carry.step_carry.step_count)
+
         return state, IterationCarry(step_carry, policy)
 
     def learn(
@@ -226,9 +347,8 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         total_timesteps: int,
         *,
         key: Key,
-        progress_bar: bool = False,
+        show_progress_bar: bool = False,
         tb_log_name: str | None = None,
-        log_interval: int = 100,
     ):
         """
         Return a trained model.
@@ -237,17 +357,12 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         init_key, learn_key = jr.split(key, 2)
         state, carry = self.initialize_iteration_carry(state, key=init_key)
 
-        # TODO: Implement progress bar under JIT
-        progress = create_progress_bar()
-        task = progress.add_task("", total=total_timesteps)
-        # TODO: Implement logging under JIT
-        tb_writer = (
-            SummaryWriter(log_dir=f"runs/{tb_log_name}" if tb_log_name else "runs")
-            if tb_log_name
+        progress_bar = (
+            JITProgressBar("Training", total=total_timesteps)
+            if show_progress_bar
             else None
         )
-        if tb_writer is not None:
-            tb_writer.add_scalar = debug_with_numpy_wrapper(tb_writer.add_scalar)
+        tb_writer = JITSummaryWriter(tb_log_name) if tb_log_name is not None else None
 
         def scan_iteration(
             carry: tuple[eqx.nn.State, IterationCarry[ActType, ObsType], Key], _
@@ -255,7 +370,13 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
             state, iter_carry, key = carry
             iter_key, carry_key = jr.split(key, 2)
 
-            state, iter_carry = self.iteration(state, iter_carry, key=iter_key)
+            state, iter_carry = self.iteration(
+                state,
+                iter_carry,
+                key=iter_key,
+                progress_bar=progress_bar,
+                tb_writer=tb_writer,
+            )
 
             return (state, iter_carry, carry_key), None
 
