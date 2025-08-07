@@ -35,7 +35,7 @@ class AbstractTransformActionWrapper[WrapperActType, ActType, ObsType](
 
 
 class TransformActionWrapper[WrapperActType, ActType, ObsType](
-    AbstractActionWrapper[WrapperActType, ActType, ObsType]
+    AbstractTransformActionWrapper[WrapperActType, ActType, ObsType]
 ):
     """Apply a function to the action before passing it to the environment"""
 
@@ -103,7 +103,7 @@ class RescaleActionWrapper[ObsType](
                 f"Clip action wrapper only works with Box action spaces not {type(env.action_space)}"
             )
 
-        action_space, rescale, _ = rescale_box(env.action_space, min, max)
+        action_space, _, rescale = rescale_box(env.action_space, min, max)
 
         self.env = env
         self.func = rescale

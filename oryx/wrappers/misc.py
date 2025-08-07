@@ -2,7 +2,6 @@ import dataclasses
 
 import equinox as eqx
 from jax import numpy as jnp
-from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
 from oryx.env import AbstractEnvLike
@@ -14,9 +13,19 @@ from .base_wrapper import AbstractNoRenderOrCloseWrapper
 class LogState(eqx.Module):
     """A simple class to log the state of the environment."""
 
-    episode_length: Int[Array, ""] = jnp.array(0)
-    episode_reward: Float[Array, ""] = jnp.array(0.0)
-    episode_done: Bool[Array, ""] = jnp.array(False)
+    episode_length: Int[Array, ""]
+    episode_reward: Float[Array, ""]
+    episode_done: Bool[Array, ""]
+
+    def __init__(
+        self,
+        episode_length: Int[ArrayLike, ""] = 0,
+        episode_reward: Float[ArrayLike, ""] = 0.0,
+        episode_done: Bool[ArrayLike, ""] = False,
+    ):
+        self.episode_length = jnp.asarray(episode_length)
+        self.episode_reward = jnp.asarray(episode_reward)
+        self.episode_done = jnp.asarray(episode_done)
 
     def update(self, reward: Float[ArrayLike, ""], done: Bool[ArrayLike, ""]):
         return dataclasses.replace(
@@ -40,12 +49,14 @@ class EpisodeStatisticsWrapper[ActType, ObsType](
     def reset(
         self, state: eqx.nn.State, *, key: Key
     ) -> tuple[eqx.nn.State, ObsType, dict]:
-        substate = state.substate(self.env)
-        substate, obs, info = self.env.reset(substate, key=key)
-        state = state.update(substate)
+        env_state = state.substate(self.env)
+        env_state, obs, info = self.env.reset(env_state, key=key)
+        state = state.update(env_state)
 
         log_state = LogState()
-        state = state.set(self.state_index, log_state)
+        wrapper_state = state.substate(self.state_index)
+        wrapper_state = wrapper_state.set(self.state_index, log_state)
+        state = state.update(wrapper_state)
 
         info["episode"] = {
             "length": log_state.episode_length,
