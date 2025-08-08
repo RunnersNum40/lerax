@@ -105,6 +105,7 @@ class CustomActorCriticPolicy[
         else:
             self.value_model = value_model
 
+        self.log_std = jnp.zeros(env.action_space.shape)
         if action_model is None:
             key, action_model_key = jr.split(key, 2)
             self.action_model = cast(
@@ -117,7 +118,6 @@ class CustomActorCriticPolicy[
                     key=action_model_key,
                 ),
             )
-            self.log_std = jnp.zeros(env.action_space.shape)
         else:
             self.action_model = action_model
 

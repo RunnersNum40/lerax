@@ -33,7 +33,7 @@ class AbstractStatefulModel[**InType, *OutType](
         """Reset the state of the model to its initial state."""
 
 
-class AbstractStochaticModel[**InType, OutType](
+class AbstractStochasticModel[**InType, OutType](
     AbstractModel[
         Concatenate[Key, InType],
         OutType,
@@ -55,7 +55,7 @@ class AbstractStochasticStatefulModel[**InType, *OutType](
         Concatenate[Key, InType],
         *OutType,
     ],
-    AbstractStochaticModel[
+    AbstractStochasticModel[
         Concatenate[eqx.nn.State, InType],
         tuple[eqx.nn.State, *OutType],
     ],

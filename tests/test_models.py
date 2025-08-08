@@ -165,6 +165,23 @@ def test_mlpncdeterm_output_shape(add_time: bool):
     assert out.shape == (data_size, input_size)
 
 
+def test_ncde_initial_insert_at_zero():
+    key = jr.key(0)
+    model, state = eqx.nn.make_with_state(MLPNeuralCDE)(
+        in_size=2,
+        out_size=1,
+        latent_size=3,
+        width_size=4,
+        depth=1,
+        key=key,
+        state_size=4,
+    )
+    t, x = jnp.asarray(0.0), jnp.zeros((2,))
+    state, _ = model(state, t, x)
+    ts = model.ts(state)
+    assert ts[0] == 0.0 and not jnp.isnan(ts[0]) and jnp.isnan(ts[1:]).all()
+
+
 @pytest.mark.parametrize("inference", [True, False])
 def test_mlpneuralcde(inference: bool):
     key = jr.key(7)

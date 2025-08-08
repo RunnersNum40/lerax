@@ -45,7 +45,7 @@ class AbstractNeuralCDE[
     are tracked. In theory the latest latent vector should contain all the important
     information about the history of inputs and states, but the longer the history
     allows more accurate gradients to be computed for back propagation through time.
-    Infrence mode can be used to disable the history and only use the latest state for
+    Inference mode can be used to disable the history and only use the latest state for
     faster computation without back propagation through time.
     """
 
@@ -299,7 +299,7 @@ class MLPNeuralCDE(AbstractNeuralCDE):
         initial_state_activation: Callable[
             [Float[Array, " width"]], Float[Array, " width"]
         ] = jnn.relu,
-        intial_state_final_activation: Callable[
+        initial_state_final_activation: Callable[
             [Float[Array, " width"]], Float[Array, " width"]
         ] = lambda x: x,
         output_activation: Callable[
@@ -365,7 +365,7 @@ class MLPNeuralCDE(AbstractNeuralCDE):
             depth=depth,
             key=initial_key,
             activation=initial_state_activation,
-            final_activation=intial_state_final_activation,
+            final_activation=initial_state_final_activation,
         )
 
         self.output = eqx.nn.MLP(

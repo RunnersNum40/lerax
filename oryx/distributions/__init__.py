@@ -189,7 +189,7 @@ class SquashedMultivariateNormalDiag(
 
             sigmoid = bijectors.Sigmoid()
             scale = bijectors.DiagLinear(high - low)
-            shift = bijectors.Shift((high - low) / 2.0)
+            shift = bijectors.Shift(low)
             chain = bijectors.Chain((sigmoid, scale, shift))
             self.distribution = distributions.Transformed(mvn, chain)
 
@@ -204,22 +204,5 @@ __all__ = [
     "Categorical",
     "Normal",
     "MultivariateNormalDiag",
+    "SquashedMultivariateNormalDiag",
 ]
-
-if __name__ == "__main__":
-    from jaxtyping import Real
-
-    class Check[T: Real[Array, " ..."]]:
-        def __init__(self, dist: AbstractDistribution[T]):
-            self.dist = dist
-
-        def check(self) -> T:
-            return self.dist.sample(key=None)
-
-    FloatCheck = Check[Float[Array, " ..."]]
-    IntegerCheck = Check[Integer[Array, " ..."]]
-    ArrayCheck = Check[Array]
-
-    FloatCheck(Categorical(None))
-    IntegerCheck(Categorical(None))
-    ArrayCheck(Categorical(None))
