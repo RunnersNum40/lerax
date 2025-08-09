@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import equinox as eqx
 from distreqx import bijectors, distributions
-from jaxtyping import Array, Bool, Float, Integer, Key
+from jax import numpy as jnp
+from jaxtyping import Array, ArrayLike, Bool, Float, Integer, Key
 
 
 class AbstractDistribution[SampleType](eqx.Module):
@@ -61,9 +62,11 @@ class Bernoulli(AbstractDistribution[Bool[Array, " dims"]]):
 
     def __init__(
         self,
-        logits: Float[Array, " dims"] | None = None,
-        probs: Float[Array, " dims"] | None = None,
+        logits: Float[ArrayLike, " dims"] | None = None,
+        probs: Float[ArrayLike, " dims"] | None = None,
     ):
+        logits = jnp.asarray(logits) if logits is not None else None
+        probs = jnp.asarray(probs) if probs is not None else None
         self.distribution = distributions.Bernoulli(logits=logits, probs=probs)
 
     @property
@@ -81,9 +84,12 @@ class Categorical(AbstractDistribution[Integer[Array, ""]]):
 
     def __init__(
         self,
-        logits: Float[Array, " dims"] | None = None,
-        probs: Float[Array, " dims"] | None = None,
+        logits: Float[ArrayLike, " dims"] | None = None,
+        probs: Float[ArrayLike, " dims"] | None = None,
     ):
+        logits = jnp.asarray(logits) if logits is not None else None
+        probs = jnp.asarray(probs) if probs is not None else None
+
         self.distribution = distributions.Categorical(logits=logits, probs=probs)
 
     @property
@@ -101,9 +107,12 @@ class Normal(AbstractDistribution[Float[Array, " dims"]]):
 
     def __init__(
         self,
-        loc: Float[Array, " dims"],
-        scale: Float[Array, " dims"],
+        loc: Float[ArrayLike, " dims"],
+        scale: Float[ArrayLike, " dims"],
     ):
+        loc = jnp.asarray(loc)
+        scale = jnp.asarray(scale)
+
         if loc.shape != scale.shape:
             raise ValueError("loc and scale must have the same shape.")
 
@@ -122,7 +131,12 @@ class SquashedNormal(AbstractTransformedDistribution[Float[Array, " dims"]]):
 
     distribution: distributions.Transformed
 
-    def __init__(self, loc: Float[Array, " dims"], scale: Float[Array, " dims"]):
+    def __init__(
+        self, loc: Float[ArrayLike, " dims"], scale: Float[ArrayLike, " dims"]
+    ):
+        loc = jnp.asarray(loc)
+        scale = jnp.asarray(scale)
+
         if loc.shape != scale.shape:
             raise ValueError("loc and scale must have the same shape.")
 
@@ -138,9 +152,12 @@ class MultivariateNormalDiag(AbstractDistribution[Float[Array, " dims"]]):
 
     def __init__(
         self,
-        loc: Float[Array, " dims"] | None = None,
-        scale_diag: Float[Array, " dims"] | None = None,
+        loc: Float[ArrayLike, " dims"] | None = None,
+        scale_diag: Float[ArrayLike, " dims"] | None = None,
     ):
+        loc = jnp.asarray(loc) if loc is not None else None
+        scale_diag = jnp.asarray(scale_diag) if scale_diag is not None else None
+
         if (loc is not None and scale_diag is not None) and (
             loc.shape != scale_diag.shape
         ):
@@ -168,10 +185,10 @@ class SquashedMultivariateNormalDiag(
 
     def __init__(
         self,
-        loc: Float[Array, " dims"],
-        scale_diag: Float[Array, " dims"],
-        high: Float[Array, " dims"] | None = None,
-        low: Float[Array, " dims"] | None = None,
+        loc: Float[ArrayLike, " dims"],
+        scale_diag: Float[ArrayLike, " dims"],
+        high: Float[ArrayLike, " dims"] | None = None,
+        low: Float[ArrayLike, " dims"] | None = None,
     ):
         """
         Initialize a SquashedMultivariateNormalDiag distribution.
@@ -180,6 +197,11 @@ class SquashedMultivariateNormalDiag(
         If neither are provided, the distribution will use a Tanh bijector for squashing
         between -1 and 1.
         """
+        loc = jnp.asarray(loc)
+        scale_diag = jnp.asarray(scale_diag)
+        high = jnp.asarray(high) if high is not None else None
+        low = jnp.asarray(low) if low is not None else None
+
         mvn = distributions.MultivariateNormalDiag(loc=loc, scale_diag=scale_diag)
 
         if high is not None or low is not None:
