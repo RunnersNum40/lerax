@@ -64,7 +64,7 @@ def test_dummy_env_reset_and_step_shapes():
 
 def test_unwrapped_returns_base_env():
     """Even after extra wrapping, `.unwrapped` should reach the original env."""
-    from oryx.wrappers.base_wrapper import AbstractNoRenderOrCloseWrapper
+    from oryx.wrapper.base_wrapper import AbstractNoRenderOrCloseWrapper
 
     class IdentityWrapper(AbstractNoRenderOrCloseWrapper):
         env: DummyEnv

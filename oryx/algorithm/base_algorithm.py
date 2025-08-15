@@ -6,7 +6,7 @@ import equinox as eqx
 from jaxtyping import Key
 
 from oryx.env import AbstractEnvLike
-from oryx.policies import AbstractPolicy
+from oryx.policy import AbstractPolicy
 
 
 class AbstractAlgorithm[ActType, ObsType](eqx.Module):

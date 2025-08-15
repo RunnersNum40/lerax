@@ -18,9 +18,9 @@ from rich.progress import (
 )
 from tensorboardX import SummaryWriter
 
-from oryx.buffers import RolloutBuffer
+from oryx.buffer import RolloutBuffer
 from oryx.env import AbstractEnvLike
-from oryx.policies import AbstractActorCriticPolicy
+from oryx.policy import AbstractActorCriticPolicy
 from oryx.utils import clone_state, debug_with_numpy_wrapper, filter_scan
 
 from .base_algorithm import AbstractAlgorithm

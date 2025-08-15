@@ -7,8 +7,8 @@ from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
 
-from oryx.spaces import Box
-from oryx.wrappers import (
+from oryx.space import Box
+from oryx.wrapper import (
     ClipAction,
     ClipObservation,
     ClipReward,
@@ -20,7 +20,7 @@ from oryx.wrappers import (
     TimeLimit,
     TransformAction,
 )
-from oryx.wrappers.utils import rescale_box
+from oryx.wrapper.utils import rescale_box
 
 from .shared import EchoEnv, FiniteEpisodeEnv, PassThroughEnv
 

@@ -4,7 +4,7 @@ import pytest
 from jax import numpy as jnp
 from jax import random as jr
 
-from oryx.spaces import (
+from oryx.space import (
     Box,
     Dict,
     Discrete,

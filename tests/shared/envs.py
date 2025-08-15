@@ -6,7 +6,7 @@ from jax import random as jr
 from jaxtyping import Array, Float, Int
 
 from oryx.env import AbstractEnv
-from oryx.spaces import Box
+from oryx.space import Box
 
 
 class EchoEnv(AbstractEnv[Float[Array, " n"], Float[Array, " n"]]):

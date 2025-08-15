@@ -5,7 +5,7 @@ from abc import abstractmethod
 import equinox as eqx
 from jaxtyping import Key
 
-from oryx.spaces.base_space import AbstractSpace
+from oryx.space.base_space import AbstractSpace
 
 
 # TODO: Break out stateful and non-stateful policies

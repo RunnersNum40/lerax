@@ -7,7 +7,7 @@ from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
 from oryx.env import AbstractEnvLike
-from oryx.spaces import AbstractSpace
+from oryx.space import AbstractSpace
 
 from .base_wrapper import (
     AbstractNoActionOrObservationSpaceWrapper,

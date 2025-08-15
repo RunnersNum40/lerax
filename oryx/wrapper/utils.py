@@ -5,7 +5,7 @@ from typing import Callable, NamedTuple
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Float
 
-from oryx.spaces import Box
+from oryx.space import Box
 
 
 class RescaleResult(NamedTuple):

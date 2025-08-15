@@ -3,7 +3,7 @@ from __future__ import annotations
 import equinox as eqx
 
 from oryx.env import AbstractEnv, AbstractEnvLike
-from oryx.spaces import AbstractSpace
+from oryx.space import AbstractSpace
 
 
 class AbstractWrapper[WrapperActType, WrapperObsType, ActType, ObsType](

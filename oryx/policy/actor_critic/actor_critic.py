@@ -5,7 +5,7 @@ from abc import abstractmethod
 import equinox as eqx
 from jaxtyping import Array, Float, Key
 
-from oryx.distributions import AbstractDistribution
+from oryx.distribution import AbstractDistribution
 
 from ..base_policy import AbstractPolicy
 

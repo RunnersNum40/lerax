@@ -7,15 +7,15 @@ from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
 
-from oryx.distributions import (
+from oryx.distribution import (
     AbstractDistribution,
     Categorical,
     SquashedMultivariateNormalDiag,
 )
 from oryx.env import AbstractEnvLike
-from oryx.models import MLP, AbstractModel, AbstractStatefulModel, Flatten
-from oryx.spaces import Box, Discrete
-from oryx.spaces.base_space import AbstractSpace
+from oryx.model import MLP, AbstractModel, AbstractStatefulModel, Flatten
+from oryx.space import Box, Discrete
+from oryx.space.base_space import AbstractSpace
 
 from .actor_critic import AbstractActorCriticPolicy
 

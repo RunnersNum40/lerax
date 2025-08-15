@@ -9,7 +9,7 @@ from jax import random as jr
 from jaxtyping import Array, Bool, Float, Key
 
 from oryx.env import AbstractEnvLike
-from oryx.spaces import AbstractSpace, Box
+from oryx.space import AbstractSpace, Box
 
 from .base_wrapper import (
     AbstractNoObservationSpaceWrapper,

@@ -6,15 +6,15 @@ import pytest
 from jax import numpy as jnp
 from jax import random as jr
 
-from oryx.models.base_model import (
+from oryx.model.base_model import (
     AbstractModel,
     AbstractStatefulModel,
 )
-from oryx.models.flatten import Flatten
-from oryx.models.mlp import MLP
-from oryx.models.ncde.ncde import MLPNeuralCDE
-from oryx.models.ncde.term import AbstractNCDETerm, MLPNCDETerm
-from oryx.models.node.node import MLPNeuralODE
+from oryx.model.flatten import Flatten
+from oryx.model.mlp import MLP
+from oryx.model.ncde.ncde import MLPNeuralCDE
+from oryx.model.ncde.term import AbstractNCDETerm, MLPNCDETerm
+from oryx.model.node.node import MLPNeuralODE
 
 # TODO: Add tests for stochastic models
 

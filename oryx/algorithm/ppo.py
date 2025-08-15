@@ -7,9 +7,9 @@ from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Key, Scalar
 
-from oryx.buffers import RolloutBuffer
+from oryx.buffer import RolloutBuffer
 from oryx.env import AbstractEnvLike
-from oryx.policies import AbstractActorCriticPolicy
+from oryx.policy import AbstractActorCriticPolicy
 from oryx.utils import filter_scan
 
 from .on_policy import AbstractOnPolicyAlgorithm

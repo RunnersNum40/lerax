@@ -4,7 +4,7 @@ import pytest
 from jax import numpy as jnp
 from jax import random as jr
 
-from oryx.buffers import RolloutBuffer
+from oryx.buffer import RolloutBuffer
 
 
 def _make_dummy_buffer(num_steps: int = 8):

@@ -5,7 +5,7 @@ from abc import abstractmethod
 import equinox as eqx
 from jaxtyping import Array, Bool, Float, Key
 
-from oryx.spaces import AbstractSpace
+from oryx.space import AbstractSpace
 
 
 class AbstractEnvLike[ActType, ObsType](eqx.Module):
