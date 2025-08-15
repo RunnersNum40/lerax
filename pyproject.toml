@@ -19,6 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-xdist", "pyright", "ruff"]
+docs = ["mkdocs-material"]
 
 [build-system]
 requires = ["hatchling"]
