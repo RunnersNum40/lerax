@@ -4,10 +4,10 @@ import equinox as eqx
 import pytest
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Float
 
 from oryx.env.base_env import AbstractEnv, AbstractEnvLike
-from oryx.spaces import Box
+
+from .shared import DummyEnv
 
 
 def test_cannot_instantiate_abstract_envs():
@@ -38,48 +38,6 @@ def test_missing_methods_detected():
 
     with pytest.raises(TypeError):
         NoStepEnv()  # pyright: ignore
-
-
-class DummyEnv(AbstractEnv[Float[Array, ""], Float[Array, ""]]):
-    """
-    Scalar environment for unit tests.
-
-    *Observation* =`state_value`
-    *Reward* =`-abs(action - state_value)`
-    Never terminates/truncates.
-    """
-
-    state_index: eqx.nn.StateIndex[Float[Array, ""]]
-
-    def __init__(self, *, key):
-        self.state_index = eqx.nn.StateIndex(jr.uniform(key))
-
-    def reset(self, state, *, key):
-        new_val = jr.uniform(key)
-        state = state.set(self.state_index, new_val)
-        return state, new_val, {}
-
-    def step(self, state, action: Float[Array, ""], *, key):
-        new_val = jr.uniform(key)
-        reward = -jnp.abs(action - new_val)
-        state = state.set(self.state_index, new_val)
-        done = jnp.asarray(False)
-        trunc = jnp.asarray(False)
-        return state, new_val, reward, done, trunc, {}
-
-    def render(self, state):
-        pass
-
-    def close(self):
-        pass
-
-    @property
-    def action_space(self) -> Box:
-        return Box(-jnp.inf, jnp.inf, shape=())
-
-    @property
-    def observation_space(self) -> Box:
-        return Box(-jnp.inf, jnp.inf, shape=())
 
 
 def test_dummy_env_reset_and_step_shapes():
