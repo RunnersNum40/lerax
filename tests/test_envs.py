@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import equinox as eqx
-import jax.numpy as jnp
 import pytest
+from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float
 

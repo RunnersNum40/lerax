@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 from jax import numpy as jnp
 from jax import random as jr

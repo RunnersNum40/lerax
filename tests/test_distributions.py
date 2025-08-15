@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from distreqx import bijectors
 from jax import numpy as jnp
 from jax import random as jr

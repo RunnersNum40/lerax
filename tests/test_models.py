@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import diffrax
 import equinox as eqx
 import pytest
