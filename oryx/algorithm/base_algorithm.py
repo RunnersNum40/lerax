@@ -13,8 +13,8 @@ class AbstractAlgorithm[ActType, ObsType](eqx.Module):
     """Base class for RL algorithms."""
 
     state_index: eqx.AbstractVar[eqx.nn.StateIndex]
-    policy: eqx.AbstractVar[AbstractPolicy]
     env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
+    policy: eqx.AbstractVar[AbstractPolicy]
 
     # TODO: Add support for callbacks
     @abstractmethod

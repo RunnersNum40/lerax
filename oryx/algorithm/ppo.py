@@ -37,7 +37,6 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
     batch_size: int
 
     optimizer: optax.GradientTransformation
-    learning_rate: float
     anneal_learning_rate: bool
 
     num_epochs: int
@@ -99,7 +98,6 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
             max_grad_norm,
             optimizer,
         )
-        self.learning_rate = learning_rate
         self.anneal_learning_rate = bool(anneal_learning_rate)
 
         opt_state = self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array))
@@ -330,6 +328,10 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         }
 
         return state, policy, log
+
+    def learning_rate(self, state: eqx.nn.State) -> Float[Array, ""]:
+        opt_state = state.get(self.state_index)
+        return opt_state["adam"].hyperparams["learning_rate"]  # pyright: ignore
 
     @classmethod
     def load(cls, path: str) -> PPO[ActType, ObsType]:
