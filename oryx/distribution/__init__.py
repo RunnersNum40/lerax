@@ -51,6 +51,18 @@ class AbstractTransformedDistribution[SampleType](AbstractDistribution[SampleTyp
 
     distribution: eqx.AbstractVar[distributions.AbstractTransformed]
 
+    def mode(self) -> SampleType:
+        # Computing the mode this way is not always correct, but it is a reasonable workaround for the
+        # use cases of this library.
+        try:
+            return super().mode()
+        except NotImplementedError:
+            # TODO: Add a warning here about the mode not being implemented for
+            # the underlying distribution.
+            return self.distribution._bijector.forward(
+                self.distribution._distribution.mode()
+            )
+
     @property
     def bijector(self) -> bijectors.AbstractBijector:
         return self.distribution.bijector

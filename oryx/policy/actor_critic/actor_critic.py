@@ -63,7 +63,7 @@ class AbstractActorCriticPolicy[FeatureType, ActType, ObsType](
         else:
             action, log_prob = action_dist.sample_and_log_prob(key)
 
-        return state, action, value, log_prob.squeeze()
+        return state, action, value, log_prob.sum().squeeze()
 
     def predict(
         self, state: eqx.nn.State, observation: ObsType, *, key: Key | None = None
@@ -93,9 +93,14 @@ class AbstractActorCriticPolicy[FeatureType, ActType, ObsType](
         state, features = self.extract_features(state, observation)
         state, action_dist = self.action_dist_from_features(state, features)
         state, value = self.value_from_features(state, features)
-        log_prob = action_dist.log_prob(action).squeeze()
+        log_prob = action_dist.log_prob(action)
 
-        return state, value, log_prob, action_dist.entropy().squeeze()
+        try:
+            entropy = action_dist.entropy().squeeze()
+        except NotImplementedError:
+            entropy = -log_prob.mean().squeeze()  # Fallback to negative log prob mean
+
+        return state, value, log_prob.sum().squeeze(), entropy
 
     @abstractmethod
     def reset(self, state: eqx.nn.State) -> eqx.nn.State:

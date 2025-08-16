@@ -1,3 +1,9 @@
-from .envs import DummyEnv, EchoEnv, FiniteEpisodeEnv, PassThroughEnv
+from .envs import DiscreteActionEnv, DummyEnv, EchoEnv, FiniteEpisodeEnv, PassThroughEnv
 
-__all__ = ["EchoEnv", "FiniteEpisodeEnv", "PassThroughEnv", "DummyEnv"]
+__all__ = [
+    "DiscreteActionEnv",
+    "DummyEnv",
+    "EchoEnv",
+    "FiniteEpisodeEnv",
+    "PassThroughEnv",
+]

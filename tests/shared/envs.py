@@ -6,7 +6,7 @@ from jax import random as jr
 from jaxtyping import Array, Float, Int
 
 from oryx.env import AbstractEnv
-from oryx.space import Box
+from oryx.space import Box, Discrete
 
 
 class EchoEnv(AbstractEnv[Float[Array, " n"], Float[Array, " n"]]):
@@ -170,3 +170,41 @@ class DummyEnv(AbstractEnv[Float[Array, ""], Float[Array, ""]]):
     @property
     def observation_space(self) -> Box:
         return Box(-jnp.inf, jnp.inf, shape=())
+
+
+class DiscreteActionEnv(AbstractEnv[Int[Array, ""], Float[Array, " n"]]):
+    """
+    Simple env with Discrete action space and vector observations.
+    Observation is zero vector. Reward = -abs(action).
+    Never terminates/truncates.
+    """
+
+    state_index: eqx.nn.StateIndex[None]
+    _obs_space: Box
+    _act_space: Discrete
+
+    def __init__(self, *, key, n_actions: int = 4, obs_size: int = 3):
+        self.state_index = eqx.nn.StateIndex(None)
+        self._obs_space = Box(-jnp.inf, jnp.inf, shape=(obs_size,))
+        self._act_space = Discrete(n_actions)
+
+    def reset(self, state, *, key):
+        return state, jnp.zeros(self._obs_space.shape), {}
+
+    def step(self, state, action, *, key):
+        obs = jnp.zeros(self._obs_space.shape)
+        reward = -jnp.abs(jnp.asarray(action, dtype=obs.dtype))
+        done = jnp.asarray(False)
+        trunc = jnp.asarray(False)
+        return state, obs, reward, done, trunc, {}
+
+    def render(self, state): ...
+    def close(self): ...
+
+    @property
+    def action_space(self):
+        return self._act_space
+
+    @property
+    def observation_space(self):
+        return self._obs_space
