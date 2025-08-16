@@ -168,9 +168,9 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         )
         state = state.update(env_state)
 
-        def reset_env() -> (
-            tuple[eqx.nn.State, ObsType, Bool[Array, ""], Bool[Array, ""], dict]
-        ):
+        def reset_env(
+            state: eqx.nn.State,
+        ) -> tuple[eqx.nn.State, ObsType, Bool[Array, ""], Bool[Array, ""], dict]:
             """
             Reset the environment and policy states.
 
@@ -180,23 +180,23 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
             env_state, reset_observation, reset_info = self.env.reset(
                 env_state, key=reset_key
             )
-            reset_state = state.update(env_state)
+            state = state.update(env_state)
 
             policy_state = state.substate(self.policy)
             policy_state = policy.reset(policy_state)
-            reset_state = reset_state.update(policy_state)
+            state = state.update(policy_state)
 
             return (
-                reset_state,
+                state,
                 reset_observation,
                 jnp.asarray(False),
                 jnp.asarray(False),
                 reset_info,
             )
 
-        def identity() -> (
-            tuple[eqx.nn.State, ObsType, Bool[Array, ""], Bool[Array, ""], dict]
-        ):
+        def identity(
+            state: eqx.nn.State,
+        ) -> tuple[eqx.nn.State, ObsType, Bool[Array, ""], Bool[Array, ""], dict]:
             """
             Return the current state.
 
@@ -207,10 +207,7 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         done = jnp.logical_or(termination, truncation)
 
         state, observation, termination, truncation, info = lax.cond(
-            done,
-            reset_env,
-            identity,
-            state,
+            done, reset_env, identity, state
         )
 
         return (
