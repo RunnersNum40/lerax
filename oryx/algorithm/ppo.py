@@ -102,8 +102,7 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         self.learning_rate = learning_rate
         self.anneal_learning_rate = bool(anneal_learning_rate)
 
-        trainable = eqx.filter(policy, eqx.is_inexact_array)
-        opt_state = self.optimizer.init(trainable)
+        opt_state = self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array))
         self.state_index = eqx.nn.StateIndex(opt_state)
 
     @staticmethod
@@ -136,10 +135,16 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
 
         return optimizer
 
+    @staticmethod
     def ppo_loss(
-        self,
         policy: AbstractActorCriticPolicy[Float, ActType, ObsType],
         rollout_buffer: RolloutBuffer[ActType, ObsType],
+        normalize_advantages: bool,
+        clip_coefficient: float,
+        clip_value_loss: bool,
+        value_loss_coefficient: float,
+        state_magnitude_coefficient: float,
+        entropy_loss_coefficient: float,
     ) -> tuple[Float[Array, ""], PPOStats]:
         _, new_values, new_log_probs, entropy = jax.vmap(policy.evaluate_action)(
             rollout_buffer.states, rollout_buffer.observations, rollout_buffer.actions
@@ -150,7 +155,7 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         approx_kl = jnp.mean(ratios - log_ratios) - 1
 
         advantages = rollout_buffer.advantages
-        if self.normalize_advantages:
+        if normalize_advantages:
             advantages = (advantages - jnp.mean(advantages)) / (
                 jnp.std(advantages) + jnp.finfo(advantages.dtype).tiny
             )
@@ -159,17 +164,15 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
             jnp.minimum(
                 advantages * ratios,
                 advantages
-                * jnp.clip(
-                    ratios, 1 - self.clip_coefficient, 1 + self.clip_coefficient
-                ),
+                * jnp.clip(ratios, 1 - clip_coefficient, 1 + clip_coefficient),
             )
         )
 
-        if self.clip_value_loss:
+        if clip_value_loss:
             clipped_values = rollout_buffer.values + jnp.clip(
                 new_values - rollout_buffer.values,
-                -self.clip_coefficient,
-                self.clip_coefficient,
+                -clip_coefficient,
+                clip_coefficient,
             )
             value_loss = (
                 jnp.mean(
@@ -191,16 +194,16 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
 
         loss = (
             policy_loss
-            + value_loss * self.value_loss_coefficient
-            + state_magnitude_loss * self.state_magnitude_coefficient
-            - entropy_loss * self.entropy_loss_coefficient
+            + value_loss * value_loss_coefficient
+            + state_magnitude_loss * state_magnitude_coefficient
+            - entropy_loss * entropy_loss_coefficient
         )
 
         return loss, PPOStats(
             approx_kl, loss, policy_loss, value_loss, entropy_loss, state_magnitude_loss
         )
 
-    ppo_loss_grad = eqx.filter_value_and_grad(ppo_loss, has_aux=True)
+    ppo_loss_grad = staticmethod(eqx.filter_value_and_grad(ppo_loss, has_aux=True))
 
     def train_batch(
         self,
@@ -215,7 +218,16 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
 
         Assumes that the rollout buffer is a single batch of data.
         """
-        (_, stats), grads = self.ppo_loss_grad(policy, rollout_buffer)
+        (_, stats), grads = self.ppo_loss_grad(
+            policy,
+            rollout_buffer,
+            self.normalize_advantages,
+            self.clip_coefficient,
+            self.clip_value_loss,
+            self.value_loss_coefficient,
+            self.state_magnitude_coefficient,
+            self.entropy_loss_coefficient,
+        )
 
         opt_state = state.get(self.state_index)
         updates, opt_state = self.optimizer.update(grads, opt_state)
