@@ -26,15 +26,29 @@ from .shared import EchoEnv, FiniteEpisodeEnv, PassThroughEnv
 
 
 def test_nested_wrapper_unwrapped():
-    env, _ = eqx.nn.make_with_state(EchoEnv)()
+    scan_key, reset_key = jr.split(jr.key(0), 2)
 
+    env, state = eqx.nn.make_with_state(EchoEnv)()
     wrapper = Identity(Identity(env))
 
     assert wrapper.unwrapped is env, "unwrapped must return the original env instance"
 
+    state, _, _ = wrapper.reset(state, key=reset_key)
+
+    action = jnp.asarray(1.23)
+
+    def step_fn(carry, _):
+        st, k = carry
+        k, sk = jr.split(k)
+        st, obs, *_ = wrapper.step(st, action, key=sk)
+        return (st, k), obs
+
+    (_, _), obs_seq = lax.scan(step_fn, (state, scan_key), None, length=5)
+    assert jnp.allclose(obs_seq, action)
+
 
 def test_transform_action():
-    reset_key, step_key = jr.split(jr.key(0), 2)
+    scan_key, reset_key, step_key = jr.split(jr.key(0), 3)
 
     action = jnp.array(1.0)
 
@@ -53,11 +67,20 @@ def test_transform_action():
 
     assert jnp.allclose(obs, func(action)), "Env should receive transformed action"
 
+    def step_scan(carry, _):
+        st, k = carry
+        k, sk = jr.split(k)
+        st, ob, *_ = wrapper.step(st, action, key=sk)
+        return (st, k), ob
+
+    (_, _), obs_seq = lax.scan(step_scan, (state, scan_key), None, length=4)
+    assert jnp.allclose(obs_seq, func(action))
+
 
 @pytest.mark.parametrize("low, high", [([-1.0, -1.0], [1.0, 1.0])])
 def test_clip_action(low, high):
+    scan_key, reset_key, step_key = jr.split(jr.key(0), 3)
     low, high = jnp.asarray(low), jnp.asarray(high)
-    reset_key, step_key = jr.split(jr.key(9), 2)
 
     env, state = eqx.nn.make_with_state(EchoEnv)(action_space=Box(low, high))
     wrapper = ClipAction(env=env)
@@ -73,13 +96,22 @@ def test_clip_action(low, high):
         jnp.isinf(wrapper.action_space.high)
     ), "Wrapper advertises an unbounded action space"
 
+    def step_scan(carry, _):
+        st, k = carry
+        k, sk = jr.split(k)
+        st, ob, *_ = wrapper.step(st, over_action, key=sk)
+        return (st, k), ob
+
+    (_, _), obs_seq = lax.scan(step_scan, (state, scan_key), None, length=3)
+    assert jnp.allclose(obs_seq, expected)
+
 
 @pytest.mark.parametrize(
     "action, expected",
     [(-1.0, 0.0), (0.0, 5.0), (1.0, 10.0)],
 )
 def test_rescale_action(action, expected):
-    reset_key, step_key = jr.split(jr.key(0), 2)
+    scan_key, reset_key, step_key = jr.split(jr.key(0), 3)
 
     env, state = eqx.nn.make_with_state(EchoEnv)(
         action_space=Box(0.0, 10.0), observation_space=Box(0.0, 10.0)
@@ -99,20 +131,44 @@ def test_rescale_action(action, expected):
         wrapper.action_space.high, 1.0
     )
 
+    actions = jnp.asarray([-1.0, -0.5, 0.0, 0.5, 1.0])
+    expected_seq = (actions + 1.0) * 5.0
+
+    def step_scan(carry, a):
+        st, k = carry
+        k, sk = jr.split(k)
+        st, ob, *_ = wrapper.step(st, a, key=sk)
+        return (st, k), ob
+
+    (_, _), obs_seq = lax.scan(step_scan, (state, scan_key), actions)
+    assert jnp.allclose(obs_seq, expected_seq)
+
 
 def test_rescale_box():
+    scan_key, sample_key = jr.split(jr.key(3), 2)
+
     orig = Box(0.0, 10.0)
     _, forward, backward = rescale_box(orig, -1.0, 1.0)
 
-    sample = orig.sample(jr.key(3))
+    sample = orig.sample(sample_key)
 
     assert jnp.allclose(
         backward(forward(sample)), sample
     ), "forward∘backward should be identity"
 
+    keys = jr.split(scan_key, 6)
+
+    def gen_and_roundtrip(carry, k):
+        s = orig.sample(k)
+        r = backward(forward(s))
+        return carry, (s, r)
+
+    _, (s_seq, r_seq) = lax.scan(gen_and_roundtrip, None, keys)
+    assert jnp.allclose(s_seq, r_seq)
+
 
 def test_episode_statistics():
-    env_key, reset_key, key0 = jr.split(jr.key(0), 3)
+    scan_key, env_key, reset_key = jr.split(jr.key(0), 3)
     env = FiniteEpisodeEnv(key=env_key)
 
     wrapper, state = eqx.nn.make_with_state(EpisodeStatistics)(env=env)
@@ -133,7 +189,7 @@ def test_episode_statistics():
 
     _, infos = lax.scan(
         step_fn,
-        (state, key0),
+        (state, scan_key),
         None,
         length=env.done_at,
     )
@@ -147,10 +203,9 @@ def test_episode_statistics():
 
 @pytest.mark.parametrize("low, high", [([-1.0, -1.0], [1.0, 1.0])])
 def test_clip_observation(low, high):
+    scan_key, reset_key, step_key = jr.split(jr.key(0), 3)
     low, high = jnp.asarray(low), jnp.asarray(high)
     over_val = jnp.array(high) + 2.0
-
-    reset_key, step_key = jr.split(jr.key(0), 2)
 
     base_env, state = eqx.nn.make_with_state(EchoEnv)(
         action_space=Box(low, high),
@@ -167,10 +222,19 @@ def test_clip_observation(low, high):
 
     assert wrapper.observation_space == base_env.observation_space
 
+    def step_scan(carry, _):
+        st, k = carry
+        k, sk = jr.split(k)
+        st, ob, *_ = wrapper.step(st, over_val, key=sk)
+        return (st, k), ob
+
+    (_, _), obs_seq = lax.scan(step_scan, (state, scan_key), None, length=4)
+    assert jnp.all(obs_seq <= high) and jnp.all(obs_seq >= low)
+
 
 @pytest.mark.parametrize("raw, expected", [(0.0, -1.0), (5.0, 0.0), (10.0, 1.0)])
 def test_rescale_observation(raw, expected):
-    reset_key, step_key = jr.split(jr.key(0), 2)
+    scan_key, reset_key, step_key = jr.split(jr.key(0), 3)
 
     base_env, state = eqx.nn.make_with_state(EchoEnv)(
         action_space=Box(0.0, 10.0),
@@ -186,29 +250,53 @@ def test_rescale_observation(raw, expected):
     assert jnp.allclose(wrapper.observation_space.low, -1.0)
     assert jnp.allclose(wrapper.observation_space.high, 1.0)
 
+    raws = jnp.asarray([0.0, 2.5, 5.0, 7.5, 10.0])
+    expected_seq = (raws - 5.0) / 5.0
+
+    def step_scan(carry, x):
+        st, k = carry
+        k, sk = jr.split(k)
+        st, ob, *_ = wrapper.step(st, x, key=sk)
+        return (st, k), ob
+
+    (_, _), obs_seq = lax.scan(step_scan, (state, scan_key), raws)
+    assert jnp.allclose(obs_seq, expected_seq, atol=1e-7)
+
 
 @pytest.mark.parametrize(
-    "action, min_, max_, expected",
+    "action, min, max, expected",
     [
         (-5.0, -1.0, 1.0, -1.0),
         (0.0, -1.0, 1.0, 0.0),
         (7.5, -1.0, 1.0, 1.0),
     ],
 )
-def test_clip_reward(action, min_, max_, expected):
-    reset_key, step_key = jr.split(jr.key(0), 2)
+def test_clip_reward(action, min, max, expected):
+    scan_key, reset_key, step_key = jr.split(jr.key(0), 3)
 
     base_env, state = eqx.nn.make_with_state(PassThroughEnv)()
-    wrapper = ClipReward(env=base_env, min=min_, max=max_)
+    wrapper = ClipReward(env=base_env, min=min, max=max)
 
     state, _, _ = wrapper.reset(state, key=reset_key)
     state, _, reward, *_ = wrapper.step(state, jnp.asarray(action), key=step_key)
 
     assert pytest.approx(float(reward)) == expected, "Reward not correctly clipped"
 
+    acts = jnp.asarray([-5.0, -0.1, 0.0, 0.3, 7.5])
+    exp_seq = jnp.clip(acts, min=min, max=max)
+
+    def step_scan(carry, a):
+        st, k = carry
+        k, sk = jr.split(k)
+        st, _, r, *_ = wrapper.step(st, a, key=sk)
+        return (st, k), r
+
+    (_, _), rew_seq = lax.scan(step_scan, (state, scan_key), acts)
+    assert jnp.allclose(rew_seq, exp_seq)
+
 
 def test_time_limit(steps=2):
-    reset_key, step_key = jr.split(jr.key(0), 2)
+    scan_key, reset_key, step_key = jr.split(jr.key(0), 3)
 
     env = EchoEnv()
     wrapper, state = eqx.nn.make_with_state(TimeLimit)(env=env, max_episode_steps=steps)
@@ -228,9 +316,20 @@ def test_time_limit(steps=2):
         if truncation:
             state, _, _ = wrapper.reset(state, key=reset_key)
 
+    state, _, _ = wrapper.reset(state, key=reset_key)
+
+    def step_scan(carry, _):
+        st, k = carry
+        st, _, _, _, trunc, _ = wrapper.step(st, jnp.asarray(0.0), key=k)
+        return (st, k), trunc
+
+    (_, _), trunc_seq = lax.scan(step_scan, (state, scan_key), None, length=steps)
+    assert not bool(trunc_seq[:-1].any())
+    assert bool(trunc_seq[-1])
+
 
 def test_flatten_observation():
-    reset_key, step_key = jr.split(jr.key(0), 2)
+    scan_key, reset_key, step_key = jr.split(jr.key(0), 3)
 
     obs_shape = (2, 3)
     base_env, state = eqx.nn.make_with_state(EchoEnv)(
@@ -252,3 +351,22 @@ def test_flatten_observation():
 
     assert obs_step.shape == (expected_flat_dim,)
     assert jnp.array_equal(obs_step, action.ravel()), "Flattening mismatch"
+
+    actions = jnp.stack(
+        [
+            jnp.arange(expected_flat_dim).reshape(obs_shape),
+            jnp.ones(obs_shape),
+            jnp.zeros(obs_shape),
+        ],
+        axis=0,
+    )
+
+    def step_scan(carry, a):
+        st, k = carry
+        k, sk = jr.split(k)
+        st, ob, *_ = wrapper.step(st, a, key=sk)
+        return (st, k), ob
+
+    (_, _), obs_seq = lax.scan(step_scan, (state, scan_key), actions)
+    assert obs_seq.shape == (actions.shape[0], expected_flat_dim)
+    assert jnp.array_equal(obs_seq[0], actions[0].ravel())
