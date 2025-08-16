@@ -11,6 +11,9 @@ from oryx.space import AbstractSpace
 class AbstractEnvLike[ActType, ObsType](eqx.Module):
     """Base class for RL environments or wrappers that behave like environments"""
 
+    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
+    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+
     @abstractmethod
     def reset(
         self, state: eqx.nn.State, *, key: Key
@@ -40,16 +43,6 @@ class AbstractEnvLike[ActType, ObsType](eqx.Module):
     @abstractmethod
     def close(self):
         """Close the environment"""
-
-    @property
-    @abstractmethod
-    def action_space(self) -> AbstractSpace[ActType]:
-        """Return the action space of the environment"""
-
-    @property
-    @abstractmethod
-    def observation_space(self) -> AbstractSpace[ObsType]:
-        """Return the observation space of the environment"""
 
     @property
     @abstractmethod

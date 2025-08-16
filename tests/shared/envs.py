@@ -15,16 +15,16 @@ class EchoEnv(AbstractEnv[Float[Array, " n"], Float[Array, " n"]]):
     """
 
     state_index: eqx.nn.StateIndex[None]
-    _action_space: Box
-    _observation_space: Box
+    action_space: Box
+    observation_space: Box
 
     def __init__(
         self,
         action_space: Box = Box(-jnp.inf, jnp.inf),
         observation_space: Box = Box(-jnp.inf, jnp.inf),
     ):
-        self._action_space = action_space
-        self._observation_space = observation_space
+        self.action_space = action_space
+        self.observation_space = observation_space
         self.state_index = eqx.nn.StateIndex(None)
 
     def reset(self, state, *, key):
@@ -42,14 +42,6 @@ class EchoEnv(AbstractEnv[Float[Array, " n"], Float[Array, " n"]]):
 
     def render(self, state): ...
     def close(self): ...
-
-    @property
-    def action_space(self):
-        return self._action_space
-
-    @property
-    def observation_space(self):
-        return self._observation_space
 
 
 class FiniteEpisodeEnv(AbstractEnv[Float[Array, ""], Float[Array, ""]]):
@@ -180,19 +172,19 @@ class DiscreteActionEnv(AbstractEnv[Int[Array, ""], Float[Array, " n"]]):
     """
 
     state_index: eqx.nn.StateIndex[None]
-    _obs_space: Box
-    _act_space: Discrete
+    observation_space: Box
+    action_space: Discrete
 
     def __init__(self, *, key, n_actions: int = 4, obs_size: int = 3):
         self.state_index = eqx.nn.StateIndex(None)
-        self._obs_space = Box(-jnp.inf, jnp.inf, shape=(obs_size,))
-        self._act_space = Discrete(n_actions)
+        self.observation_space = Box(-jnp.inf, jnp.inf, shape=(obs_size,))
+        self.action_space = Discrete(n_actions)
 
     def reset(self, state, *, key):
-        return state, jnp.zeros(self._obs_space.shape), {}
+        return state, jnp.zeros(self.observation_space.shape), {}
 
     def step(self, state, action, *, key):
-        obs = jnp.zeros(self._obs_space.shape)
+        obs = jnp.zeros(self.observation_space.shape)
         reward = -jnp.abs(jnp.asarray(action, dtype=obs.dtype))
         done = jnp.asarray(False)
         trunc = jnp.asarray(False)
@@ -200,11 +192,3 @@ class DiscreteActionEnv(AbstractEnv[Int[Array, ""], Float[Array, " n"]]):
 
     def render(self, state): ...
     def close(self): ...
-
-    @property
-    def action_space(self):
-        return self._act_space
-
-    @property
-    def observation_space(self):
-        return self._obs_space
