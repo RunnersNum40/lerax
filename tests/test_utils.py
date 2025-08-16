@@ -8,6 +8,7 @@ import pytest
 from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
+from jaxtyping import Key
 
 from oryx.utils import clone_state, debug_with_numpy_wrapper, debug_wrapper, filter_scan
 
@@ -40,7 +41,7 @@ def test_cannot_reuse_state():
         state.get(module.state_index)
 
 
-def test_filter_scan_accumulates_and_keeps_static():
+def test_filter_scan():
     key = jr.key(0)
     mlp = eqx.nn.MLP("scalar", "scalar", 0, 0, key=key)
 
@@ -55,6 +56,17 @@ def test_filter_scan_accumulates_and_keeps_static():
         lax.scan(step, mlp, xs)
 
     filter_scan(step, mlp, xs)
+
+
+def test_filter_scan_key():
+    key = jr.key(0)
+
+    def step(carry: Key, _) -> tuple[Key, Key]:
+        carry, result = jr.split(carry, 2)
+        return carry, result
+
+    _, keys = filter_scan(step, key, None, length=4)
+    assert jnp.all(keys[1:] != keys[0])
 
 
 def _compute(x):

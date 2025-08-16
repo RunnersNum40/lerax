@@ -22,6 +22,7 @@ def clone_state(state: eqx.nn.State) -> eqx.nn.State:
     return state_clone
 
 
+@eqx.filter_jit
 @wraps(lax.scan)
 def filter_scan[Carry, X, Y](
     f: Callable[[Carry, X], tuple[Carry, Y]],
@@ -42,11 +43,9 @@ def filter_scan[Carry, X, Y](
         carry, y = f(carry, x)
         carry_arr, _static = eqx.partition(carry, eqx.is_array)
 
-        carry_arr = eqx.error_if(
-            carry_arr,
-            _static != static,
-            "Non-array carry of filter_scan must not change.",
-        )
+        assert eqx.tree_equal(
+            static, _static
+        ), "Non-array carry of filter_scan must not change."
         return carry_arr, y
 
     carry_arr, y = lax.scan(
