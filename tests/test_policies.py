@@ -22,48 +22,41 @@ class TestAbstractBases:
             AbstractActorCriticPolicy()  # pyright: ignore
 
 
-class TestCustomActorCriticPolicy_Box:
+class TestCustomActorCriticPolicyBox:
     def test_init_and_spaces(self):
         env = EchoEnv(
             action_space=Box(-jnp.ones(3), jnp.ones(3)),
             observation_space=Box(-jnp.inf, jnp.inf, shape=(5,)),
         )
         key = jr.key(0)
-        policy, state = eqx.nn.make_with_state(CustomActorCriticPolicy)(
-            env=env, key=key
-        )
+        policy, _ = eqx.nn.make_with_state(CustomActorCriticPolicy)(env=env, key=key)
 
         assert policy.action_space == env.action_space
         assert policy.observation_space == env.observation_space
         assert policy.log_std.shape == env.action_space.shape
-        _ = state.tree_flatten()
 
     def test_predict_bounds_and_shapes(self):
+        init_key, sample_key = jr.split(jr.key(0), 2)
         env = EchoEnv(
             action_space=Box(-jnp.ones(2), jnp.ones(2)),
             observation_space=Box(-jnp.inf, jnp.inf, shape=(4,)),
         )
-        key = jr.key(1)
         policy, state = eqx.nn.make_with_state(CustomActorCriticPolicy)(
-            env=env, key=key
+            env=env, key=init_key
         )
+
         obs = jnp.arange(4.0)
-
-        state, action = policy.predict(state, obs)
-        assert action.shape == env.action_space.shape
-        assert env.action_space.contains(action)
-
-        key = jr.key(2)
-        state, action = policy.predict(state, obs, key=key)
-        assert action.shape == env.action_space.shape
-        assert env.action_space.contains(action)
+        for key in jr.split(sample_key, 5):
+            state, action = policy.predict(state, obs, key=key)
+            assert action.shape == env.action_space.shape
+            assert env.action_space.contains(action)
 
     def test_call_and_evaluate_action_consistency(self):
+        key = jr.key(0)
         env = EchoEnv(
             action_space=Box(-2.0 * jnp.ones(3), 2.0 * jnp.ones(3)),
             observation_space=Box(-jnp.inf, jnp.inf, shape=(6,)),
         )
-        key = jr.key(3)
         policy, state = eqx.nn.make_with_state(CustomActorCriticPolicy)(
             env=env, key=key
         )
@@ -83,11 +76,11 @@ class TestCustomActorCriticPolicy_Box:
         assert jnp.allclose(logp2, logp)
 
     def test_reset_is_noop_for_default_models(self):
+        key = jr.key(0)
         env = EchoEnv(
             action_space=Box(-jnp.ones(1), jnp.ones(1)),
             observation_space=Box(-jnp.inf, jnp.inf, shape=(2,)),
         )
-        key = jr.key(4)
         policy, state = eqx.nn.make_with_state(CustomActorCriticPolicy)(
             env=env, key=key
         )
@@ -95,9 +88,9 @@ class TestCustomActorCriticPolicy_Box:
         assert state.tree_flatten() == state2.tree_flatten()
 
 
-class TestCustomActorCriticPolicy_Discrete:
+class TestCustomActorCriticPolicyDiscrete:
     def test_predict_and_evaluate(self):
-        key = jr.key(5)
+        key = jr.key(0)
         env_key, pol_key, obs_key = jr.split(key, 3)
         env = DiscreteActionEnv(key=env_key, n_actions=4, obs_size=3)
         policy, state = eqx.nn.make_with_state(CustomActorCriticPolicy)(
