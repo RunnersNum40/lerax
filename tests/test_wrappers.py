@@ -121,8 +121,6 @@ def test_rescale_action(action, expected):
     state, _, _ = wrapper.reset(state, key=reset_key)
     state, obs, *_ = wrapper.step(state, action, key=step_key)
 
-    print(f"Action: {action}, Expected: {expected}, Obs: {obs}")
-
     assert jnp.allclose(
         obs, expected
     ), "Affine rescaling should map [-1,0,1] to [low,mid,high]"
