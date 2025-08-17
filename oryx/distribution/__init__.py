@@ -144,18 +144,33 @@ class SquashedNormal(AbstractTransformedDistribution[Float[Array, " dims"]]):
     distribution: distributions.Transformed
 
     def __init__(
-        self, loc: Float[ArrayLike, " dims"], scale: Float[ArrayLike, " dims"]
+        self,
+        loc: Float[ArrayLike, " dims"],
+        scale: Float[ArrayLike, " dims"],
+        high: Float[ArrayLike, " dims"] | None = None,
+        low: Float[ArrayLike, " dims"] | None = None,
     ):
         loc = jnp.asarray(loc)
         scale = jnp.asarray(scale)
+        high = jnp.asarray(high) if high is not None else None
+        low = jnp.asarray(low) if low is not None else None
 
         if loc.shape != scale.shape:
             raise ValueError("loc and scale must have the same shape.")
 
         normal = distributions.Normal(loc=loc, scale=scale)
-        tanh = bijectors.Tanh()
 
-        self.distribution = distributions.Transformed(normal, tanh)
+        if high is not None or low is not None:
+            assert (
+                high is not None and low is not None
+            ), "Both high and low must be provided for bounded squashing."
+            sigmoid = bijectors.Sigmoid()
+            affine = bijectors.ScalarAffine(scale=high - low, shift=low)
+            chain = bijectors.Chain((sigmoid, affine))
+            self.distribution = distributions.Transformed(normal, chain)
+        else:
+            tanh = bijectors.Tanh()
+            self.distribution = distributions.Transformed(normal, tanh)
 
 
 class MultivariateNormalDiag(AbstractDistribution[Float[Array, " dims"]]):
@@ -226,7 +241,6 @@ class SquashedMultivariateNormalDiag(
             shift = bijectors.Shift(low)
             chain = bijectors.Chain((sigmoid, scale, shift))
             self.distribution = distributions.Transformed(mvn, chain)
-
         else:
             tanh = bijectors.Tanh()
             self.distribution = distributions.Transformed(mvn, tanh)

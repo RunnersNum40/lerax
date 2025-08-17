@@ -11,6 +11,7 @@ from oryx.distribution import (
     AbstractDistribution,
     Categorical,
     SquashedMultivariateNormalDiag,
+    SquashedNormal,
 )
 from oryx.env import AbstractEnvLike
 from oryx.model import MLP, AbstractModel, AbstractStatefulModel, Flatten
@@ -20,21 +21,20 @@ from oryx.space.base_space import AbstractSpace
 from .actor_critic import AbstractActorCriticPolicy
 
 
-# TODO: Support other action spaces
 class CustomActorCriticPolicy[
     FeatureType: Array,
     ActType: (Float[Array, " dims"], Integer[Array, ""]),
     ObsType: Real[Array, "..."],
 ](AbstractActorCriticPolicy[FeatureType, ActType, ObsType]):
     """
-    Actor-critic policy with custom feature extractor, value model, and action model.
+    Actor–critic policy with pluggable components.
 
-    If no feature extractor is provided, the flatten model will be used.
-    If no value model is provided, a default MLP will be used.
-    If no action model is provided, a default MLP will be used.
-
-    Only Box and Discrete action spaces are supported currently.
-    Only non-stochastic models are supported currently.
+    Defaults:
+      - Feature extractor: Flatten
+      - Value model: MLP(feature_size → scalar)
+      - Action model:
+          * Discrete: MLP(feature_size → n_actions) with Categorical
+          * Box: MLP(feature_size → action_dim) with Normal + squashing
     """
 
     state_index: eqx.nn.StateIndex[None]
@@ -79,19 +79,18 @@ class CustomActorCriticPolicy[
     ):
         self.env = env
 
-        # TODO: Maybe cast is not needed here
         if feature_extractor is None:
             self.feature_extractor = cast(
                 AbstractModel[[ObsType], FeatureType], Flatten()
             )
             feature_size = int(jnp.prod(jnp.asarray(env.observation_space.shape)))
-        elif feature_size is None:
-            raise ValueError("Custom feature extractor must specify feature_size")
         else:
+            if feature_size is None:
+                raise ValueError("Custom feature extractor requires feature_size.")
             self.feature_extractor = feature_extractor
 
         if value_model is None:
-            key, value_model_key = jr.split(key, 2)
+            key, vm_key = jr.split(key)
             self.value_model = cast(
                 AbstractModel[[FeatureType], Float[Array, ""]],
                 MLP(
@@ -99,23 +98,37 @@ class CustomActorCriticPolicy[
                     out_size="scalar",
                     width_size=128,
                     depth=4,
-                    key=value_model_key,
+                    key=vm_key,
                 ),
             )
         else:
             self.value_model = value_model
 
-        self.log_std = jnp.zeros(env.action_space.shape)
+        self.log_std = jnp.zeros(
+            getattr(env.action_space, "shape", ()), dtype=jnp.float32
+        )
         if action_model is None:
-            key, action_model_key = jr.split(key, 2)
+            key, am_key = jr.split(key)
+            if isinstance(env.action_space, Discrete):
+                out_size = int(env.action_space.n)
+            elif isinstance(env.action_space, Box):
+                out_size = (
+                    "scalar"
+                    if env.action_space.shape == ()
+                    else int(jnp.prod(jnp.asarray(env.action_space.shape)))
+                )
+            else:
+                raise NotImplementedError(
+                    f"Unsupported action space {type(env.action_space)}."
+                )
             self.action_model = cast(
                 AbstractModel[[FeatureType], ActType],
                 MLP(
                     in_size=feature_size,
-                    out_size=int(jnp.prod(jnp.asarray(env.action_space.shape))),
+                    out_size=out_size,
                     width_size=128,
                     depth=4,
-                    key=action_model_key,
+                    key=am_key,
                 ),
             )
         else:
@@ -131,73 +144,70 @@ class CustomActorCriticPolicy[
     def observation_space(self) -> AbstractSpace[ObsType]:
         return self.env.observation_space
 
+    @staticmethod
+    def _apply_model[T, X](
+        state: eqx.nn.State,
+        model: AbstractModel[[X], T] | AbstractStatefulModel[[X], T],
+        x: X,
+    ) -> tuple[eqx.nn.State, T]:
+        if isinstance(model, AbstractStatefulModel):
+            sub = state.substate(model)
+            sub, out = model(sub, x)
+            state = state.update(sub)
+            return state, out
+        else:
+            return state, model(x)
+
     def extract_features(
         self, state: eqx.nn.State, observation: ObsType
     ) -> tuple[eqx.nn.State, FeatureType]:
-        if isinstance(self.feature_extractor, AbstractStatefulModel):
-            substate = state.substate(self.feature_extractor)
-            substate, features = self.feature_extractor(substate, observation)
-            state = state.update(substate)
-
-        else:
-            features = self.feature_extractor(observation)
-
-        return state, features
+        return self._apply_model(state, self.feature_extractor, observation)
 
     def action_dist_from_features(
         self, state: eqx.nn.State, features: FeatureType
     ) -> tuple[eqx.nn.State, AbstractDistribution[ActType]]:
-        if isinstance(self.action_model, AbstractStatefulModel):
-            substate = state.substate(self.action_model)
-            substate, action = self.action_model(substate, features)
-            state = state.update(substate)
-
-        else:
-            action = self.action_model(features)
+        state, action_param = self._apply_model(state, self.action_model, features)
 
         if isinstance(self.env.action_space, Box):
-            action_distribution = SquashedMultivariateNormalDiag(
-                loc=action,
-                scale_diag=jnp.exp(self.log_std),
-                high=self.env.action_space.high,
-                low=self.env.action_space.low,
-            )
+            if self.env.action_space.shape == ():
+                dist = SquashedNormal(
+                    loc=action_param,
+                    scale=jnp.exp(self.log_std),
+                    high=self.env.action_space.high,
+                    low=self.env.action_space.low,
+                )
+            else:
+                dist = SquashedMultivariateNormalDiag(
+                    loc=action_param,
+                    scale_diag=jnp.exp(self.log_std),
+                    high=self.env.action_space.high,
+                    low=self.env.action_space.low,
+                )
         elif isinstance(self.env.action_space, Discrete):
-            action_distribution = Categorical(logits=action)
+            dist = Categorical(logits=action_param)
         else:
             raise NotImplementedError(
-                f"Action space {self.env.action_space} not supported"
+                f"Unsupported action space {type(self.env.action_space)}."
             )
 
-        return state, action_distribution
+        return state, dist
 
     def value_from_features(
         self, state: eqx.nn.State, features: FeatureType
     ) -> tuple[eqx.nn.State, Float[Array, ""]]:
-        if isinstance(self.value_model, AbstractStatefulModel):
-            substate = state.substate(self.value_model)
-            substate, value = self.value_model(substate, features)
-            state = state.update(substate)
-
-        else:
-            value = self.value_model(features)
-
-        return state, value
+        return self._apply_model(state, self.value_model, features)
 
     def reset(self, state: eqx.nn.State) -> eqx.nn.State:
         if isinstance(self.feature_extractor, AbstractStatefulModel):
-            substate = state.substate(self.feature_extractor)
-            substate = self.feature_extractor.reset(substate)
-            state = state.update(substate)
-
+            sub = state.substate(self.feature_extractor)
+            sub = self.feature_extractor.reset(sub)
+            state = state.update(sub)
         if isinstance(self.value_model, AbstractStatefulModel):
-            substate = state.substate(self.value_model)
-            substate = self.value_model.reset(substate)
-            state = state.update(substate)
-
+            sub = state.substate(self.value_model)
+            sub = self.value_model.reset(sub)
+            state = state.update(sub)
         if isinstance(self.action_model, AbstractStatefulModel):
-            substate = state.substate(self.action_model)
-            substate = self.action_model.reset(substate)
-            state = state.update(substate)
-
+            sub = state.substate(self.action_model)
+            sub = self.action_model.reset(sub)
+            state = state.update(sub)
         return state
