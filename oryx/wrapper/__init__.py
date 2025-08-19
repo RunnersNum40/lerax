@@ -2,6 +2,7 @@ from .base_wrapper import (
     AbstractWrapper,
 )
 from .misc import (
+    AutoClose,
     EpisodeStatistics,
     Identity,
     TimeLimit,
@@ -22,12 +23,13 @@ from .transform_reward import (
 
 __all__ = [
     "AbstractWrapper",
+    "AutoClose",
+    "EpisodeStatistics",
     "Identity",
     "TimeLimit",
     "TransformAction",
     "ClipAction",
     "RescaleAction",
-    "EpisodeStatistics",
     "ClipObservation",
     "FlattenObservation",
     "RescaleObservation",

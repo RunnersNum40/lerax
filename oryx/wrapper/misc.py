@@ -165,3 +165,35 @@ class TimeLimit[ActType, ObsType](
         truncation = jnp.logical_or(truncation, step_count >= self.max_episode_steps)
 
         return state, obs, reward, termination, truncation, info
+
+
+class AutoClose[ActType, ObsType](
+    AbstractNoActionOrObservationSpaceWrapper[ActType, ObsType],
+    AbstractNoRenderOrCloseWrapper[ActType, ObsType, ActType, ObsType],
+):
+    """
+    Closes the environment automatically when it is deleted.
+    """
+
+    env: AbstractEnvLike[ActType, ObsType]
+
+    def __init__(self, env: AbstractEnvLike[ActType, ObsType]):
+        self.env = env
+
+    def reset(
+        self, state: eqx.nn.State, *, key: Key
+    ) -> tuple[eqx.nn.State, ObsType, dict]:
+        return self.env.reset(state, key=key)
+
+    def step(
+        self, state: eqx.nn.State, action: ActType, *, key: Key
+    ) -> tuple[
+        eqx.nn.State, ObsType, Float[Array, ""], Bool[Array, ""], Bool[Array, ""], dict
+    ]:
+        return self.env.step(state, action, key=key)
+
+    def close(self):
+        self.env.close()
+
+    def __del__(self):
+        self.close()
