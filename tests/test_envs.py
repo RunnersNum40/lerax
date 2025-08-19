@@ -6,7 +6,13 @@ from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
 
-from oryx.env import AbstractEnv, AbstractEnvLike, CartPole
+from oryx.env import (
+    AbstractEnv,
+    AbstractEnvLike,
+    CartPole,
+    ContinuousMountainCar,
+    MountainCar,
+)
 from oryx.space import Box, Discrete
 
 from .shared import DummyEnv
@@ -95,57 +101,169 @@ def test_unwrapped_returns_base_env():
     assert wrapped_env.unwrapped is base_env, "unwrapped must expose base env"
 
 
-def test_cartpole():
-    key, reset_key = jr.split(jr.key(0), 2)
-    env, state = eqx.nn.make_with_state(CartPole)()
+class TestCartPole:
+    def test(self):
+        key, reset_key = jr.split(jr.key(0), 2)
+        env, state = eqx.nn.make_with_state(CartPole)()
 
-    assert isinstance(env.action_space, Discrete)
-    assert isinstance(env.observation_space, Box)
-    assert env.observation_space.shape == (4,)
+        assert isinstance(env.action_space, Discrete)
+        assert isinstance(env.observation_space, Box)
+        assert env.observation_space.shape == (4,)
 
-    state, obs, info = env.reset(state, key=reset_key)
-    assert obs.shape == (4,)
-    assert info == {}
+        state, obs, info = env.reset(state, key=reset_key)
+        assert obs.shape == (4,)
+        assert info == {}
 
-    key, step_key = jr.split(key)
-    action = jnp.asarray(1)
-    state, obs2, reward, terminated, truncated, info2 = env.step(
-        state, action, key=step_key
-    )
+        key, step_key = jr.split(key)
+        action = jnp.asarray(1)
+        state, obs2, reward, terminated, truncated, info2 = env.step(
+            state, action, key=step_key
+        )
 
-    assert obs2.shape == (4,)
-    assert reward.shape == ()
-    assert terminated.shape == ()
-    assert truncated.shape == ()
-    assert reward == 1.0
-    assert isinstance(info2, dict)
+        assert obs2.shape == (4,)
+        assert reward.shape == ()
+        assert terminated.shape == ()
+        assert truncated.shape == ()
+        assert reward == 1.0
+        assert isinstance(info2, dict)
 
-    bad = jnp.array(
-        [env.x_threshold * 3.0, 0.0, env.theta_threshold_radians * 3.0, 0.0]
-    )
-    state = state.set(env.state_index, bad)
-    key, step_key = jr.split(key)
-    state, *_ = env.step(state, action, key=step_key)
+        bad = jnp.array(
+            [env.x_threshold * 3.0, 0.0, env.theta_threshold_radians * 3.0, 0.0]
+        )
+        state = state.set(env.state_index, bad)
+        key, step_key = jr.split(key)
+        state, *_ = env.step(state, action, key=step_key)
+
+    def test_scan(self):
+        key, reset_key = jr.split(jr.key(0), 2)
+        env, state = eqx.nn.make_with_state(CartPole)()
+
+        state, obs0, _ = env.reset(state, key=reset_key)
+
+        def scan_step(carry, _):
+            st, obs, k = carry
+            k, step_k = jr.split(k)
+            act = jnp.asarray(0)
+            st, obs, rew, term, trunc, _ = env.step(st, act, key=step_k)
+            return (st, obs, k), (obs, rew, term, trunc)
+
+        (state, _, _), (obs_seq, rew_seq, term_seq, trunc_seq) = lax.scan(
+            scan_step, (state, obs0, key), None, length=8
+        )
+
+        assert obs_seq.shape == (8, 4)
+        assert rew_seq.shape == (8,)
+        assert term_seq.shape == (8,)
+        assert trunc_seq.shape == (8,)
 
 
-def test_cartpole_scan():
-    key, reset_key = jr.split(jr.key(0), 2)
-    env, state = eqx.nn.make_with_state(CartPole)()
+class TestMountainCar:
+    def test_mountaincar(self):
+        key, reset_key = jr.split(jr.key(0), 2)
+        env, state = eqx.nn.make_with_state(MountainCar)()
 
-    state, obs0, _ = env.reset(state, key=reset_key)
+        assert isinstance(env.action_space, Discrete)
+        assert isinstance(env.observation_space, Box)
+        assert env.observation_space.shape == (2,)
 
-    def scan_step(carry, _):
-        st, obs, k = carry
-        k, step_k = jr.split(k)
-        act = jnp.asarray(0)
-        st, obs, rew, term, trunc, _ = env.step(st, act, key=step_k)
-        return (st, obs, k), (obs, rew, term, trunc)
+        state, obs, info = env.reset(state, key=reset_key)
+        assert obs.shape == (2,)
+        assert info == {}
+        assert env.observation_space.contains(obs)
 
-    (state, _, _), (obs_seq, rew_seq, term_seq, trunc_seq) = lax.scan(
-        scan_step, (state, obs0, key), None, length=8
-    )
+        key, step_key = jr.split(key)
+        action = jnp.asarray(1)
+        state, obs2, reward, terminated, truncated, info2 = env.step(
+            state, action, key=step_key
+        )
+        assert obs2.shape == (2,)
+        assert reward.shape == ()
+        assert terminated.shape == ()
+        assert truncated.shape == ()
+        assert pytest.approx(float(reward)) == -1.0
+        assert isinstance(info2, dict)
 
-    assert obs_seq.shape == (8, 4)
-    assert rew_seq.shape == (8,)
-    assert term_seq.shape == (8,)
-    assert trunc_seq.shape == (8,)
+        state = state.set(env.state_index, jnp.asarray([env.min_position, -0.01]))
+        key, step_key = jr.split(key)
+        state, obs3, *_ = env.step(state, jnp.asarray(1), key=step_key)
+        assert obs3.shape == (2,)
+        assert env.min_position <= float(obs3[0]) <= env.max_position
+        assert abs(float(obs3[1])) <= env.max_speed + 1e-6
+
+
+    def test_mountaincar_scan(self):
+        key, reset_key = jr.split(jr.key(1), 2)
+        env, state = eqx.nn.make_with_state(MountainCar)()
+        state, obs0, _ = env.reset(state, key=reset_key)
+
+        def scan_step(carry, _):
+            st, obs, k = carry
+            k, step_k = jr.split(k)
+            act = jnp.asarray(1)
+            st, obs, rew, term, trunc, _ = env.step(st, act, key=step_k)
+            return (st, obs, k), (obs, rew, term, trunc)
+
+        (state, _, _), (obs_seq, rew_seq, term_seq, trunc_seq) = lax.scan(
+            scan_step, (state, obs0, key), None, length=8
+        )
+        assert obs_seq.shape == (8, 2)
+        assert rew_seq.shape == (8,)
+        assert term_seq.shape == (8,)
+        assert trunc_seq.shape == (8,)
+
+
+class TestContinuousMountainCar:
+    def test_continuous_mountaincar(self):
+        key, reset_key = jr.split(jr.key(2), 2)
+        env, state = eqx.nn.make_with_state(ContinuousMountainCar)()
+
+        assert isinstance(env.action_space, Box)
+        assert isinstance(env.observation_space, Box)
+        assert env.observation_space.shape == (2,)
+
+        state, obs, info = env.reset(state, key=reset_key)
+        assert obs.shape == (2,)
+        assert info == {}
+        assert env.observation_space.contains(obs)
+
+        state = state.set(env.state_index, jnp.asarray([env.min_position, 0.0]))
+        key, step_key = jr.split(key)
+        state, obs2, reward2, terminated2, truncated2, _ = env.step(
+            state, jnp.asarray(0.0), key=step_key
+        )
+        assert obs2.shape == (2,)
+        assert not bool(terminated2)
+        assert pytest.approx(float(reward2)) == 100.0
+        assert truncated2.shape == ()
+
+        state = state.set(
+            env.state_index, jnp.asarray([env.max_position, env.goal_velocity])
+        )
+        key, step_key = jr.split(key)
+        state, obs3, reward3, terminated3, truncated3, _ = env.step(
+            state, jnp.asarray(0.0), key=step_key
+        )
+        assert obs3.shape == (2,)
+        assert bool(terminated3)
+        assert pytest.approx(float(reward3)) == 0.0
+        assert truncated3.shape == ()
+
+    def test_continuous_mountaincar_scan(self):
+        key, reset_key = jr.split(jr.key(3), 2)
+        env, state = eqx.nn.make_with_state(ContinuousMountainCar)()
+        state, obs0, _ = env.reset(state, key=reset_key)
+
+        def scan_step(carry, _):
+            st, obs, k = carry
+            k, step_k = jr.split(k)
+            act = jnp.asarray(0.0)
+            st, obs, rew, term, trunc, _ = env.step(st, act, key=step_k)
+            return (st, obs, k), (obs, rew, term, trunc)
+
+        (state, _, _), (obs_seq, rew_seq, term_seq, trunc_seq) = lax.scan(
+            scan_step, (state, obs0, key), None, length=8
+        )
+        assert obs_seq.shape == (8, 2)
+        assert rew_seq.shape == (8,)
+        assert term_seq.shape == (8,)
+        assert trunc_seq.shape == (8,)

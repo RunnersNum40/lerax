@@ -17,6 +17,8 @@ class SOLVER(eqx.Enumeration):
 
 class CartPole(AbstractEnv[Int[Array, ""], Float[Array, "4"]]):
     state_index: eqx.nn.StateIndex[Float[Array, "4"]]
+    action_space: Discrete
+    observation_space: Box
 
     gravity: float
     masscart: float
@@ -30,7 +32,7 @@ class CartPole(AbstractEnv[Int[Array, ""], Float[Array, "4"]]):
     theta_threshold_radians: float
     x_threshold: float
 
-    def __init__(self):
+    def __init__(self, solver: SOLVER = SOLVER.explicit):
         self.gravity = 9.8
         self.masscart = 1.0
         self.masspole = 0.1
@@ -39,7 +41,7 @@ class CartPole(AbstractEnv[Int[Array, ""], Float[Array, "4"]]):
         self.polemass_length = self.masspole * self.length
         self.force_mag = 10.0
         self.tau = 0.02
-        self.solver = SOLVER.explicit
+        self.solver = solver
 
         self.theta_threshold_radians = 12 * 2 * jnp.pi / 360
         self.x_threshold = 2.4
@@ -73,8 +75,7 @@ class CartPole(AbstractEnv[Int[Array, ""], Float[Array, "4"]]):
         Bool[Array, ""],
         dict,
     ]:
-        state_vals = state.get(self.state_index)
-        x, x_dot, theta, theta_dot = (state_vals[i] for i in range(4))
+        x, x_dot, theta, theta_dot = state.get(self.state_index)
 
         force = (action * 2 - 1) * self.force_mag
         costheta = jnp.cos(theta)
