@@ -6,7 +6,7 @@ from typing import Callable
 import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Bool, Float, Key
+from jaxtyping import Array, ArrayLike, Bool, Float, Key
 
 from oryx.env import AbstractEnvLike
 
@@ -93,8 +93,8 @@ class ClipReward[ActType, ObsType](
     def __init__(
         self,
         env: AbstractEnvLike[ActType, ObsType],
-        min: Float[Array, ""] = jnp.asarray(-1.0),
-        max: Float[Array, ""] = jnp.asarray(1.0),
+        min: Float[ArrayLike, ""] = jnp.asarray(-1.0),
+        max: Float[ArrayLike, ""] = jnp.asarray(1.0),
     ):
         self.env = env
         self.min = jnp.asarray(min)

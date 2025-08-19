@@ -172,6 +172,14 @@ class SquashedNormal(AbstractTransformedDistribution[Float[Array, " dims"]]):
             tanh = bijectors.Tanh()
             self.distribution = distributions.Transformed(normal, tanh)
 
+    @property
+    def loc(self) -> Float[Array, " dims"]:
+        return self.distribution._distribution.loc
+
+    @property
+    def scale(self) -> Float[Array, " dims"]:
+        return self.distribution._distribution.scale
+
 
 class MultivariateNormalDiag(AbstractDistribution[Float[Array, " dims"]]):
 
@@ -244,6 +252,14 @@ class SquashedMultivariateNormalDiag(
         else:
             tanh = bijectors.Tanh()
             self.distribution = distributions.Transformed(mvn, tanh)
+
+    @property
+    def loc(self) -> Float[Array, " dims"]:
+        return self.distribution._distribution.loc
+
+    @property
+    def scale_diag(self) -> Float[Array, " dims"]:
+        return self.distribution._distribution.scale_diag
 
 
 __all__ = [

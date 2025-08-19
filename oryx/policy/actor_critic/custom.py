@@ -37,8 +37,6 @@ class CustomActorCriticPolicy[
           * Box: MLP(feature_size → action_dim) with Normal + squashing
     """
 
-    state_index: eqx.nn.StateIndex[None]
-
     feature_extractor: (
         AbstractModel[[ObsType], FeatureType]
         | AbstractStatefulModel[[ObsType], FeatureType]
@@ -54,6 +52,7 @@ class CustomActorCriticPolicy[
     log_std: Float[Array, " action_size"]
 
     env: AbstractEnvLike[ActType, ObsType]
+    state_index: eqx.nn.StateIndex[None] = eqx.nn.StateIndex(None)
 
     def __init__(
         self,
@@ -133,8 +132,6 @@ class CustomActorCriticPolicy[
             )
         else:
             self.action_model = action_model
-
-        self.state_index = eqx.nn.StateIndex(None)
 
     @property
     def action_space(self) -> AbstractSpace[ActType]:

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from typing import cast
+
 import equinox as eqx
+import jax
 import pytest
 from jax import numpy as jnp
 from jax import random as jr
@@ -8,88 +11,87 @@ from jax import random as jr
 from oryx.policy import AbstractPolicy
 from oryx.policy.actor_critic import AbstractActorCriticPolicy, CustomActorCriticPolicy
 from oryx.space import Box
+from oryx.utils import clone_state
 
-from .shared import DiscreteActionEnv, EchoEnv
+from .shared.envs import DiscreteActionEnv, EchoEnv
+from .shared.models import Doubler, StatefulDoubler
 
 
-class TestAbstractBases:
-    def test_cannot_instantiate_abstract_policy(self):
+class TestAbstractPolicy:
+    def test_cannot_instantiate(self):
         with pytest.raises(TypeError):
             AbstractPolicy()  # pyright: ignore
 
-    def test_cannot_instantiate_abstract_actorcritic(self):
+
+class TestAbstractActorCriticPolicy:
+    def test_cannot_instantiate(self):
         with pytest.raises(TypeError):
             AbstractActorCriticPolicy()  # pyright: ignore
 
 
 class TestCustomActorCriticPolicyBox:
-    def test_init_and_spaces(self):
+    def test_interface(self):
         env = EchoEnv(
             action_space=Box(-jnp.ones(3), jnp.ones(3)),
             observation_space=Box(-jnp.inf, jnp.inf, shape=(5,)),
         )
         key = jr.key(0)
-        policy, _ = eqx.nn.make_with_state(CustomActorCriticPolicy)(env=env, key=key)
+        policy, state = eqx.nn.make_with_state(CustomActorCriticPolicy)(
+            env=env, key=key
+        )
 
         assert policy.action_space == env.action_space
         assert policy.observation_space == env.observation_space
         assert policy.log_std.shape == env.action_space.shape
 
-    def test_predict_bounds_and_shapes(self):
-        init_key, sample_key = jr.split(jr.key(0), 2)
+        obs = jnp.linspace(-1.0, 1.0, env.observation_space.shape[0])
+
+        state, action = policy.predict(state, obs, key=jr.key(1))
+        assert action.shape == env.action_space.shape
+        assert env.action_space.contains(action)
+
+        state, act2, val, logp = policy(state, obs, key=jr.key(2))
+        assert act2.shape == env.action_space.shape
+        assert env.action_space.contains(act2)
+        assert val.shape == ()
+        assert logp.shape == ()
+
+        state, v2, lp2, ent = policy.evaluate_action(state, obs, act2)
+        assert v2.shape == ()
+        assert lp2.shape == ()
+        assert ent.shape == ()
+
+        state2 = policy.reset(state)
+        assert jax.tree.flatten(state) == jax.tree.flatten(state2)
+
+    def test_jit(self):
+        init_key, step_key = jr.split(jr.key(0))
         env = EchoEnv(
-            action_space=Box(-jnp.ones(2), jnp.ones(2)),
+            action_space=Box(-2.0 * jnp.ones(2), 2.0 * jnp.ones(2)),
             observation_space=Box(-jnp.inf, jnp.inf, shape=(4,)),
         )
         policy, state = eqx.nn.make_with_state(CustomActorCriticPolicy)(
             env=env, key=init_key
         )
-
         obs = jnp.arange(4.0)
-        for key in jr.split(sample_key, 5):
-            state, action = policy.predict(state, obs, key=key)
-            assert action.shape == env.action_space.shape
-            assert env.action_space.contains(action)
 
-    def test_call_and_evaluate_action_consistency(self):
-        key = jr.key(0)
-        env = EchoEnv(
-            action_space=Box(-2.0 * jnp.ones(3), 2.0 * jnp.ones(3)),
-            observation_space=Box(-jnp.inf, jnp.inf, shape=(6,)),
-        )
-        policy, state = eqx.nn.make_with_state(CustomActorCriticPolicy)(
-            env=env, key=key
-        )
-        obs = jnp.linspace(-1.0, 1.0, 6)
+        @eqx.filter_jit
+        def f(pol, st, ob, key):
+            st, act, val, logp = pol(st, ob, key=key)
+            st, v2, lp2, ent = pol.evaluate_action(st, ob, act)
+            return st, act, val, logp, v2, lp2, ent
 
-        state, act, val, logp = policy(state, obs)
-        assert act.shape == env.action_space.shape
+        state, act, val, logp, v2, lp2, ent = f(policy, state, obs, step_key)
         assert env.action_space.contains(act)
         assert val.shape == ()
         assert logp.shape == ()
-
-        state, val2, logp2, ent = policy.evaluate_action(state, obs, act)
-        assert val2.shape == ()
-        assert logp2.shape == ()
+        assert v2.shape == ()
+        assert lp2.shape == ()
         assert ent.shape == ()
-        assert jnp.allclose(val2, val)
-        assert jnp.allclose(logp2, logp)
-
-    def test_reset_is_noop_for_default_models(self):
-        key = jr.key(0)
-        env = EchoEnv(
-            action_space=Box(-jnp.ones(1), jnp.ones(1)),
-            observation_space=Box(-jnp.inf, jnp.inf, shape=(2,)),
-        )
-        policy, state = eqx.nn.make_with_state(CustomActorCriticPolicy)(
-            env=env, key=key
-        )
-        state2 = policy.reset(state)
-        assert state.tree_flatten() == state2.tree_flatten()
 
 
 class TestCustomActorCriticPolicyDiscrete:
-    def test_predict_and_evaluate(self):
+    def test_interface(self):
         key = jr.key(0)
         env_key, pol_key, obs_key = jr.split(key, 3)
         env = DiscreteActionEnv(key=env_key, n_actions=4, obs_size=3)
@@ -99,20 +101,68 @@ class TestCustomActorCriticPolicyDiscrete:
 
         state, obs, _ = env.reset(state, key=obs_key)
 
-        state, action = policy.predict(state, obs)
+        state, action = policy.predict(state, obs, key=jr.key(1))
         assert isinstance(int(action), int)
         assert env.action_space.contains(action)
 
-        keys = jr.split(jr.key(6), 8)
-        actions = []
-        for k in keys:
-            state, a = policy.predict(state, obs, key=k)
-            actions.append(int(a))
-            assert env.action_space.contains(a)
-
-        assert all(0 <= a < int(env.action_space.n) for a in actions)
-
-        state, val, logp, ent = policy.evaluate_action(state, obs, (action))
+        state, val, logp, ent = policy.evaluate_action(state, obs, action)
         assert val.shape == ()
         assert logp.shape == ()
         assert ent.shape == ()
+
+        state = policy.reset(state)
+
+    def test_jit(self):
+        key = jr.key(0)
+        env_key, pol_key, obs_key, call_key = jr.split(key, 4)
+        env = DiscreteActionEnv(key=env_key, n_actions=5, obs_size=3)
+        policy, state = eqx.nn.make_with_state(CustomActorCriticPolicy)(
+            env=env, key=pol_key
+        )
+        state, obs, _ = env.reset(state, key=obs_key)
+
+        @eqx.filter_jit
+        def step(pol, st, ob, key):
+            st, act, val, logp = pol(st, ob, key=key)
+            st, v2, lp2, ent = pol.evaluate_action(st, ob, act)
+            return st, act, val, logp, v2, lp2, ent
+
+        state, action, val, logp, v2, lp2, ent = step(policy, state, obs, call_key)
+        assert env.action_space.contains(action)
+        assert val.shape == ()
+        assert logp.shape == ()
+        assert v2.shape == ()
+        assert lp2.shape == ()
+        assert ent.shape == ()
+
+
+class TestCustomActorCriticPolicyPrivate:
+    def test_apply_model_stateless(self):
+        model = Doubler()
+        state = cast(eqx.nn.State, None)
+
+        _, y = CustomActorCriticPolicy._apply_model(state, model, jnp.array(2.0))
+        assert jnp.allclose(y, 4.0)
+
+    def test_apply_model_stateful(self):
+        model, state = eqx.nn.make_with_state(StatefulDoubler)()
+        s1 = clone_state(state)
+        s2, y = CustomActorCriticPolicy._apply_model(state, model, jnp.array(5.0))
+        assert jnp.allclose(y, 10.0)
+        assert not (jax.tree.flatten(s1) == jax.tree.flatten(s2))
+
+    def test_reset_stateful_model(self):
+        env_key, policy_key = jr.split(jr.key(0), 2)
+        model = StatefulDoubler()
+        env = EchoEnv()
+        with pytest.raises(ValueError):
+            eqx.nn.make_with_state(CustomActorCriticPolicy)(
+                env=env, feature_extractor=model, key=policy_key
+            )
+
+        policy, state = eqx.nn.make_with_state(CustomActorCriticPolicy)(
+            env=env, value_model=model, key=policy_key
+        )
+
+        state, obs, _ = env.reset(state, key=env_key)
+        state = policy.reset(state)

@@ -33,9 +33,6 @@ def filter_scan[Carry, X, Y](
     unroll: int | bool = 1,
     _split_transpose: bool = False,
 ) -> tuple[Carry, Y]:
-    """
-    Allows to use `jax.lax.scan` with a non array carry.
-    """
     init_arr, static = eqx.partition(init, eqx.is_array)
 
     def _f(carry_arr, x):
@@ -43,6 +40,8 @@ def filter_scan[Carry, X, Y](
         carry, y = f(carry, x)
         carry_arr, _static = eqx.partition(carry, eqx.is_array)
 
+        # Assert will be omitted from the compiled code
+        # I tried using `eqx.error(carry_arr, cond)` if but it breaks if the carry includes a key
         assert eqx.tree_equal(
             static, _static
         ), "Non-array carry of filter_scan must not change."

@@ -14,9 +14,9 @@ class EchoEnv(AbstractEnv[Float[Array, " n"], Float[Array, " n"]]):
     Echoes the action back as the observation, never terminates.
     """
 
-    state_index: eqx.nn.StateIndex[None]
     action_space: Box
     observation_space: Box
+    state_index: eqx.nn.StateIndex[None] = eqx.nn.StateIndex(None)
 
     def __init__(
         self,
@@ -25,7 +25,6 @@ class EchoEnv(AbstractEnv[Float[Array, " n"], Float[Array, " n"]]):
     ):
         self.action_space = action_space
         self.observation_space = observation_space
-        self.state_index = eqx.nn.StateIndex(None)
 
     def reset(self, state, *, key):
         return state, self.observation_space.sample(key), {}
@@ -92,10 +91,9 @@ class PassThroughEnv(AbstractEnv[Float[Array, ""], Float[Array, ""]]):
     always returns observation = 0.0.
     """
 
-    state_index: eqx.nn.StateIndex[None]
+    state_index: eqx.nn.StateIndex[None] = eqx.nn.StateIndex(None)
 
-    def __init__(self):
-        self.state_index = eqx.nn.StateIndex(None)
+    def __init__(self): ...  # Override dataclass init to avoid unused argument warning
 
     def reset(self, state, *, key):
         return state, jnp.asarray(0.0), {}
@@ -171,12 +169,11 @@ class DiscreteActionEnv(AbstractEnv[Int[Array, ""], Float[Array, " n"]]):
     Never terminates/truncates.
     """
 
-    state_index: eqx.nn.StateIndex[None]
+    state_index: eqx.nn.StateIndex[None] = eqx.nn.StateIndex(None)
     observation_space: Box
     action_space: Discrete
 
     def __init__(self, *, key, n_actions: int = 4, obs_size: int = 3):
-        self.state_index = eqx.nn.StateIndex(None)
         self.observation_space = Box(-jnp.inf, jnp.inf, shape=(obs_size,))
         self.action_space = Discrete(n_actions)
 

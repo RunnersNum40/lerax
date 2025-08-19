@@ -10,7 +10,7 @@ from oryx.distribution import Normal
 from oryx.policy import AbstractActorCriticPolicy
 from oryx.utils import filter_scan
 
-from .shared import EchoEnv
+from .shared.envs import EchoEnv
 
 
 class TestRolloutBufferBasics:
@@ -111,12 +111,11 @@ class TestRolloutBufferBasics:
 class TestRolloutBufferWithEnv:
 
     class _SimplePolicy(AbstractActorCriticPolicy):
-        state_index: eqx.nn.StateIndex[None]
         env: EchoEnv
+        state_index: eqx.nn.StateIndex[None] = eqx.nn.StateIndex(None)
 
         def __init__(self, env: EchoEnv):
             self.env = env
-            self.state_index = eqx.nn.StateIndex(None)
 
         @property
         def action_space(self):
