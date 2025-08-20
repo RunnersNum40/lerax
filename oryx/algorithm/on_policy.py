@@ -7,14 +7,7 @@ from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key, Scalar, ScalarLike
-from rich.progress import (
-    BarColumn,
-    Progress,
-    TaskID,
-    TaskProgressColumn,
-    TextColumn,
-    TimeRemainingColumn,
-)
+from rich import progress
 from tensorboardX import SummaryWriter
 
 from oryx.buffer import RolloutBuffer
@@ -115,17 +108,26 @@ class JITSummaryWriter:
 
 
 class JITProgressBar:
-    progress_bar: Progress
-    task: TaskID
+    progress_bar: progress.Progress
+    task: progress.TaskID
 
     def __init__(self, name: str, total: int | None):
-        self.progress_bar = Progress(
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            TimeRemainingColumn(),
+        self.progress_bar = progress.Progress(
+            progress.TextColumn("[progress.description]{task.description}"),
+            progress.SpinnerColumn(),
+            progress.MofNCompleteColumn(),
+            progress.BarColumn(bar_width=None),
+            progress.TaskProgressColumn(),
+            progress.TimeRemainingColumn(),
+            transient=True,
         )
         self.task = self.progress_bar.add_task(name, total=total)
+
+    def start(self) -> None:
+        debug_wrapper(self.progress_bar.start, thread=True)()
+
+    def stop(self) -> None:
+        debug_wrapper(self.progress_bar.stop, thread=True)()
 
     def update(
         self,
@@ -136,7 +138,7 @@ class JITProgressBar:
         visible: Bool[ArrayLike, ""] | None = None,
         refresh: Bool[ArrayLike, ""] = False,
     ) -> None:
-        debug_with_list_wrapper(self.progress_bar.update)(
+        debug_with_list_wrapper(self.progress_bar.update, thread=True)(
             self.task,
             total=total,
             completed=completed,
@@ -428,8 +430,6 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
                     episode_stats, global_step=carry.step_carry.step_count
                 )
 
-        debug_wrapper(print)(carry.step_carry.step_count)
-
         return state, IterationCarry(step_carry, policy)
 
     def learn(
@@ -444,16 +444,6 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         """
         Return a trained model.
         """
-
-        init_key, learn_key = jr.split(key, 2)
-        state, carry = self.initialize_iteration_carry(state, key=init_key)
-
-        progress_bar = (
-            JITProgressBar("Training", total=total_timesteps)
-            if show_progress_bar
-            else None
-        )
-        tb_writer = JITSummaryWriter(tb_log_name) if tb_log_name is not None else None
 
         def scan_iteration(
             carry: tuple[eqx.nn.State, IterationCarry[ActType, ObsType], Key], _
@@ -471,10 +461,26 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
 
             return (state, iter_carry, carry_key), None
 
+        init_key, learn_key = jr.split(key, 2)
+        state, carry = self.initialize_iteration_carry(state, key=init_key)
+
+        progress_bar = (
+            JITProgressBar("[green]Training", total=total_timesteps)
+            if show_progress_bar
+            else None
+        )
+        tb_writer = JITSummaryWriter(tb_log_name) if tb_log_name is not None else None
+
         num_iterations = total_timesteps // self.num_steps
+
+        if progress_bar is not None:
+            progress_bar.start()
 
         (state, carry, _), _ = filter_scan(
             scan_iteration, (state, carry, learn_key), length=num_iterations
         )
+
+        if progress_bar is not None:
+            progress_bar.stop()
 
         return state, carry.policy
