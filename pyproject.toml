@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-xdist", "pyright", "ruff"]
+test = ["pytest", "pytest-cov", "pytest-xdist", "pyright", "ruff"]
 docs = ["mkdocs-material"]
 
 [build-system]
@@ -27,7 +27,7 @@ build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 pythonpath = "."
-addopts = ["--import-mode=importlib", "-Werror"]
+addopts = ["--import-mode=importlib", "-Werror", "--cov=oryx"]
 
 [tool.ruff.lint]
 fixable = ["I001", "F401"]
