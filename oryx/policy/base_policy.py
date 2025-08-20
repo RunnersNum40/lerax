@@ -18,16 +18,8 @@ class AbstractPolicy[ActType, ObsType](eqx.Module):
     """
 
     state_index: eqx.AbstractVar[eqx.nn.StateIndex]
-
-    @property
-    @abstractmethod
-    def action_space(self) -> AbstractSpace[ActType]:
-        """The action space of the policy."""
-
-    @property
-    @abstractmethod
-    def observation_space(self) -> AbstractSpace[ObsType]:
-        """The observation space of the policy."""
+    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
+    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
     @abstractmethod
     def predict(

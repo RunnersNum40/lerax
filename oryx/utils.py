@@ -93,7 +93,7 @@ def debug_with_numpy_wrapper(
 ) -> Callable[..., None]:
     """
     Like `debug_wrapper` but converts every jax.Array/`jnp.ndarray` argument
-    to a plain numpy.ndarray` before calling *func*.
+    to a plain `numpy.ndarray` before calling *func*.
 
     It is impossible with Python's current type system to express the transformation so
     parameter information is lost.
@@ -104,6 +104,33 @@ def debug_with_numpy_wrapper(
     def wrapped(*args, **kwargs) -> None:
         args, kwargs = jax.tree.map(
             lambda x: np.asarray(x) if isinstance(x, jnp.ndarray) else x, (args, kwargs)
+        )
+        func(*args, **kwargs)
+
+    return wrapped
+
+
+def debug_with_list_wrapper(
+    func: Callable[..., Any], ordered: bool = False, thread: bool = False
+) -> Callable[..., None]:
+    """
+    Like `debug_wrapper` but converts every jax.Array/`jnp.ndarray` argument
+    to a plain list before calling *func*.
+
+    It is impossible with Python's current type system to express the transformation so
+    parameter information is lost.
+    """
+
+    @partial(debug_wrapper, ordered=ordered, thread=thread)
+    @wraps(func)
+    def wrapped(*args, **kwargs) -> None:
+        args, kwargs = jax.tree.map(
+            lambda x: (
+                np.asarray(x).tolist()
+                if isinstance(x, (jnp.ndarray, np.ndarray))
+                else x
+            ),
+            (args, kwargs),
         )
         func(*args, **kwargs)
 

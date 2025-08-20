@@ -16,7 +16,6 @@ from oryx.distribution import (
 from oryx.env import AbstractEnvLike
 from oryx.model import MLP, AbstractModel, AbstractStatefulModel, Flatten
 from oryx.space import Box, Discrete
-from oryx.space.base_space import AbstractSpace
 
 from .actor_critic import AbstractActorCriticPolicy
 
@@ -37,6 +36,9 @@ class CustomActorCriticPolicy[
           * Box: MLP(feature_size → action_dim) with Normal + squashing
     """
 
+    action_space: Box | Discrete
+    observation_space: Box | Discrete
+
     feature_extractor: (
         AbstractModel[[ObsType], FeatureType]
         | AbstractStatefulModel[[ObsType], FeatureType]
@@ -51,7 +53,6 @@ class CustomActorCriticPolicy[
     )
     log_std: Float[Array, " action_size"]
 
-    env: AbstractEnvLike[ActType, ObsType]
     state_index: eqx.nn.StateIndex[None] = eqx.nn.StateIndex(None)
 
     def __init__(
@@ -76,7 +77,19 @@ class CustomActorCriticPolicy[
         ) = None,
         key: Key,
     ):
-        self.env = env
+        if not isinstance(env.action_space, (Box, Discrete)):
+            raise NotImplementedError(
+                f"Unsupported action space {type(env.action_space)}."
+                "Only Box and Discrete are supported."
+            )
+        if not isinstance(env.observation_space, (Box, Discrete)):
+            raise NotImplementedError(
+                f"Unsupported action space {type(env.observation_space)}."
+                "Only Box and Discrete are supported."
+            )
+
+        self.action_space = env.action_space
+        self.observation_space = env.observation_space
 
         if feature_extractor is None:
             self.feature_extractor = cast(
@@ -133,14 +146,6 @@ class CustomActorCriticPolicy[
         else:
             self.action_model = action_model
 
-    @property
-    def action_space(self) -> AbstractSpace[ActType]:
-        return self.env.action_space
-
-    @property
-    def observation_space(self) -> AbstractSpace[ObsType]:
-        return self.env.observation_space
-
     @staticmethod
     def _apply_model[T, X](
         state: eqx.nn.State,
@@ -165,26 +170,26 @@ class CustomActorCriticPolicy[
     ) -> tuple[eqx.nn.State, AbstractDistribution[ActType]]:
         state, action_param = self._apply_model(state, self.action_model, features)
 
-        if isinstance(self.env.action_space, Box):
-            if self.env.action_space.shape == ():
+        if isinstance(self.action_space, Box):
+            if self.action_space.shape == ():
                 dist = SquashedNormal(
                     loc=action_param,
                     scale=jnp.exp(self.log_std),
-                    high=self.env.action_space.high,
-                    low=self.env.action_space.low,
+                    high=self.action_space.high,
+                    low=self.action_space.low,
                 )
             else:
                 dist = SquashedMultivariateNormalDiag(
                     loc=action_param,
                     scale_diag=jnp.exp(self.log_std),
-                    high=self.env.action_space.high,
-                    low=self.env.action_space.low,
+                    high=self.action_space.high,
+                    low=self.action_space.low,
                 )
-        elif isinstance(self.env.action_space, Discrete):
+        elif isinstance(self.action_space, Discrete):
             dist = Categorical(logits=action_param)
         else:
             raise NotImplementedError(
-                f"Unsupported action space {type(self.env.action_space)}."
+                f"Unsupported action space {type(self.action_space)}."
             )
 
         return state, dist

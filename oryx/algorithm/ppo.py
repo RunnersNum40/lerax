@@ -232,9 +232,8 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         policy = eqx.apply_updates(policy, updates)
         state = state.set(self.state_index, opt_state)
 
-        flat_grads = jnp.concatenate(
-            jax.tree.flatten(jax.tree.map(jnp.ravel, grads))[0]
-        )
+        leaves = jax.tree.leaves(grads)
+        flat_grads = jnp.concatenate(jax.tree.map(jnp.ravel, leaves))
         nan_in_grads = jnp.any(jnp.isnan(flat_grads))
         stats = eqx.error_if(stats, nan_in_grads, "NaN in gradients")
 

@@ -26,7 +26,7 @@ class AbstractAlgorithm[ActType, ObsType](eqx.Module):
         key: Key,
         show_progress_bar: bool = False,
         tb_log_name: str | None = None,
-    ):
+    ) -> tuple[eqx.nn.State, AbstractPolicy[ActType, ObsType]]:
         """Return a trained model."""
 
     @classmethod

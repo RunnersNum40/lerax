@@ -20,7 +20,13 @@ from tensorboardX import SummaryWriter
 from oryx.buffer import RolloutBuffer
 from oryx.env import AbstractEnvLike
 from oryx.policy import AbstractActorCriticPolicy
-from oryx.utils import clone_state, debug_with_numpy_wrapper, filter_scan
+from oryx.utils import (
+    clone_state,
+    debug_with_list_wrapper,
+    debug_with_numpy_wrapper,
+    debug_wrapper,
+    filter_scan,
+)
 
 from .base_algorithm import AbstractAlgorithm
 
@@ -86,7 +92,7 @@ class JITProgressBar:
         visible: Bool[ArrayLike, ""] | None = None,
         refresh: Bool[ArrayLike, ""] = False,
     ) -> None:
-        debug_with_numpy_wrapper(self.progress_bar.update)(
+        debug_with_list_wrapper(self.progress_bar.update)(
             self.task,
             total=total,
             completed=completed,
@@ -334,6 +340,8 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
 
             tb_writer.add_dict(log, global_step=carry.step_carry.step_count)
 
+        debug_wrapper(print)(carry.step_carry.step_count)
+
         return state, IterationCarry(step_carry, policy)
 
     def learn(
@@ -344,7 +352,7 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         key: Key,
         show_progress_bar: bool = False,
         tb_log_name: str | None = None,
-    ):
+    ) -> tuple[eqx.nn.State, AbstractActorCriticPolicy[Float, ActType, ObsType]]:
         """
         Return a trained model.
         """
@@ -381,4 +389,4 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
             scan_iteration, (state, carry, learn_key), length=num_iterations
         )
 
-        self.policy = carry.policy
+        return state, carry.policy
