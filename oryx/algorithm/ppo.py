@@ -155,7 +155,7 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         advantages = rollout_buffer.advantages
         if normalize_advantages:
             advantages = (advantages - jnp.mean(advantages)) / (
-                jnp.std(advantages) + jnp.finfo(advantages.dtype).tiny
+                jnp.std(advantages) + jnp.finfo(advantages.dtype).eps
             )
 
         policy_loss = -jnp.mean(
@@ -314,7 +314,7 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         variance = jnp.var(rollout_buffer.rewards)
         explained_variance = 1 - jnp.var(
             rollout_buffer.returns - rollout_buffer.values
-        ) / (variance + jnp.finfo(rollout_buffer.returns.dtype).tiny)
+        ) / (variance + jnp.finfo(rollout_buffer.returns.dtype).eps)
         log = {
             "loss/approx_kl": stats.approx_kl,
             "loss/total": stats.total_loss,

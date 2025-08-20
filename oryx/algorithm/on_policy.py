@@ -51,6 +51,11 @@ class JITSummaryWriter:
         """
         Add a scalar value to the summary writer.
         """
+        scalar_value = eqx.error_if(
+            scalar_value,
+            jnp.logical_or(jnp.isnan(scalar_value), jnp.isinf(scalar_value)),
+            "Scalar value cannot be NaN",
+        )
         debug_with_numpy_wrapper(self.summary_writer.add_scalar, thread=True)(
             tag, scalar_value, global_step, walltime
         )
@@ -68,6 +73,45 @@ class JITSummaryWriter:
 
         for tag, value in scalars.items():
             self.add_scalar(tag, value, global_step=global_step, walltime=walltime)
+
+    def log_episode_stats(
+        self,
+        episode_stats: EpisodeStatisticsAccumulator,
+        *,
+        global_step: Int[ArrayLike, ""] | None = None,
+        walltime: Float[ArrayLike, ""] | None = None,
+    ) -> None:
+        """
+        Log episode statistics to the summary writer.
+        """
+
+        def log_fn(rewards, lengths, dones, global_step, walltime):
+            for reward, length, done in zip(
+                rewards,
+                lengths,
+                dones,
+            ):
+                if done:
+                    self.summary_writer.add_scalar(
+                        "episode/reward",
+                        reward,
+                        global_step=global_step,
+                        walltime=walltime,
+                    )
+                    self.summary_writer.add_scalar(
+                        "episode/length",
+                        length,
+                        global_step=global_step,
+                        walltime=walltime,
+                    )
+
+        debug_with_numpy_wrapper(log_fn, thread=True)(
+            episode_stats.episode_reward,
+            episode_stats.episode_length,
+            episode_stats.episode_done,
+            global_step,
+            walltime,
+        )
 
 
 class JITProgressBar:
@@ -119,8 +163,29 @@ class IterationCarry[ActType, ObsType](eqx.Module):
     policy: AbstractActorCriticPolicy[Float, ActType, ObsType]
 
 
+class EpisodeStatisticsAccumulator(eqx.Module):
+    """
+    Accumulator for episode statistics.
+    This is used to keep track of the episode length, reward, and done status.
+    """
+
+    episode_length: Int[Array, ""]
+    episode_reward: Float[Array, ""]
+    episode_done: Bool[Array, ""]
+
+    @classmethod
+    def from_episode_stats(cls, info: dict[str, Array]) -> EpisodeStatisticsAccumulator:
+        return cls(
+            episode_length=info["length"],
+            episode_reward=info["reward"],
+            episode_done=info["done"],
+        )
+
+
 class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, ObsType]):
-    """Base class for on policy algorithms."""
+    """
+    Base class for on policy algorithms.
+    """
 
     state_index: eqx.AbstractVar[eqx.nn.StateIndex]
     env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
@@ -135,7 +200,7 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         """
         Check invariants.
 
-        Called automatically after the object is initialized by Equinox.
+        Called automatically by Equinox after the object is initialized.
         """
         if (self.env.action_space != self.policy.action_space) or (
             self.env.observation_space != self.policy.observation_space
@@ -151,7 +216,13 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         carry: StepCarry[ObsType],
         *,
         key: Key,
-    ) -> tuple[eqx.nn.State, StepCarry[ObsType], RolloutBuffer[ActType, ObsType], dict]:
+    ) -> tuple[
+        eqx.nn.State,
+        StepCarry[ObsType],
+        RolloutBuffer[ActType, ObsType],
+        EpisodeStatisticsAccumulator | None,
+        dict,
+    ]:
         """
         Perform a single step in the environment.
         """
@@ -172,6 +243,13 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
             env_state, action, key=env_key
         )
         state = state.update(env_state)
+
+        if "episode" in info:
+            episode_stats = EpisodeStatisticsAccumulator.from_episode_stats(
+                info["episode"]
+            )
+        else:
+            episode_stats = None
 
         def reset_env(
             state: eqx.nn.State,
@@ -228,6 +306,7 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
                 values=value,
                 states=state.substate(self.policy),
             ),
+            episode_stats,
             info,
         )
 
@@ -238,7 +317,12 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         carry: StepCarry[ObsType],
         *,
         key: Key,
-    ) -> tuple[eqx.nn.State, StepCarry[ObsType], RolloutBuffer[ActType, ObsType]]:
+    ) -> tuple[
+        eqx.nn.State,
+        StepCarry[ObsType],
+        RolloutBuffer[ActType, ObsType],
+        EpisodeStatisticsAccumulator | None,
+    ]:
         """
         Collect a rollout from the environment and store it in a buffer.
         """
@@ -248,16 +332,16 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
             _,
         ) -> tuple[
             tuple[eqx.nn.State, StepCarry[ObsType], Key],
-            RolloutBuffer[ActType, ObsType],
+            tuple[RolloutBuffer[ActType, ObsType], EpisodeStatisticsAccumulator | None],
         ]:
             state, previous, key = carry
             step_key, carry_key = jr.split(key, 2)
-            state, previous, rollout, info = self.step(
+            state, previous, rollout, episode_stats, _ = self.step(
                 policy, state, previous, key=step_key
             )
-            return (state, previous, carry_key), rollout
+            return (state, previous, carry_key), (rollout, episode_stats)
 
-        (state, carry, _), rollout_buffer = lax.scan(
+        (state, carry, _), (rollout_buffer, episode_stats) = lax.scan(
             scan_step, (state, carry, key), length=self.num_steps
         )
 
@@ -267,7 +351,7 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
             next_value, next_done, self.gae_lambda, self.gamma
         )
 
-        return state, carry, rollout_buffer
+        return state, carry, rollout_buffer, episode_stats
 
     @abstractmethod
     def train(
@@ -323,7 +407,7 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         Perform a single iteration of the algorithm.
         """
         rollout_key, train_key = jr.split(key, 2)
-        state, step_carry, rollout_buffer = self.collect_rollout(
+        state, step_carry, rollout_buffer, episode_stats = self.collect_rollout(
             carry.policy,
             state,
             carry.step_carry,
@@ -339,6 +423,10 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
             log["loss/learning_rate"] = self.learning_rate(state)
 
             tb_writer.add_dict(log, global_step=carry.step_carry.step_count)
+            if episode_stats is not None:
+                tb_writer.log_episode_stats(
+                    episode_stats, global_step=carry.step_carry.step_count
+                )
 
         debug_wrapper(print)(carry.step_carry.step_count)
 
