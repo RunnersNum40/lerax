@@ -20,11 +20,10 @@ class EchoEnv(AbstractEnv[Float[Array, " n"], Float[Array, " n"]]):
 
     def __init__(
         self,
-        action_space: Box = Box(-jnp.inf, jnp.inf),
-        observation_space: Box = Box(-jnp.inf, jnp.inf),
+        space: Box = Box(-jnp.inf, jnp.inf),
     ):
-        self.action_space = action_space
-        self.observation_space = observation_space
+        self.action_space = space
+        self.observation_space = space
 
     def reset(self, state, *, key):
         return state, self.observation_space.sample(key), {}

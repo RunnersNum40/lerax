@@ -32,8 +32,7 @@ class TestAbstractActorCriticPolicy:
 class TestCustomActorCriticPolicyBox:
     def test_interface(self):
         env = EchoEnv(
-            action_space=Box(-jnp.ones(3), jnp.ones(3)),
-            observation_space=Box(-jnp.inf, jnp.inf, shape=(5,)),
+            space=Box(-jnp.ones(3), jnp.ones(3)),
         )
         key = jr.key(0)
         policy, state = eqx.nn.make_with_state(CustomActorCriticPolicy)(
@@ -67,13 +66,12 @@ class TestCustomActorCriticPolicyBox:
     def test_jit(self):
         init_key, step_key = jr.split(jr.key(0))
         env = EchoEnv(
-            action_space=Box(-2.0 * jnp.ones(2), 2.0 * jnp.ones(2)),
-            observation_space=Box(-jnp.inf, jnp.inf, shape=(4,)),
+            space=Box(-2.0 * jnp.ones(2), 2.0 * jnp.ones(2)),
         )
         policy, state = eqx.nn.make_with_state(CustomActorCriticPolicy)(
             env=env, key=init_key
         )
-        obs = jnp.arange(4.0)
+        obs = jnp.arange(2)
 
         @eqx.filter_jit
         def f(pol, st, ob, key):

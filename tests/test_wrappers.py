@@ -102,7 +102,7 @@ class TestClipAction:
     def test_interface(self, low, high):
         scan_key, reset_key, step_key = jr.split(jr.key(0), 3)
         low, high = jnp.asarray(low), jnp.asarray(high)
-        env, state = eqx.nn.make_with_state(EchoEnv)(action_space=Box(low, high))
+        env, state = eqx.nn.make_with_state(EchoEnv)(space=Box(low, high))
         w = ClipAction(env=env)
 
         over = high + 1
@@ -125,7 +125,7 @@ class TestClipAction:
     def test_jit(self):
         key = jr.key(0)
         env, state = eqx.nn.make_with_state(EchoEnv)(
-            action_space=Box(-jnp.ones(2), jnp.ones(2))
+            space=Box(-jnp.ones(2), jnp.ones(2))
         )
         w = ClipAction(env=env)
 
@@ -146,9 +146,7 @@ class TestRescaleAction:
     )
     def test_interface(self, action, expected):
         scan_key, reset_key, step_key = jr.split(jr.key(0), 3)
-        env, state = eqx.nn.make_with_state(EchoEnv)(
-            action_space=Box(0.0, 10.0), observation_space=Box(0.0, 10.0)
-        )
+        env, state = eqx.nn.make_with_state(EchoEnv)(space=Box(0.0, 10.0))
         w = RescaleAction(env=env)
 
         state, _, _ = w.reset(state, key=reset_key)
@@ -172,9 +170,7 @@ class TestRescaleAction:
 
     def test_jit(self):
         key = jr.key(0)
-        env, state = eqx.nn.make_with_state(EchoEnv)(
-            action_space=Box(2.0, 4.0), observation_space=Box(2.0, 4.0)
-        )
+        env, state = eqx.nn.make_with_state(EchoEnv)(space=Box(2.0, 4.0))
         w = RescaleAction(env=env)
 
         @eqx.filter_jit
@@ -249,9 +245,7 @@ class TestClipObservation:
         low, high = jnp.asarray(low), jnp.asarray(high)
         over = jnp.array(high) + 2.0
 
-        base_env, state = eqx.nn.make_with_state(EchoEnv)(
-            action_space=Box(low, high), observation_space=Box(low, high)
-        )
+        base_env, state = eqx.nn.make_with_state(EchoEnv)(space=Box(low, high))
         w = ClipObservation(env=base_env)
 
         state, _, _ = w.reset(state, key=reset_key)
@@ -271,8 +265,7 @@ class TestClipObservation:
     def test_jit(self):
         key = jr.key(0)
         base_env, state = eqx.nn.make_with_state(EchoEnv)(
-            action_space=Box(-jnp.ones(2), jnp.ones(2)),
-            observation_space=Box(-jnp.ones(2), jnp.ones(2)),
+            space=Box(-jnp.ones(2), jnp.ones(2))
         )
         w = ClipObservation(env=base_env)
 
@@ -290,9 +283,7 @@ class TestRescaleObservation:
     @pytest.mark.parametrize("raw, expected", [(0.0, -1.0), (5.0, 0.0), (10.0, 1.0)])
     def test_interface(self, raw, expected):
         scan_key, reset_key, step_key = jr.split(jr.key(0), 3)
-        base_env, state = eqx.nn.make_with_state(EchoEnv)(
-            action_space=Box(0.0, 10.0), observation_space=Box(0.0, 10.0)
-        )
+        base_env, state = eqx.nn.make_with_state(EchoEnv)(space=Box(0.0, 10.0))
         w = RescaleObservation(env=base_env)
 
         state, _, _ = w.reset(state, key=reset_key)
@@ -315,9 +306,7 @@ class TestRescaleObservation:
 
     def test_jit(self):
         key = jr.key(0)
-        base_env, state = eqx.nn.make_with_state(EchoEnv)(
-            action_space=Box(0.0, 2.0), observation_space=Box(0.0, 2.0)
-        )
+        base_env, state = eqx.nn.make_with_state(EchoEnv)(space=Box(0.0, 2.0))
         w = RescaleObservation(env=base_env)
 
         @eqx.filter_jit
@@ -418,8 +407,7 @@ class TestFlattenObservation:
         scan_key, reset_key, step_key = jr.split(jr.key(0), 3)
         obs_shape = (2, 3)
         base_env, state = eqx.nn.make_with_state(EchoEnv)(
-            action_space=Box(-jnp.inf, jnp.inf, shape=obs_shape),
-            observation_space=Box(-jnp.inf, jnp.inf, shape=obs_shape),
+            space=Box(-jnp.inf, jnp.inf, shape=obs_shape)
         )
         w = FlattenObservation(env=base_env)
 
@@ -456,8 +444,7 @@ class TestFlattenObservation:
     def test_jit(self):
         key = jr.key(0)
         base_env, state = eqx.nn.make_with_state(EchoEnv)(
-            action_space=Box(-jnp.inf, jnp.inf, shape=(2, 2)),
-            observation_space=Box(-jnp.inf, jnp.inf, shape=(2, 2)),
+            space=Box(-jnp.inf, jnp.inf, shape=(2, 2))
         )
         w = FlattenObservation(env=base_env)
 
