@@ -22,43 +22,46 @@ def clone_state(state: eqx.nn.State) -> eqx.nn.State:
     return state_clone
 
 
-@eqx.filter_jit
-@wraps(lax.scan)
-def filter_scan[Carry, X, Y](
-    f: Callable[[Carry, X], tuple[Carry, Y]],
-    init: Carry,
-    xs: X | None = None,
-    length: int | None = None,
-    reverse: bool = False,
-    unroll: int | bool = 1,
-    _split_transpose: bool = False,
-) -> tuple[Carry, Y]:
-    init_arr, static = eqx.partition(init, eqx.is_array)
+class _FilterScan(eqx.Module):
 
-    def _f(carry_arr, x):
-        carry = eqx.combine(carry_arr, static)
-        carry, y = f(carry, x)
-        carry_arr, _static = eqx.partition(carry, eqx.is_array)
+    @property
+    def __wrapped__(self):
+        return lax.scan
 
-        # Assert will be omitted from the compiled code
-        # I tried using `eqx.error(carry_arr, cond)` if but it breaks if the carry includes a key
-        assert eqx.tree_equal(
-            static, _static
-        ), "Non-array carry of filter_scan must not change."
-        return carry_arr, y
+    def __call__(
+        self,
+        f,
+        init,
+        xs=None,
+        length=None,
+        reverse: bool = False,
+        unroll: int | bool = 1,
+        _split_transpose: bool = False,
+    ):
+        init_arr, static = eqx.partition(init, eqx.is_array)
 
-    carry_arr, y = lax.scan(
-        f=_f,
-        init=init_arr,
-        xs=xs,
-        length=length,
-        reverse=reverse,
-        unroll=unroll,
-        _split_transpose=_split_transpose,
-    )
+        def _f(carry_arr, x):
+            carry = eqx.combine(carry_arr, static)
+            carry, y = f(carry, x)
+            new_carry_arr, new_static = eqx.partition(carry, eqx.is_array)
+            assert eqx.tree_equal(
+                static, new_static
+            ), "Non-array carry of filter_scan must not change."
+            return new_carry_arr, y
 
-    carry = eqx.combine(carry_arr, static)
-    return carry, y
+        carry_arr, ys = lax.scan(
+            f=_f,
+            init=init_arr,
+            xs=xs,
+            length=length,
+            reverse=reverse,
+            unroll=unroll,
+            _split_transpose=_split_transpose,
+        )
+        return eqx.combine(carry_arr, static), ys
+
+
+filter_scan = eqx.module_update_wrapper(_FilterScan())
 
 
 def debug_wrapper[**InType](
