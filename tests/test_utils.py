@@ -10,7 +10,13 @@ from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Key
 
-from oryx.utils import clone_state, debug_with_numpy_wrapper, debug_wrapper, filter_scan
+from oryx.utils import (
+    clone_state,
+    debug_with_list_wrapper,
+    debug_with_numpy_wrapper,
+    debug_wrapper,
+    filter_scan,
+)
 
 
 class DummyModule(eqx.Module):
@@ -20,7 +26,7 @@ class DummyModule(eqx.Module):
         self.state_index = eqx.nn.StateIndex(0)
 
 
-def test_clone_state_independence():
+def test_clone_state():
     module, state = eqx.nn.make_with_state(DummyModule)()
     clone = clone_state(state)
 
@@ -115,3 +121,17 @@ def test_debug_with_numpy_wrapper_converts_arrays():
     time.sleep(0.01)
 
     assert _array_collector.received_type is np.ndarray
+
+
+def test_debug_with_list_wrapper():
+    wrapped = debug_with_list_wrapper(_array_collector)
+
+    @jax.jit
+    def f(x):
+        wrapped(x)
+        return x
+
+    f(jnp.ones((2, 2)))
+    time.sleep(0.01)
+
+    assert _array_collector.received_type is list
