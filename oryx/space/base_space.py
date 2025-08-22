@@ -4,10 +4,16 @@ from abc import abstractmethod
 from typing import Any
 
 import equinox as eqx
-import numpy as np
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
+
+
+def try_cast(x: Any) -> Array | None:
+    try:
+        return jnp.asarray(x)
+    except TypeError:
+        return None
 
 
 class AbstractSpace[SampleType](eqx.Module):
@@ -27,11 +33,11 @@ class AbstractSpace[SampleType](eqx.Module):
         """Returns a random sample from the space."""
 
     @abstractmethod
-    def contains(self, x: Any) -> bool:
+    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
         """Returns True if the input is in the space, False otherwise."""
 
     def __contains__(self, x: Any) -> bool:
-        return self.contains(x)
+        return bool(self.contains(x))
 
     @abstractmethod
     def __eq__(self, other: object) -> bool:
@@ -69,8 +75,16 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
     def sample(self, key: Key) -> Int[Array, ""]:
         return jr.randint(key, shape=(), minval=self.start, maxval=self._n + self.start)
 
-    def contains(self, x: Any) -> bool:
-        if not isinstance(x, (int, jnp.ndarray, np.ndarray)):
+    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
+        x = try_cast(x)
+        if x is None:
+            return False
+
+        if x.ndim != 0:
+            return False
+        x = x.item()
+
+        if jnp.logical_not(jnp.array_equal(x, jnp.floor(x))):
             return False
 
         return bool(self.start <= x < self._n + self.start)
@@ -163,8 +177,12 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
 
         return sample
 
-    def contains(self, x: Any) -> bool:
-        if not isinstance(x, (jnp.ndarray, np.ndarray)):
+    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
+        x = try_cast(x)
+        if x is None:
+            return False
+
+        if x.shape != self._shape:
             return False
 
         return bool(jnp.all(x >= self._low)) and bool(jnp.all(x <= self._high))
@@ -172,6 +190,7 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Box):
             return False
+
         return bool(jnp.array_equal(self._low, other._low)) and bool(
             jnp.array_equal(self._high, other._high)
         )
@@ -204,7 +223,7 @@ class Tuple(AbstractSpace[tuple[Any, ...]]):
             for space, key in zip(self.spaces, jr.split(key, len(self.spaces)))
         )
 
-    def contains(self, x: Any) -> bool:
+    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
         if not isinstance(x, tuple):
             return False
 
@@ -216,6 +235,7 @@ class Tuple(AbstractSpace[tuple[Any, ...]]):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Tuple):
             return False
+
         return all(
             space == other_space
             for space, other_space in zip(self.spaces, other.spaces)
@@ -257,7 +277,7 @@ class Dict(AbstractSpace[dict[str, Any]]):
             )
         }
 
-    def contains(self, x: Any) -> bool:
+    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
         if not isinstance(x, dict):
             return False
 
@@ -271,6 +291,7 @@ class Dict(AbstractSpace[dict[str, Any]]):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Dict):
             return False
+
         return all(
             key in other.spaces and self.spaces[key] == other.spaces[key]
             for key in self.spaces.keys()
@@ -310,11 +331,15 @@ class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]]):
             key, shape=self.shape, minval=self.starts, maxval=self.ns + self.starts
         )
 
-    def contains(self, x: Any) -> bool:
-        if not isinstance(x, jnp.ndarray):
+    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
+        x = try_cast(x)
+        if x is None:
             return False
 
         if x.shape != self.shape:
+            return False
+
+        if jnp.logical_not(jnp.array_equal(x, jnp.floor(x))):
             return False
 
         return bool(jnp.all((self.starts <= x) & (x < self.ns + self.starts), axis=0))
@@ -322,6 +347,7 @@ class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]]):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, MultiDiscrete):
             return False
+
         return bool(jnp.array_equal(self.ns, other.ns)) and bool(
             jnp.array_equal(self.starts, other.starts)
         )
@@ -346,8 +372,9 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
     def sample(self, key: Key) -> Bool[Array, " n"]:
         return jr.bernoulli(key, shape=self.shape)
 
-    def contains(self, x: Any) -> bool:
-        if not isinstance(x, jnp.ndarray):
+    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
+        x = try_cast(x)
+        if x is None:
             return False
 
         if x.shape != self.shape:
@@ -358,6 +385,7 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, MultiBinary):
             return False
+
         return bool(self.n == other.n)
 
     def __repr__(self) -> str:
@@ -386,18 +414,20 @@ class OneOf(AbstractSpace):
         subspace = self.spaces[subspace_idx]
         return subspace.sample(sample_key)
 
-    def contains(self, x: Any) -> bool:
+    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
         return any(space.contains(x) for space in self.spaces)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, OneOf):
             return False
+
         spaces = list(self.spaces)
         try:
             for other_space in other.spaces:
                 spaces.remove(other_space)
         except ValueError:
             return False
+
         return not spaces
 
     def __repr__(self) -> str:
