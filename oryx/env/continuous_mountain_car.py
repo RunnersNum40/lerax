@@ -49,7 +49,7 @@ class ContinuousMountainCar(AbstractEnv[Float[Array, ""], Float[Array, "2"]]):
 
     def reset(
         self, state: eqx.nn.State, *, key: Key, low: float = -0.6, high: float = -0.4
-    ) -> tuple[eqx.nn.State, Float[Array, "4"], dict]:
+    ) -> tuple[eqx.nn.State, Float[Array, "2"], dict]:
         position = jr.uniform(key, minval=low, maxval=high)
         velocity = 0.0
 
@@ -60,7 +60,7 @@ class ContinuousMountainCar(AbstractEnv[Float[Array, ""], Float[Array, "2"]]):
 
     def step(self, state: eqx.nn.State, action: Float[Array, ""], *, key: Key) -> tuple[
         eqx.nn.State,
-        Float[Array, "4"],
+        Float[Array, "2"],
         Float[Array, ""],
         Bool[Array, ""],
         Bool[Array, ""],

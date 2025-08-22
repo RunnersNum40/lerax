@@ -40,14 +40,14 @@ class MountainCar(AbstractEnv[Int[Array, ""], Float[Array, "2"]]):
         self.low = jnp.array([self.min_position, -self.max_speed])
         self.high = jnp.array([self.max_position, self.max_speed])
 
-        self.action_space = Discrete(2)
+        self.action_space = Discrete(3)
         self.observation_space = Box(self.low, self.high)
 
         self.state_index = eqx.nn.StateIndex(jnp.zeros(2))
 
     def reset(
         self, state: eqx.nn.State, *, key: Key, low: float = -0.6, high: float = -0.4
-    ) -> tuple[eqx.nn.State, Float[Array, "4"], dict]:
+    ) -> tuple[eqx.nn.State, Float[Array, "2"], dict]:
         position = jr.uniform(key, minval=low, maxval=high)
         velocity = 0.0
 
@@ -58,7 +58,7 @@ class MountainCar(AbstractEnv[Int[Array, ""], Float[Array, "2"]]):
 
     def step(self, state: eqx.nn.State, action: Int[Array, ""], *, key: Key) -> tuple[
         eqx.nn.State,
-        Float[Array, "4"],
+        Float[Array, "2"],
         Float[Array, ""],
         Bool[Array, ""],
         Bool[Array, ""],
