@@ -10,6 +10,7 @@ authors = [{ name = "Theodore Pinkerton", email = "p_t@fastmail.net" }]
 dependencies = [
   "jax <= 0.6 ",  # Lock Jax for compatibility with Equinox
   "equinox",
+  "jaxtyping",
   "optax",
   "diffrax",
   "distreqx",

@@ -8,7 +8,7 @@ from jax import random as jr
 from oryx.algorithm import PPO
 from oryx.policy.actor_critic import CustomActorCriticPolicy
 from oryx.space import Box
-from tests.shared.envs import EchoEnv
+from tests.envs import EchoEnv
 
 
 def _make_ppo(num_steps: int = 8) -> tuple[PPO, eqx.nn.State]:

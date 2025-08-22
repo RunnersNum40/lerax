@@ -12,9 +12,8 @@ from oryx.policy import AbstractPolicy
 from oryx.policy.actor_critic import AbstractActorCriticPolicy, CustomActorCriticPolicy
 from oryx.space import Box
 from oryx.utils import clone_state
-
-from .shared.envs import DiscreteActionEnv, EchoEnv
-from .shared.models import Doubler, StatefulDoubler
+from tests.envs import DiscreteActionEnv, EchoEnv
+from tests.models import Doubler, StatefulDoubler
 
 
 class TestAbstractPolicy:

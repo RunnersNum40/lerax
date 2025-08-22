@@ -9,11 +9,10 @@ from oryx.buffer import RolloutBuffer
 from oryx.distribution import Normal
 from oryx.policy import AbstractActorCriticPolicy
 from oryx.utils import filter_scan
+from tests.envs import EchoEnv
 
-from .shared.envs import EchoEnv
 
-
-class TestRolloutBufferBasics:
+class TestRolloutBuffer:
     @staticmethod
     def _make_dummy_buffer(num_steps: int = 8):
         key = jr.key(0)

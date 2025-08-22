@@ -21,8 +21,7 @@ from oryx.wrapper import (
     TransformAction,
 )
 from oryx.wrapper.utils import rescale_box
-
-from .shared.envs import EchoEnv, FiniteEpisodeEnv, PassThroughEnv
+from tests.envs import EchoEnv, FiniteEpisodeEnv, PassThroughEnv
 
 
 class TestIdentity:

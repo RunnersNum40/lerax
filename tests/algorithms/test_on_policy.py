@@ -11,7 +11,7 @@ from oryx.algorithm import AbstractOnPolicyAlgorithm
 from oryx.env import AbstractEnvLike
 from oryx.policy.actor_critic import AbstractActorCriticPolicy, CustomActorCriticPolicy
 from oryx.space import Box
-from tests.shared.envs import DiscreteActionEnv, EchoEnv
+from tests.envs import DiscreteActionEnv, EchoEnv
 
 
 class OnPolicyAlgorithm[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
