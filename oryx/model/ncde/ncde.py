@@ -139,7 +139,7 @@ class AbstractNeuralCDE[
     ) -> tuple[
         Float[Array, " num_steps"],
         Float[Array, " num_steps input_size"],
-        Float[Array, " num_steps state_size"],
+        Float[Array, " num_steps latent_size"],
     ]:
         """Add new time and input pair to the state."""
         ts, xs, zs = state.get(self.state_index)
@@ -153,7 +153,7 @@ class AbstractNeuralCDE[
         def shift() -> tuple[
             Float[Array, " num_steps"],
             Float[Array, " num_steps input_size"],
-            Float[Array, " num_steps state_size"],
+            Float[Array, " num_steps latent_size"],
         ]:
             """Shift the saved times and inputs to make room for the new pair."""
             return (
@@ -165,7 +165,7 @@ class AbstractNeuralCDE[
         def insert() -> tuple[
             Float[Array, " num_steps"],
             Float[Array, " num_steps input_size"],
-            Float[Array, " num_steps state_size"],
+            Float[Array, " num_steps latent_size"],
         ]:
             """Insert the new time and input pair at the end of the saved times and inputs."""
             return ts.at[latest_index + 1].set(t1), xs.at[latest_index + 1].set(x1), zs
