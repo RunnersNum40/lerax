@@ -343,7 +343,7 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
             )
             return (state, previous, carry_key), (rollout, episode_stats)
 
-        (state, carry, _), (rollout_buffer, episode_stats) = lax.scan(
+        (state, carry, _), (rollout_buffer, episode_stats) = filter_scan(
             scan_step, (state, carry, key), length=self.num_steps
         )
 

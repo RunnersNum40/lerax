@@ -11,6 +11,7 @@ from jax import lax
 from jax import numpy as jnp
 
 
+# TODO: Consider moving this to a standalone Equinox utilities library
 def clone_state(state: eqx.nn.State) -> eqx.nn.State:
     """
     Clone an Equinox state.
@@ -22,6 +23,7 @@ def clone_state(state: eqx.nn.State) -> eqx.nn.State:
     return state_clone
 
 
+# TODO: Consider moving this to a standalone Equinox utilities library
 class _FilterScan(eqx.Module):
 
     @property
