@@ -6,18 +6,16 @@ from jax import numpy as jnp
 from jax import random as jr
 
 from oryx.env import AbstractEnv, AbstractEnvLike
+from oryx.wrapper import Identity
 from tests.envs import DummyEnv
 
 
 class TestAbstractEnvLike:
     def test_cannot_instantiate_abstract(self):
-        """Direct instantiation of abstract bases must fail."""
         with pytest.raises(TypeError):
             AbstractEnvLike()  # pyright: ignore
 
     def test_missing_methods(self):
-        """A subclass that omits a required method should be abstract."""
-
         class NoStepEnv(AbstractEnvLike):
             def reset(self, state, *, key):
                 raise NotImplementedError
@@ -39,13 +37,10 @@ class TestAbstractEnvLike:
 
 class TestAbstractEnv:
     def test_cannot_instantiate_abstract(self):
-        """Direct instantiation of abstract bases must fail."""
         with pytest.raises(TypeError):
             AbstractEnv()  # pyright: ignore
 
     def test_missing_methods(self):
-        """A subclass that omits a required method should be abstract."""
-
         class NoStepEnv(AbstractEnv):
             def reset(self, state, *, key):
                 raise NotImplementedError
@@ -65,7 +60,6 @@ class TestAbstractEnv:
             NoStepEnv()  # pyright: ignore
 
     def test_dummy_env_reset_and_step_shapes(self):
-        """`reset` and `step` should respect the declared spaces & signatures."""
         key = jr.key(0)
         env, state = eqx.nn.make_with_state(DummyEnv)(key=key)
 
@@ -86,30 +80,7 @@ class TestAbstractEnv:
         assert info == {}
 
     def test_unwrapped_returns_base_env(self):
-        """Even after extra wrapping, `.unwrapped` should reach the original env."""
-        from oryx.wrapper.base_wrapper import AbstractNoRenderOrCloseWrapper
-
-        class IdentityWrapper(AbstractNoRenderOrCloseWrapper):
-            env: DummyEnv
-
-            def __init__(self, env):
-                self.env = env
-
-            def reset(self, state, *, key):
-                return self.env.reset(state, key=key)
-
-            def step(self, state, action, *, key):
-                return self.env.step(state, action, key=key)
-
-            @property
-            def action_space(self):
-                return self.env.action_space
-
-            @property
-            def observation_space(self):
-                return self.env.observation_space
-
         base_env, _ = eqx.nn.make_with_state(DummyEnv)(key=jr.key(0))
-        wrapped_env = IdentityWrapper(base_env)
+        wrapped_env = Identity(base_env)
 
-        assert wrapped_env.unwrapped is base_env, "unwrapped must expose base env"
+        assert wrapped_env.unwrapped is base_env

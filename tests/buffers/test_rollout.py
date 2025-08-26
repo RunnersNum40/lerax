@@ -6,10 +6,9 @@ from jax import numpy as jnp
 from jax import random as jr
 
 from oryx.buffer import RolloutBuffer
-from oryx.distribution import Normal
-from oryx.policy import AbstractActorCriticPolicy
 from oryx.utils import filter_scan
 from tests.envs import EchoEnv
+from tests.policies import NormalPolicy
 
 
 class TestRolloutBuffer:
@@ -108,43 +107,13 @@ class TestRolloutBuffer:
 
 
 class TestRolloutBufferWithEnv:
-
-    class _SimplePolicy(AbstractActorCriticPolicy):
-        env: EchoEnv
-        state_index: eqx.nn.StateIndex[None] = eqx.nn.StateIndex(None)
-
-        def __init__(self, env: EchoEnv):
-            self.env = env
-
-        @property
-        def action_space(self):
-            return self.env.action_space
-
-        @property
-        def observation_space(self):
-            return self.env.observation_space
-
-        def extract_features(self, state, observation):
-            return state, jnp.asarray(observation)
-
-        def action_dist_from_features(self, state, features):
-            return state, Normal(features, jnp.asarray(1.0))
-
-        def value_from_features(self, state, features):
-            return state, jnp.asarray(0.0)
-
-        def reset(self, state):
-            return state
-
     def test_env_policy_collection_and_batching(
         self, num_steps: int = 8, batch_size: int = 2
     ):
         reset_key, scan_key, batch_key = jr.split(jr.key(0), 3)
 
         env = EchoEnv()
-        policy, state = eqx.nn.make_with_state(TestRolloutBufferWithEnv._SimplePolicy)(
-            env=env
-        )
+        policy, state = eqx.nn.make_with_state(NormalPolicy)(env=env)
 
         state, obs, _ = env.reset(state, key=reset_key)
 

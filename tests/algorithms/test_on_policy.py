@@ -15,8 +15,6 @@ from tests.envs import DiscreteActionEnv, EchoEnv
 
 
 class OnPolicyAlgorithm[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
-    """Minimal concrete on-policy algorithm just for testing."""
-
     env: AbstractEnvLike[ActType, ObsType]
     policy: AbstractActorCriticPolicy[Float, ActType, ObsType]
     state_index: eqx.nn.StateIndex[None] = eqx.nn.StateIndex(None)

@@ -82,9 +82,6 @@ def _compute(x):
 
 @pytest.mark.parametrize("thread_flag", [False, True])
 def test_debug_wrapper_threading(thread_flag):
-    """
-    Ensure the callback fires and – when requested – in a different thread.
-    """
     wrapped = debug_wrapper(_compute, thread=thread_flag)
 
     @jax.jit
@@ -97,12 +94,12 @@ def test_debug_wrapper_threading(thread_flag):
     time.sleep(0.05)
 
     assert float(result) == pytest.approx(4.14)
-    assert hasattr(_compute, "thread_id"), "callback never executed"
+    assert hasattr(_compute, "thread_id")
 
     if thread_flag:
-        assert _compute.thread_id != main_thread, "expected a different thread"
+        assert _compute.thread_id != main_thread
     else:
-        assert _compute.thread_id == main_thread, "should run on main thread"
+        assert _compute.thread_id == main_thread
 
 
 def _array_collector(x):
