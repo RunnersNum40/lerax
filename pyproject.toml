@@ -1,41 +1,42 @@
 [project]
 name = "oryx"
 version = "0.0.1"
-license = "GPL-3.0-or-later"
-license-files = ["LICENSE"]
 description = "Deep Reinforcement Learning with JAX and Equinox."
 readme = "README.md"
 requires-python = ">=3.13"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 authors = [{ name = "Theodore Pinkerton", email = "p_t@fastmail.net" }]
 dependencies = [
-  "jax <= 0.6 ",  # Lock Jax for compatibility with Equinox
-  "equinox",
-  "jaxtyping",
-  "optax",
   "diffrax",
   "distreqx",
-  "tensorboardX",
+  "equinox",
+  "jax <= 0.6 ",  # Lock Jax for compatibility with Equinox
+  "jaxtyping",
+  "optax",
   "rich",
+  "tensorboardX",
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov", "pytest-xdist", "pyright", "ruff"]
 docs = ["mkdocs-material"]
+test = ["pytest", "pytest-cov", "pytest-xdist", "pyright", "ruff"]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.pyright]
+reportIncompatibleMethodOverride = true
+reportIncompatibleVariableOverride = false  # Incompatible with eqx.AbstractVar
+reportFunctionMemberAccess = false
+
 [tool.pytest.ini_options]
-pythonpath = "."
 addopts = ["--import-mode=importlib", "-Werror", "--cov=oryx"]
+pythonpath = "."
 
 [tool.ruff.lint]
 fixable = ["I001", "F401"]
 ignore = ["E402", "E721", "E731", "E741", "F722", "E501"]
 select = ["E", "F", "I001"]
 
-[tool.pyright]
-reportIncompatibleMethodOverride = true
-reportIncompatibleVariableOverride = false # Incompatible with eqx.AbstractVar
-reportFunctionMemberAccess = false
