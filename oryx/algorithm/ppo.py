@@ -60,7 +60,7 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         gamma: float = 0.99,
         learning_rate: float = 3e-4,
         anneal_learning_rate: bool = True,
-        num_epochs: int = 10,
+        num_epochs: int = 16,
         num_mini_batches: int = 32,
         clip_coefficient: float = 0.2,
         clip_value_loss: bool = True,
