@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from typing import Literal
+
 import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Bool, Float, Int, Key
 
+from oryx.render import AbstractRenderer, Color, PygameRenderer, Transform
 from oryx.space import Box, Discrete
 
 from .base_env import AbstractEnv
@@ -32,7 +35,13 @@ class CartPole(AbstractEnv[Int[Array, ""], Float[Array, "4"]]):
     theta_threshold_radians: float
     x_threshold: float
 
-    def __init__(self, solver: SOLVER = SOLVER.explicit):
+    renderer: AbstractRenderer | None
+
+    def __init__(
+        self,
+        solver: SOLVER = SOLVER.implicit,
+        renderer: AbstractRenderer | Literal["auto"] | None = None,
+    ):
         self.gravity = 9.8
         self.masscart = 1.0
         self.masspole = 0.1
@@ -58,6 +67,11 @@ class CartPole(AbstractEnv[Int[Array, ""], Float[Array, "4"]]):
         self.observation_space = Box(-high, high)
 
         self.state_index = eqx.nn.StateIndex(jnp.zeros(4))
+
+        if renderer == "auto":
+            self.renderer = self.default_renderer()
+        else:
+            self.renderer = renderer
 
     def reset(
         self, state: eqx.nn.State, *, key: Key, low: float = -0.05, high: float = 0.05
@@ -116,6 +130,52 @@ class CartPole(AbstractEnv[Int[Array, ""], Float[Array, "4"]]):
         return state, state_vals, reward, terminated, jnp.array(False), {}
 
     def render(self, state: eqx.nn.State):
-        raise NotImplementedError
+        x, _, theta, _ = state.get(self.state_index)
+        x = x
 
-    def close(self): ...
+        assert self.renderer is not None, "Renderer is not set."
+        self.renderer.clear()
+
+        # Ground
+        self.renderer.draw_line(
+            start=jnp.array((-10.0, 0.0)),
+            end=jnp.array((10.0, 0.0)),
+            color=Color(0.0, 0.0, 0.0),
+            width=0.01,
+        )
+        # Cart
+        cart_w, cart_h = 0.3, 0.15
+        cart_col = Color(0.0, 0.0, 0.0)
+        self.renderer.draw_rect(jnp.array((x, 0.0)), w=cart_w, h=cart_h, color=cart_col)
+        # Pole
+        pole_start = jnp.asarray((x, cart_h / 4))
+        pole_end = pole_start + self.length * jnp.asarray(
+            [jnp.sin(theta), jnp.cos(theta)]
+        )
+        pole_col = Color(0.8, 0.6, 0.4)
+        self.renderer.draw_line(pole_start, pole_end, color=pole_col, width=0.05)
+        # Pole Hinge
+        hinge_r = 0.025
+        hinge_col = Color(0.5, 0.5, 0.5)
+        self.renderer.draw_circle(pole_start, radius=hinge_r, color=hinge_col)
+
+        self.renderer.render()
+
+    def default_renderer(self) -> AbstractRenderer:
+        width, height = 800, 450
+        transform = Transform(
+            scale=200.0,
+            offset=jnp.array([width / 2, height * 0.1]),
+            width=width,
+            height=height,
+            y_up=True,
+        )
+        return PygameRenderer(
+            width=width,
+            height=height,
+            background_color=Color(1.0, 1.0, 1.0),
+            transform=transform,
+        )
+
+    def close(self):
+        pass
