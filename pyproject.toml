@@ -14,7 +14,9 @@ dependencies = [
   "jax <= 0.6 ",  # Lock Jax for compatibility with Equinox
   "jaxtyping",
   "optax",
+  "pygame",
   "rich",
+  "tensorboard",
   "tensorboardX",
 ]
 
@@ -39,4 +41,3 @@ pythonpath = "."
 fixable = ["I001", "F401"]
 ignore = ["E402", "E721", "E731", "E741", "F722", "E501"]
 select = ["E", "F", "I001"]
-
