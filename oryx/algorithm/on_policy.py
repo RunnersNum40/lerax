@@ -465,7 +465,7 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         state, carry = self.initialize_iteration_carry(state, key=init_key)
 
         progress_bar = (
-            JITProgressBar("[green]Training", total=total_timesteps)
+            JITProgressBar(f"[green]Training {self.env.name}", total=total_timesteps)
             if show_progress_bar
             else None
         )

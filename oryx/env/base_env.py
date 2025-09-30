@@ -53,6 +53,7 @@ class AbstractEnvLike[ActType, ObsType](eqx.Module):
 class AbstractEnv[ActType, ObsType](AbstractEnvLike[ActType, ObsType]):
     """Base class for RL environments"""
 
+    name: eqx.AbstractClassVar[str]
     state_index: eqx.AbstractVar[eqx.nn.StateIndex]
 
     @property

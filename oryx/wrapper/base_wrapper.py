@@ -18,6 +18,11 @@ class AbstractWrapper[WrapperActType, WrapperObsType, ActType, ObsType](
         """Return the unwrapped environment"""
         return self.env.unwrapped
 
+    @property
+    def name(self) -> str:
+        """Return the name of the environment"""
+        return self.env.name
+
 
 class AbstractNoRenderWrapper[WrapperActType, WrapperObsType, ActType, ObsType](
     AbstractWrapper[WrapperActType, WrapperObsType, ActType, ObsType]

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import ClassVar, Literal
 
 import equinox as eqx
 from jax import numpy as jnp
@@ -19,6 +19,8 @@ class SOLVER(eqx.Enumeration):
 
 
 class CartPole(AbstractEnv[Int[Array, ""], Float[Array, "4"]]):
+    name: ClassVar[str] = "CartPole"
+
     state_index: eqx.nn.StateIndex[Float[Array, "4"]]
     action_space: Discrete
     observation_space: Box
