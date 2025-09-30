@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-import pygame
+# Disable pygame greeting message
+import contextlib
+
+with contextlib.redirect_stdout(None):
+    import pygame
+
 from jax import numpy as jnp
 from jaxtyping import ArrayLike, Float
 from pygame import gfxdraw
