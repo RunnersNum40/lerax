@@ -11,7 +11,7 @@ dependencies = [
   "diffrax",
   "distreqx",
   "equinox",
-  "jax <= 0.6 ",  # Lock Jax for compatibility with Equinox
+  "jax",
   "jaxtyping",
   "optax",
   "pygame",
