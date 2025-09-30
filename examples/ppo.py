@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
@@ -37,7 +39,6 @@ def build_policy(env: AbstractEnvLike, *, key: Key) -> CustomActorCriticPolicy:
 def main():
     seed = 0
     total_timesteps = 2**20
-    logdir = "logs/CartPole_PPO"
 
     policy_key, learn_key = jr.split(jr.key(seed), 2)
 
@@ -54,7 +55,7 @@ def main():
         total_timesteps=total_timesteps,
         key=learn_key,
         show_progress_bar=True,
-        tb_log_name=logdir,
+        tb_log_name=f"logs/{env.name}_{datetime.now().strftime("%H%M%S")}",
     )
 
 
