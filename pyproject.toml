@@ -22,6 +22,7 @@ dependencies = [
 
 [project.optional-dependencies]
 docs = ["mkdocs-material"]
+gym = ["gymnasium"]
 test = ["pytest", "pytest-cov", "pytest-xdist", "pyright", "ruff"]
 
 [build-system]
