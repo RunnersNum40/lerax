@@ -23,15 +23,10 @@ In addition, the NDE code is heavily inspired by the work of [Patrick Kidger](ht
 ## TODO
 
 - Get it working!
-  - Environment implementations
-    - Custom environments
-    - Wrappers for other libraries
-      - Gymnax
-      - Gymnasium
-  - Wrappers
   - Policies
   - Algorithms
     - PPO
+  - Expand support beyond Box and Discrete spaces
 - Logging
   - Code flow logging
   - Training logging
