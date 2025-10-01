@@ -48,9 +48,10 @@ class LogState(eqx.Module):
         episode_reward: Float[ArrayLike, ""] = 0.0,
         episode_done: Bool[ArrayLike, ""] = False,
     ):
-        self.episode_length = jnp.asarray(episode_length)
-        self.episode_reward = jnp.asarray(episode_reward)
-        self.episode_done = jnp.asarray(episode_done)
+        # Types must be specified to avoid weak types
+        self.episode_length = jnp.array(episode_length, dtype=int)
+        self.episode_reward = jnp.array(episode_reward, dtype=float)
+        self.episode_done = jnp.array(episode_done, dtype=bool)
 
     def update(self, reward: Float[ArrayLike, ""], done: Bool[ArrayLike, ""]):
         return dataclasses.replace(
