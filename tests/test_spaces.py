@@ -10,7 +10,6 @@ from oryx.space import (
     Discrete,
     MultiBinary,
     MultiDiscrete,
-    OneOf,
     Tuple,
     flat_dim,
     flatten,
@@ -144,27 +143,6 @@ def test_multibinary():
     assert not a.contains(jnp.array([0, 1, 2, 1]))
     assert not a.contains(jnp.array([0, 1, 1]))
     assert not a.contains(jnp.array([0.5, 1.0, 1.0, 0.0]))
-    assert not a.contains("string")
-
-    assert a == b
-    assert a != c
-
-
-def test_oneof():
-    key = jr.key(0)
-    sub_a, sub_b = Discrete(3), Box(-1, 1, shape=())
-    a = OneOf((sub_a, sub_b))
-    b = OneOf((sub_a, sub_b))
-    c = OneOf((Discrete(4), sub_b))
-
-    sample = a.sample(key)
-    assert sub_a.contains(sample) or sub_b.contains(sample)
-    assert a.contains(sample)
-    assert a.contains(1)
-    assert a.contains(0.5)
-
-    assert not a.contains(jnp.array([1, 0]))
-    assert not a.contains(3.5)
     assert not a.contains("string")
 
     assert a == b

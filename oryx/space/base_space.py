@@ -29,6 +29,10 @@ class AbstractSpace[SampleType](eqx.Module):
         """Returns the shape of the space as an immutable property."""
 
     @abstractmethod
+    def canonical(self) -> SampleType:
+        """Returns a canonical element of the space."""
+
+    @abstractmethod
     def sample(self, key: Key) -> SampleType:
         """Returns a random sample from the space."""
 
@@ -47,6 +51,10 @@ class AbstractSpace[SampleType](eqx.Module):
     def __repr__(self) -> str:
         """Returns a string representation of the space."""
 
+    @abstractmethod
+    def __hash__(self) -> int:
+        """Returns a hash of the space."""
+
 
 class Discrete(AbstractSpace[Int[Array, ""]]):
     """
@@ -58,8 +66,8 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
     _n: Int[Array, ""]
     start: Int[Array, ""]
 
-    def __init__(self, n: int, start: int = 0):
-        assert n > 0, "n must be positive"
+    def __init__(self, n: Int[ArrayLike, ""], start: Int[ArrayLike, ""] = 0):
+        assert n > 0, "n must be positive"  # pyright: ignore
 
         self._n = jnp.asarray(n)
         self.start = jnp.asarray(start)
@@ -71,6 +79,9 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
     @property
     def shape(self) -> tuple[int, ...]:
         return ()
+
+    def canonical(self) -> Int[Array, ""]:
+        return self.start
 
     def sample(self, key: Key) -> Int[Array, ""]:
         return jr.randint(key, shape=(), minval=self.start, maxval=self._n + self.start)
@@ -96,6 +107,13 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
 
     def __repr__(self) -> str:
         return f"Discrete({self._n}, start={self.start})"
+
+    def __hash__(self) -> int:
+        return hash((int(self._n), int(self.start)))
+
+    @property
+    def dtype(self) -> jnp.dtype:
+        return self._n.dtype
 
 
 class Box(AbstractSpace[Float[Array, " ..."]]):
@@ -139,6 +157,9 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
     @property
     def shape(self) -> tuple[int, ...]:
         return self._low.shape
+
+    def canonical(self) -> Float[Array, " ..."]:
+        return (self._low + self._high) / 2
 
     def sample(self, key: Key) -> Float[Array, " ..."]:
         bounded_key, unbounded_key, upper_bounded_key, lower_bounded_key = jr.split(
@@ -198,6 +219,13 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
     def __repr__(self) -> str:
         return f"Box(low={self._low}, high={self._high})"
 
+    def __hash__(self) -> int:
+        return hash((self._low.tobytes(), self._high.tobytes()))
+
+    @property
+    def dtype(self) -> jnp.dtype:
+        return self._low.dtype
+
 
 class Tuple(AbstractSpace[tuple[Any, ...]]):
     """A cartesian product of spaces."""
@@ -216,6 +244,9 @@ class Tuple(AbstractSpace[tuple[Any, ...]]):
     @property
     def shape(self) -> None:
         return None
+
+    def canonical(self) -> tuple[Any, ...]:
+        return tuple(space.canonical() for space in self.spaces)
 
     def sample(self, key: Key) -> tuple[Any, ...]:
         return tuple(
@@ -244,6 +275,9 @@ class Tuple(AbstractSpace[tuple[Any, ...]]):
     def __repr__(self) -> str:
         return f"Tuple({', '.join(repr(space) for space in self.spaces)})"
 
+    def __hash__(self) -> int:
+        return hash(tuple(hash(space) for space in self.spaces))
+
     def __getitem__(self, index: int) -> AbstractSpace:
         return self.spaces[index]
 
@@ -268,6 +302,9 @@ class Dict(AbstractSpace[dict[str, Any]]):
     @property
     def shape(self) -> None:
         return None
+
+    def canonical(self) -> dict[str, Any]:
+        return {key: space.canonical() for key, space in self.spaces.items()}
 
     def sample(self, key: Key) -> dict[str, Any]:
         return {
@@ -300,6 +337,9 @@ class Dict(AbstractSpace[dict[str, Any]]):
     def __repr__(self) -> str:
         return f"Dict({', '.join(f'{key}: {repr(space)}' for key, space in self.spaces.items())})"
 
+    def __hash__(self) -> int:
+        return hash(tuple((key, hash(space)) for key, space in self.spaces.items()))
+
     def __getitem__(self, index: str) -> AbstractSpace:
         return self.spaces[index]
 
@@ -325,6 +365,9 @@ class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]]):
     @property
     def shape(self) -> tuple[int, ...]:
         return (len(self.ns),)
+
+    def canonical(self) -> Int[Array, " n"]:
+        return self.starts
 
     def sample(self, key: Key) -> Int[Array, " n"]:
         return jr.randint(
@@ -355,6 +398,9 @@ class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]]):
     def __repr__(self) -> str:
         return f"MultiDiscrete({self.ns}, starts={self.starts})"
 
+    def __hash__(self) -> int:
+        return hash((self.ns.tobytes(), self.starts.tobytes()))
+
 
 class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
     """A space of binary values."""
@@ -368,6 +414,9 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
     @property
     def shape(self) -> tuple[int, ...]:
         return (self.n,)
+
+    def canonical(self) -> Bool[Array, " n"]:
+        return jnp.zeros(self.shape, dtype=bool)
 
     def sample(self, key: Key) -> Bool[Array, " n"]:
         return jr.bernoulli(key, shape=self.shape)
@@ -391,50 +440,5 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
     def __repr__(self) -> str:
         return f"MultiBinary({self.n})"
 
-
-class OneOf(AbstractSpace):
-    """An exclusive tuple of multiple spaces."""
-
-    spaces: tuple[AbstractSpace, ...]
-
-    def __init__(self, spaces: tuple[AbstractSpace, ...]):
-        assert len(spaces) > 0, "spaces must be non-empty"
-
-        self.spaces = spaces
-
-    @property
-    def shape(self) -> None:
-        return None
-
-    def sample(self, key: Key):
-        space_key, sample_key = jr.split(key, 2)
-        subspace_idx = jr.randint(
-            space_key, shape=(), minval=0, maxval=len(self.spaces)
-        )
-        subspace = self.spaces[subspace_idx]
-        return subspace.sample(sample_key)
-
-    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
-        return any(space.contains(x) for space in self.spaces)
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, OneOf):
-            return False
-
-        spaces = list(self.spaces)
-        try:
-            for other_space in other.spaces:
-                spaces.remove(other_space)
-        except ValueError:
-            return False
-
-        return not spaces
-
-    def __repr__(self) -> str:
-        return f"OneOf({', '.join(repr(space) for space in self.spaces)})"
-
-    def __getitem__(self, index: int) -> AbstractSpace:
-        return self.spaces[index]
-
-    def __len__(self) -> int:
-        return len(self.spaces)
+    def __hash__(self) -> int:
+        return hash(self.n)
