@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 
 import equinox as eqx
+import optax
 from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
@@ -189,9 +190,10 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
     Base class for on policy algorithms.
     """
 
-    state_index: eqx.AbstractVar[eqx.nn.StateIndex]
     env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
     policy: eqx.AbstractVar[AbstractActorCriticPolicy[Float, ActType, ObsType]]
+    optimizer: eqx.AbstractVar[optax.GradientTransformation]
+    opt_state_index: eqx.AbstractVar[eqx.nn.StateIndex[optax.OptState]]
 
     gae_lambda: eqx.AbstractVar[float]
     gamma: eqx.AbstractVar[float]
@@ -372,13 +374,6 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         Train the policy using the rollout buffer.
         """
 
-    @abstractmethod
-    def learning_rate(self, state: eqx.nn.State) -> Float[Array, ""]:
-        """
-        Return the current learning rate.
-        This is used for logging purposes.
-        """
-
     def initialize_iteration_carry(
         self,
         state: eqx.nn.State,
@@ -422,7 +417,9 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         if progress_bar is not None:
             progress_bar.update(advance=self.num_steps)
         if tb_writer is not None:
-            log["loss/learning_rate"] = self.learning_rate(state)
+            log["loss/learning_rate"] = optax.tree_utils.tree_get(
+                state.get(self.opt_state_index), "learning_rate"
+            )
 
             tb_writer.add_dict(log, global_step=carry.step_carry.step_count)
             if episode_stats is not None:

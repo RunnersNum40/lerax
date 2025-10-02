@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 
 import equinox as eqx
+import optax
 from jaxtyping import Key
 
 from oryx.env import AbstractEnvLike
@@ -12,9 +13,10 @@ from oryx.policy import AbstractPolicy
 class AbstractAlgorithm[ActType, ObsType](eqx.Module):
     """Base class for RL algorithms."""
 
-    state_index: eqx.AbstractVar[eqx.nn.StateIndex]
     env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
     policy: eqx.AbstractVar[AbstractPolicy]
+    optimizer: eqx.AbstractVar[optax.GradientTransformation]
+    opt_state_index: eqx.AbstractVar[eqx.nn.StateIndex[optax.OptState]]
 
     # TODO: Add support for callbacks
     @abstractmethod

@@ -22,44 +22,44 @@ class PPOStats(eqx.Module):
     value_loss: Float[Array, ""]
     entropy_loss: Float[Array, ""]
     state_magnitude_loss: Float[Array, ""]
+    ratios: Float[Array, ""]
 
 
 class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
     """Proximal Policy Optimization (PPO) algorithm."""
 
-    state_index: eqx.nn.StateIndex[optax.OptState]
     env: AbstractEnvLike[ActType, ObsType]
     policy: AbstractActorCriticPolicy[Float, ActType, ObsType]
+    optimizer: eqx.AbstractVar[optax.GradientTransformation]
+    opt_state_index: eqx.AbstractVar[eqx.nn.StateIndex[optax.OptState]]
 
-    gae_lambda: float
-    gamma: float
-    num_steps: int
-    batch_size: int
+    clipper: optax.GradientTransformation
+    clipper_index: eqx.nn.StateIndex
 
-    optimizer: optax.GradientTransformation
-    anneal_learning_rate: bool
+    gae_lambda: float = eqx.field(static=True)
+    gamma: float = eqx.field(static=True)
+    num_steps: int = eqx.field(static=True)
+    batch_size: int = eqx.field(static=True)
 
-    num_epochs: int
-    num_mini_batches: int
+    num_epochs: int = eqx.field(static=True)
+    num_mini_batches: int = eqx.field(static=True)
 
-    normalize_advantages: bool
-    clip_coefficient: float
-    clip_value_loss: bool
-    entropy_loss_coefficient: float
-    value_loss_coefficient: float
-    state_magnitude_coefficient: float
-    max_grad_norm: float
+    normalize_advantages: bool = eqx.field(static=True)
+    clip_coefficient: float = eqx.field(static=True)
+    clip_value_loss: bool = eqx.field(static=True)
+    entropy_loss_coefficient: float = eqx.field(static=True)
+    value_loss_coefficient: float = eqx.field(static=True)
+    state_magnitude_coefficient: float = eqx.field(static=True)
+    max_grad_norm: float = eqx.field(static=True)
 
     def __init__(
         self,
         env: AbstractEnvLike[ActType, ObsType],
         policy: AbstractActorCriticPolicy[Float, ActType, ObsType],
         *,
-        num_steps: int = 2048,
+        num_steps: int = 1024,
         gae_lambda: float = 0.95,
         gamma: float = 0.99,
-        learning_rate: float = 3e-4,
-        anneal_learning_rate: bool = True,
         num_epochs: int = 16,
         num_mini_batches: int = 32,
         clip_coefficient: float = 0.2,
@@ -69,7 +69,6 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         state_magnitude_coefficient: float = 0.0,
         max_grad_norm: float = 0.5,
         normalize_advantages: bool = True,
-        optimizer: optax.GradientTransformation | None = None,
     ):
         self.env = env
         self.policy = policy
@@ -90,46 +89,25 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         self.max_grad_norm = float(max_grad_norm)
         self.normalize_advantages = bool(normalize_advantages)
 
-        self.optimizer = self.make_optimizer(
-            learning_rate,
-            anneal_learning_rate,
-            num_epochs,
-            num_mini_batches,
-            max_grad_norm,
-            optimizer,
-        )
-        self.anneal_learning_rate = bool(anneal_learning_rate)
+        self.clipper = optax.clip_by_global_norm(self.max_grad_norm)
+        clipper_state = self.clipper.init(eqx.filter(policy, eqx.is_inexact_array))
+        self.clipper_index = eqx.nn.StateIndex(clipper_state)
 
+        self.optimizer = self.make_optimizer(3e-4, self.max_grad_norm)
         opt_state = self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array))
-        self.state_index = eqx.nn.StateIndex(opt_state)
+        self.opt_state_index = eqx.nn.StateIndex(opt_state)
 
     @staticmethod
     def make_optimizer(
         learning_rate: float,
-        anneal_learning_rate: bool,
-        num_epochs: int,
-        num_mini_batches: int,
         max_grad_norm: float,
-        optimizer: optax.GradientTransformation | None = None,
     ) -> optax.GradientTransformation:
-        if optimizer is None:
-            if anneal_learning_rate:
-                schedule = optax.linear_schedule(
-                    init_value=learning_rate,
-                    end_value=0.0,
-                    transition_steps=num_epochs * num_mini_batches,
-                )
-            else:
-                schedule = learning_rate
+        adam = optax.inject_hyperparams(optax.adam)(learning_rate=learning_rate)
 
-            adam = optax.inject_hyperparams(optax.adam)(
-                learning_rate=schedule, eps=1e-5
-            )
-
-            optimizer = optax.named_chain(
-                ("clipping", optax.clip_by_global_norm(max_grad_norm)),
-                ("adam", adam),
-            )
+        optimizer = optax.named_chain(
+            ("clipping", optax.clip_by_global_norm(max_grad_norm)),
+            ("adam", adam),
+        )
 
         return optimizer
 
@@ -187,7 +165,7 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         entropy_loss = jnp.mean(entropy)
 
         # TODO: Add state magnitude loss
-        # manitude loss is proportional to the squared L2 norm of the latent state of the policy
+        # State loss is proportional to the squared norm of the latent state of the policy
         state_magnitude_loss = jnp.array(0.0)
 
         loss = (
@@ -198,7 +176,13 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         )
 
         return loss, PPOStats(
-            approx_kl, loss, policy_loss, value_loss, entropy_loss, state_magnitude_loss
+            approx_kl,
+            loss,
+            policy_loss,
+            value_loss,
+            entropy_loss,
+            state_magnitude_loss,
+            ratios,
         )
 
     ppo_loss_grad = staticmethod(eqx.filter_value_and_grad(ppo_loss, has_aux=True))
@@ -227,15 +211,16 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
             self.entropy_loss_coefficient,
         )
 
-        opt_state = state.get(self.state_index)
-        updates, opt_state = self.optimizer.update(grads, opt_state)
-        policy = eqx.apply_updates(policy, updates)
-        state = state.set(self.state_index, opt_state)
+        clipper_state = state.get(self.clipper_index)
+        updates, clipper_state = self.clipper.update(grads, clipper_state)
+        state = state.set(self.clipper_index, clipper_state)
 
-        leaves = jax.tree.leaves(grads)
-        flat_grads = jnp.concatenate(jax.tree.map(jnp.ravel, leaves))
-        nan_in_grads = jnp.any(jnp.isnan(flat_grads))
-        stats = eqx.error_if(stats, nan_in_grads, "NaN in gradients")
+        opt_state = state.get(self.opt_state_index)
+
+        updates, new_opt_state = self.optimizer.update(updates, opt_state)
+        state = state.set(self.opt_state_index, new_opt_state)
+
+        policy = eqx.apply_updates(policy, updates)
 
         return state, policy, stats
 
@@ -322,15 +307,12 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
             "loss/value": stats.value_loss,
             "loss/entropy": stats.entropy_loss,
             "loss/state_magnitude": stats.state_magnitude_loss,
+            "loss/ratio": stats.ratios,
             "stats/variance": variance,
             "stats/explained_variance": explained_variance,
         }
 
         return state, policy, log
-
-    def learning_rate(self, state: eqx.nn.State) -> Float[Array, ""]:
-        opt_state = state.get(self.state_index)
-        return opt_state["adam"].hyperparams["learning_rate"]  # pyright: ignore
 
     @classmethod
     def load(cls, path: str) -> PPO[ActType, ObsType]:
