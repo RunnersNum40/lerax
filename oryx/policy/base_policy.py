@@ -17,7 +17,6 @@ class AbstractPolicy[ActType, ObsType](eqx.Module):
     Policies map from observations to actions.
     """
 
-    state_index: eqx.AbstractVar[eqx.nn.StateIndex]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 

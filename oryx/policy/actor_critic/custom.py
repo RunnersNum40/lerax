@@ -53,8 +53,6 @@ class CustomActorCriticPolicy[
     )
     log_std: Float[Array, " action_size"]
 
-    state_index: eqx.nn.StateIndex[None] = eqx.nn.StateIndex(None)
-
     def __init__(
         self,
         env: AbstractEnvLike[ActType, ObsType],

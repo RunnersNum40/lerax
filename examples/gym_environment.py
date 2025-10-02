@@ -25,7 +25,7 @@ algo, state = eqx.nn.make_with_state(PPO)(
 
 algo.learn(
     state,
-    total_timesteps=2**18,
+    total_timesteps=2**17,
     key=learn_key,
     show_progress_bar=True,
     tb_log_name=f"logs/{env.name}_{datetime.now().strftime("%H%M%S")}",

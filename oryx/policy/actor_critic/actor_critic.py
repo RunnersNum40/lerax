@@ -6,6 +6,7 @@ import equinox as eqx
 from jaxtyping import Array, Float, Key
 
 from oryx.distribution import AbstractDistribution
+from oryx.space import AbstractSpace
 
 from ..base_policy import AbstractPolicy
 
@@ -18,10 +19,11 @@ class AbstractActorCriticPolicy[FeatureType, ActType, ObsType](
     Base class for actor-critic policies.
 
     For now all policies are treated as stateful, meaning they maintain an internal
-    state. Non-stateful policies can simplly ignore the state during implementation.
+    state. Non-stateful policies can simply ignore the state during implementation.
     """
 
-    state_index: eqx.AbstractVar[eqx.nn.StateIndex]
+    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
+    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
     @abstractmethod
     def extract_features(

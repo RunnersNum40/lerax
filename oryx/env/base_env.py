@@ -11,6 +11,8 @@ from oryx.space import AbstractSpace
 class AbstractEnvLike[ActType, ObsType](eqx.Module):
     """Base class for RL environments or wrappers that behave like environments"""
 
+    name: eqx.AbstractVar[str]
+
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
@@ -53,8 +55,10 @@ class AbstractEnvLike[ActType, ObsType](eqx.Module):
 class AbstractEnv[ActType, ObsType](AbstractEnvLike[ActType, ObsType]):
     """Base class for RL environments"""
 
-    name: eqx.AbstractClassVar[str]
-    state_index: eqx.AbstractVar[eqx.nn.StateIndex]
+    name: eqx.AbstractVar[str]
+
+    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
+    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
     @property
     def unwrapped(self) -> AbstractEnv[ActType, ObsType]:

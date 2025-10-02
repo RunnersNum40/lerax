@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import cast
 
 import equinox as eqx
+import optax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
@@ -27,13 +28,6 @@ class MLPActorCriticPolicy[
 ](AbstractActorCriticPolicy[FeatureType, ActType, ObsType]):
     """
     Actor–critic policy with MLP components.
-
-    Defaults:
-      - Feature extractor: Flatten
-      - Value model: MLP(feature_size → scalar)
-      - Action model:
-          * Discrete: MLP(feature_size → n_actions) with Categorical
-          * Box: MLP(feature_size → action_dim) with Normal + squashing
     """
 
     action_space: Box | Discrete
@@ -43,8 +37,6 @@ class MLPActorCriticPolicy[
     value_model: MLP
     action_model: MLP
     log_std: Float[Array, " action_size"]
-
-    state_index: eqx.nn.StateIndex[None] = eqx.nn.StateIndex(None)
 
     def __init__(
         self,
@@ -57,7 +49,7 @@ class MLPActorCriticPolicy[
         value_depth: int = 2,
         action_width: int = 64,
         action_depth: int = 2,
-        log_std_init: float = -0.5,
+        log_std_init: float = 0.0,
         key: Key,
     ):
         if isinstance(env.action_space, Discrete):
