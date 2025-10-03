@@ -259,6 +259,16 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
 
         return state, policy, stats
 
+    @staticmethod
+    def explained_variance(
+        returns: Float[Array, ""], values: Float[Array, ""]
+    ) -> Float[Array, ""]:
+        variance = jnp.var(returns)
+        explained_variance = 1 - jnp.var(returns - values) / (
+            variance + jnp.finfo(returns.dtype).eps
+        )
+        return explained_variance
+
     def train(
         self,
         state: eqx.nn.State,
@@ -294,10 +304,9 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         )
 
         stats = jax.tree.map(jnp.mean, stats)
-        variance = jnp.var(rollout_buffer.rewards)
-        explained_variance = 1 - jnp.var(
-            rollout_buffer.returns - rollout_buffer.values
-        ) / (variance + jnp.finfo(rollout_buffer.returns.dtype).eps)
+        explained_variance = self.explained_variance(
+            rollout_buffer.returns, rollout_buffer.values
+        )
         log = {
             "approx_kl": stats.approx_kl,
             "loss": stats.total_loss,
