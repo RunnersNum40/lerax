@@ -88,27 +88,15 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         self.max_grad_norm = float(max_grad_norm)
         self.normalize_advantages = bool(normalize_advantages)
 
+        # Keep optimizer and clipper separate to allow defining the optimizer
+        # somewhere else in the future
         self.clipper = optax.clip_by_global_norm(self.max_grad_norm)
         clipper_state = self.clipper.init(eqx.filter(policy, eqx.is_inexact_array))
         self.clipper_index = eqx.nn.StateIndex(clipper_state)
 
-        self.optimizer = self.make_optimizer(3e-4, self.max_grad_norm)
+        self.optimizer = optax.inject_hyperparams(optax.adam)(3e-4)
         opt_state = self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array))
         self.opt_state_index = eqx.nn.StateIndex(opt_state)
-
-    @staticmethod
-    def make_optimizer(
-        learning_rate: float,
-        max_grad_norm: float,
-    ) -> optax.GradientTransformation:
-        adam = optax.inject_hyperparams(optax.adam)(learning_rate=learning_rate)
-
-        optimizer = optax.named_chain(
-            ("clipping", optax.clip_by_global_norm(max_grad_norm)),
-            ("adam", adam),
-        )
-
-        return optimizer
 
     @staticmethod
     def ppo_loss(
