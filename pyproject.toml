@@ -21,9 +21,18 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+compatibility = ["gymnasium", "stable-baselines3", "torch"]
 docs = ["mkdocs-material"]
-gym = ["gymnasium"]
-test = ["pytest", "pytest-cov", "pytest-xdist", "pyright", "ruff"]
+test = [
+  "pytest",
+  "pytest-cov",
+  "pytest-xdist",
+  "pyright",
+  "ruff",
+  "gymnasium",
+  "stable-baselines3",
+  "torch",
+]
 
 [build-system]
 requires = ["hatchling"]
