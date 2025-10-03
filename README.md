@@ -22,19 +22,15 @@ In addition, the NDE code is heavily inspired by the work of [Patrick Kidger](ht
 
 ## TODO
 
-- Get it working!
-  - Policies
-  - Algorithms
-    - PPO
-  - Expand support beyond Box and Discrete spaces
+- Expand support beyond Box and Discrete spaces
 - Logging
   - Code flow logging
   - Training logging
+  - Migrate from tensorboard to aim
 - Documentation
   - Standardize docstring formats
   - Write documentation for all public APIs
   - Publish docs
-  - Examples
 - Testing
   - More thorough unit testing
   - Integration testing
@@ -48,4 +44,3 @@ In addition, the NDE code is heavily inspired by the work of [Patrick Kidger](ht
   - Rendering support
   - Expand RL variants to include more algorithms
   - Create a more comprehensive set of environments
-- Migrate from tensorboard to aim
