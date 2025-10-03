@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import equinox as eqx
 from distreqx import bijectors, distributions
-from jax import numpy as jnp
-from jaxtyping import Array, ArrayLike, Bool, Float, Integer, Key
+from jaxtyping import Array, Float, Key
 
 
 class AbstractDistribution[SampleType](eqx.Module):
