@@ -44,7 +44,7 @@ class MLPActorCriticPolicy[
         *,
         feature_size: int = 64,
         feature_width: int = 64,
-        feature_depth: int = 2,
+        feature_depth: int = 0,
         value_width: int = 64,
         value_depth: int = 2,
         action_width: int = 64,
