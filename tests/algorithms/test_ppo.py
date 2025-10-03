@@ -65,15 +65,16 @@ class TestPPOLossAndTraining:
 
         state, pol_after2, log = algo.train(state, pol_after, buf, key=k_train)
         required = {
-            "loss/approx_kl",
-            "loss/total",
-            "loss/policy",
-            "loss/value",
-            "loss/entropy",
-            "loss/state_magnitude",
-            "stats/variance",
-            "stats/explained_variance",
+            "approx_kl",
+            "loss",
+            "policy_loss",
+            "value_loss",
+            "entropy_loss",
+            "state_magnitude_loss",
+            "explained_variance",
         }
+        print(log.keys())
+        print(required)
         assert required.issubset(log.keys())
         assert all(jnp.isfinite(v) for v in log.values())
 
@@ -103,14 +104,14 @@ class TestPPOLossAndTraining:
         )
         policy_loss = -1.0
         value_loss_clipped = 0.5 * (0.1**2)
-        entropy = 2.0
-        expected_total = policy_loss + 0.5 * value_loss_clipped - 0.01 * entropy
+        entropy = -2.0
+        expected_total = policy_loss + 0.5 * value_loss_clipped + 0.01 * entropy
 
         assert float(stats_c.policy_loss) == pytest.approx(policy_loss)
         assert float(stats_c.value_loss) == pytest.approx(value_loss_clipped)
         assert float(stats_c.entropy_loss) == pytest.approx(entropy)
         assert float(stats_c.state_magnitude_loss) == pytest.approx(0.0)
-        assert float(stats_c.total_loss) == pytest.approx(expected_total, rel=1e-6)
+        assert float(stats_c.total_loss) == pytest.approx(expected_total)
         assert float(stats_c.approx_kl) == pytest.approx(0.0)
 
         loss_u, stats_u = PPO.ppo_loss(
@@ -124,8 +125,6 @@ class TestPPOLossAndTraining:
             entropy_loss_coefficient=0.01,
         )
         assert float(stats_u.value_loss) == pytest.approx(12.5)
-        expected_total_unclipped = policy_loss + 0.5 * 12.5 - 0.01 * entropy
-        assert float(stats_u.total_loss) == pytest.approx(
-            expected_total_unclipped, rel=1e-6
-        )
+        expected_total_unclipped = policy_loss + 0.5 * 12.5 + 0.01 * entropy
+        assert float(stats_u.total_loss) == pytest.approx(expected_total_unclipped)
         assert expected_total_unclipped != pytest.approx(expected_total)

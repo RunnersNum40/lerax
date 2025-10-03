@@ -298,7 +298,7 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         log = {
             "approx_kl": stats.approx_kl,
             "loss": stats.total_loss,
-            "policy_gradient_loss": stats.policy_loss,
+            "policy_loss": stats.policy_loss,
             "value_loss": stats.value_loss,
             "entropy_loss": stats.entropy_loss,
             "state_magnitude_loss": stats.state_magnitude_loss,
