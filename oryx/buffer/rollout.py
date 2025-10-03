@@ -10,6 +10,8 @@ from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Key, PyTree
 
+from oryx.utils import clone_state
+
 from .base_buffer import AbstractBuffer
 
 
@@ -80,7 +82,8 @@ class RolloutBuffer[ActType, ObsType](AbstractBuffer):
         self.truncations = jnp.asarray(truncations)
         self.log_probs = jnp.asarray(log_probs)
         self.values = jnp.asarray(values)
-        self.states = states
+        # Assume the state has been used already and clone to compensate
+        self.states = clone_state(states)
         self.returns = (
             jnp.asarray(returns)
             if returns is not None
@@ -92,7 +95,6 @@ class RolloutBuffer[ActType, ObsType](AbstractBuffer):
             else jnp.full_like(values, jnp.nan)
         )
 
-    @eqx.filter_jit
     def compute_returns_and_advantages(
         self,
         last_value: Float[ArrayLike, ""],

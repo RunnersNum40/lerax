@@ -86,9 +86,7 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
 
         policy_state = state.substate(self.policy)
         policy_state, action, value, log_prob = policy(
-            clone_state(  # Don't consume the state since it will also be used in training
-                policy_state
-            ),
+            policy_state,
             carry.last_obs,
             key=action_key,
         )
