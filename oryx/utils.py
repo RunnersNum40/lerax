@@ -67,7 +67,7 @@ filter_scan = eqx.module_update_wrapper(_FilterScan())
 
 
 def debug_wrapper[**InType](
-    func: Callable[InType, Any], ordered: bool = False, thread: bool = False
+    func: Callable[InType, Any], ordered: bool = False, thread: bool | None = None
 ) -> Callable[InType, None]:
     """
     Return a JIT‑safe version of *func*.
@@ -76,6 +76,9 @@ def debug_wrapper[**InType](
     :param ordered: If True, the callback will be executed in the order of the arguments
     :param thread: If True, the callback will be executed in a separate thread.
     """
+    if thread is None:
+        thread = not ordered
+
     if ordered and thread:
         # TODO: Add a warning or error here
         pass
@@ -94,7 +97,7 @@ def debug_wrapper[**InType](
 
 
 def debug_with_numpy_wrapper(
-    func: Callable[..., Any], ordered: bool = False, thread: bool = False
+    func: Callable[..., Any], ordered: bool = False, thread: bool | None = None
 ) -> Callable[..., None]:
     """
     Like `debug_wrapper` but converts every jax.Array/`jnp.ndarray` argument
@@ -116,7 +119,7 @@ def debug_with_numpy_wrapper(
 
 
 def debug_with_list_wrapper(
-    func: Callable[..., Any], ordered: bool = False, thread: bool = False
+    func: Callable[..., Any], ordered: bool = False, thread: bool | None = None
 ) -> Callable[..., None]:
     """
     Like `debug_wrapper` but converts every jax.Array/`jnp.ndarray` argument
