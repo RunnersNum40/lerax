@@ -206,7 +206,7 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
         if x.shape != self._shape:
             return False
 
-        return bool(jnp.all(x >= self._low)) and bool(jnp.all(x <= self._high))
+        return jnp.logical_and(jnp.all(x >= self._low), jnp.all(x <= self._high))
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Box):
@@ -261,7 +261,9 @@ class Tuple(AbstractSpace[tuple[Any, ...]]):
         if len(x) != len(self.spaces):
             return False
 
-        return all(space.contains(x_i) for space, x_i in zip(self.spaces, x))
+        return jnp.array(
+            space.contains(x_i) for space, x_i in zip(self.spaces, x)
+        ).all()
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Tuple):
@@ -321,9 +323,9 @@ class Dict(AbstractSpace[dict[str, Any]]):
         if len(x) != len(self.spaces):
             return False
 
-        return all(
+        return jnp.array(
             key in self.spaces and self.spaces[key].contains(x[key]) for key in x.keys()
-        )
+        ).all()
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Dict):
@@ -385,7 +387,7 @@ class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]]):
         if jnp.logical_not(jnp.array_equal(x, jnp.floor(x))):
             return False
 
-        return bool(jnp.all((self.starts <= x) & (x < self.ns + self.starts), axis=0))
+        return jnp.all((self.starts <= x) & (x < self.ns + self.starts), axis=0)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, MultiDiscrete):
@@ -429,7 +431,7 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
         if x.shape != self.shape:
             return False
 
-        return bool(jnp.all((x == 0) | (x == 1), axis=0))
+        return jnp.all((x == 0) | (x == 1), axis=0)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, MultiBinary):
