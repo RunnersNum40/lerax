@@ -22,7 +22,6 @@ class PPOStats(eqx.Module):
     value_loss: Float[Array, ""]
     entropy_loss: Float[Array, ""]
     state_magnitude_loss: Float[Array, ""]
-    ratios: Float[Array, ""]
 
 
 class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
@@ -57,13 +56,13 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         env: AbstractEnvLike[ActType, ObsType],
         policy: AbstractActorCriticPolicy[Float, ActType, ObsType],
         *,
-        num_steps: int = 1024,
+        num_steps: int = 2048,
+        num_epochs: int = 16,
+        num_batches: int = 32,
         gae_lambda: float = 0.95,
         gamma: float = 0.99,
-        num_epochs: int = 16,
-        num_mini_batches: int = 32,
         clip_coefficient: float = 0.2,
-        clip_value_loss: bool = True,
+        clip_value_loss: bool = False,
         entropy_loss_coefficient: float = 0.0,
         value_loss_coefficient: float = 0.5,
         state_magnitude_coefficient: float = 0.0,
@@ -74,12 +73,12 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         self.policy = policy
 
         self.num_steps = int(num_steps)
+        self.num_epochs = int(num_epochs)
+        self.num_mini_batches = int(num_batches)
+        self.batch_size = self.num_steps // self.num_mini_batches
+
         self.gae_lambda = float(gae_lambda)
         self.gamma = float(gamma)
-
-        self.num_epochs = int(num_epochs)
-        self.num_mini_batches = int(num_mini_batches)
-        self.batch_size = self.num_steps // self.num_mini_batches
 
         self.clip_coefficient = float(clip_coefficient)
         self.clip_value_loss = bool(clip_value_loss)
@@ -122,11 +121,11 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         state_magnitude_coefficient: float,
         entropy_loss_coefficient: float,
     ) -> tuple[Float[Array, ""], PPOStats]:
-        _, new_values, new_log_probs, entropy = jax.vmap(policy.evaluate_action)(
+        _, values, log_probs, entropy = jax.vmap(policy.evaluate_action)(
             rollout_buffer.states, rollout_buffer.observations, rollout_buffer.actions
         )
 
-        log_ratios = new_log_probs - rollout_buffer.log_probs
+        log_ratios = log_probs - rollout_buffer.log_probs
         ratios = jnp.exp(log_ratios)
         approx_kl = jnp.mean(ratios - log_ratios) - 1
 
@@ -146,21 +145,21 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
 
         if clip_value_loss:
             clipped_values = rollout_buffer.values + jnp.clip(
-                new_values - rollout_buffer.values,
+                values - rollout_buffer.values,
                 -clip_coefficient,
                 clip_coefficient,
             )
             value_loss = (
                 jnp.mean(
                     jnp.minimum(
-                        jnp.square(new_values - rollout_buffer.returns),
+                        jnp.square(values - rollout_buffer.returns),
                         jnp.square(clipped_values - rollout_buffer.returns),
                     )
                 )
                 / 2
             )
         else:
-            value_loss = jnp.mean(jnp.square(new_values - rollout_buffer.returns)) / 2
+            value_loss = jnp.mean(jnp.square(values - rollout_buffer.returns)) / 2
 
         entropy_loss = jnp.mean(entropy)
 
@@ -182,7 +181,6 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
             value_loss,
             entropy_loss,
             state_magnitude_loss,
-            ratios,
         )
 
     ppo_loss_grad = staticmethod(eqx.filter_value_and_grad(ppo_loss, has_aux=True))
@@ -301,15 +299,13 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
             rollout_buffer.returns - rollout_buffer.values
         ) / (variance + jnp.finfo(rollout_buffer.returns.dtype).eps)
         log = {
-            "loss/approx_kl": stats.approx_kl,
-            "loss/total": stats.total_loss,
-            "loss/policy": stats.policy_loss,
-            "loss/value": stats.value_loss,
-            "loss/entropy": stats.entropy_loss,
-            "loss/state_magnitude": stats.state_magnitude_loss,
-            "loss/ratio": stats.ratios,
-            "stats/variance": variance,
-            "stats/explained_variance": explained_variance,
+            "approx_kl": stats.approx_kl,
+            "loss": stats.total_loss,
+            "policy_gradient_loss": stats.policy_loss,
+            "value_loss": stats.value_loss,
+            "entropy_loss": stats.entropy_loss,
+            "state_magnitude_loss": stats.state_magnitude_loss,
+            "explained_variance": explained_variance,
         }
 
         return state, policy, log

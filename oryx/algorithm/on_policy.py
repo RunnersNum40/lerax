@@ -7,147 +7,18 @@ import optax
 from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key, Scalar, ScalarLike
-from rich import progress
-from tensorboardX import SummaryWriter
+from jaxtyping import Array, Bool, Float, Int, Key, Scalar
 
 from oryx.buffer import RolloutBuffer
 from oryx.env import AbstractEnvLike
 from oryx.policy import AbstractActorCriticPolicy
 from oryx.utils import (
     clone_state,
-    debug_with_list_wrapper,
-    debug_with_numpy_wrapper,
-    debug_wrapper,
     filter_scan,
 )
 
 from .base_algorithm import AbstractAlgorithm
-
-
-class JITSummaryWriter:
-    """
-    A wrapper around `tensorboardX.SummaryWriter` with a JIT compatible interface.
-    """
-
-    summary_writer: SummaryWriter
-
-    def __init__(self, log_dir: str | None = None):
-        self.summary_writer = SummaryWriter(log_dir=log_dir)
-
-    def add_scalar(
-        self,
-        tag: str,
-        scalar_value: ScalarLike,
-        global_step: Int[ArrayLike, ""] | None = None,
-        walltime: Float[ArrayLike, ""] | None = None,
-    ):
-        """
-        Add a scalar value to the summary writer.
-        """
-        scalar_value = eqx.error_if(
-            scalar_value,
-            jnp.logical_or(jnp.isnan(scalar_value), jnp.isinf(scalar_value)),
-            "Scalar value cannot be NaN",
-        )
-        debug_with_numpy_wrapper(self.summary_writer.add_scalar, thread=True)(
-            tag, scalar_value, global_step, walltime
-        )
-
-    def add_dict(
-        self,
-        scalars: dict[str, Scalar],
-        *,
-        global_step: Int[ArrayLike, ""] | None = None,
-        walltime: Float[ArrayLike, ""] | None = None,
-    ) -> None:
-        """
-        Log a dictionary of **scalar** values.
-        """
-
-        for tag, value in scalars.items():
-            self.add_scalar(tag, value, global_step=global_step, walltime=walltime)
-
-    def log_episode_stats(
-        self,
-        episode_stats: EpisodeStatisticsAccumulator,
-        *,
-        global_step: Int[ArrayLike, ""] | None = None,
-        walltime: Float[ArrayLike, ""] | None = None,
-    ) -> None:
-        """
-        Log episode statistics to the summary writer.
-        """
-
-        def log_fn(rewards, lengths, dones, global_step, walltime):
-            for reward, length, done in zip(
-                rewards,
-                lengths,
-                dones,
-            ):
-                if done:
-                    self.summary_writer.add_scalar(
-                        "episode/reward",
-                        reward,
-                        global_step=global_step,
-                        walltime=walltime,
-                    )
-                    self.summary_writer.add_scalar(
-                        "episode/length",
-                        length,
-                        global_step=global_step,
-                        walltime=walltime,
-                    )
-
-        debug_with_numpy_wrapper(log_fn, thread=True)(
-            episode_stats.episode_reward,
-            episode_stats.episode_length,
-            episode_stats.episode_done,
-            global_step,
-            walltime,
-        )
-
-
-class JITProgressBar:
-    progress_bar: progress.Progress
-    task: progress.TaskID
-
-    def __init__(self, name: str, total: int | None):
-        self.progress_bar = progress.Progress(
-            progress.TextColumn("[progress.description]{task.description}"),
-            progress.SpinnerColumn(),
-            progress.MofNCompleteColumn(),
-            progress.BarColumn(bar_width=None),
-            progress.TaskProgressColumn(),
-            progress.TimeRemainingColumn(),
-            transient=True,
-        )
-        self.task = self.progress_bar.add_task(name, total=total)
-
-    def start(self) -> None:
-        debug_wrapper(self.progress_bar.start, thread=True)()
-
-    def stop(self) -> None:
-        debug_wrapper(self.progress_bar.stop, thread=True)()
-
-    def update(
-        self,
-        total: Float[ArrayLike, ""] | None = None,
-        completed: Float[ArrayLike, ""] | None = None,
-        advance: Float[ArrayLike, ""] | None = None,
-        description: str | None = None,
-        visible: Bool[ArrayLike, ""] | None = None,
-        refresh: Bool[ArrayLike, ""] = False,
-    ) -> None:
-        debug_with_list_wrapper(self.progress_bar.update, thread=True)(
-            self.task,
-            total=total,
-            completed=completed,
-            advance=advance,
-            description=description,
-            visible=visible,
-            refresh=refresh,
-        )
+from .utils import EpisodeStatisticsAccumulator, JITProgressBar, JITSummaryWriter
 
 
 class StepCarry[ObsType](eqx.Module):
@@ -164,25 +35,6 @@ class IterationCarry[ActType, ObsType](eqx.Module):
 
     step_carry: StepCarry[ObsType]
     policy: AbstractActorCriticPolicy[Float, ActType, ObsType]
-
-
-class EpisodeStatisticsAccumulator(eqx.Module):
-    """
-    Accumulator for episode statistics.
-    This is used to keep track of the episode length, reward, and done status.
-    """
-
-    episode_length: Int[Array, ""]
-    episode_reward: Float[Array, ""]
-    episode_done: Bool[Array, ""]
-
-    @classmethod
-    def from_episode_stats(cls, info: dict[str, Array]) -> EpisodeStatisticsAccumulator:
-        return cls(
-            episode_length=info["length"],
-            episode_reward=info["reward"],
-            episode_done=info["done"],
-        )
 
 
 class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, ObsType]):
@@ -417,14 +269,17 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         if progress_bar is not None:
             progress_bar.update(advance=self.num_steps)
         if tb_writer is not None:
-            log["loss/learning_rate"] = optax.tree_utils.tree_get(
+            log["learning_rate"] = optax.tree_utils.tree_get(
                 state.get(self.opt_state_index), "learning_rate"
             )
 
-            tb_writer.add_dict(log, global_step=carry.step_carry.step_count)
+            tb_writer.add_dict(
+                log, prefix="train", global_step=carry.step_carry.step_count
+            )
             if episode_stats is not None:
                 tb_writer.log_episode_stats(
-                    episode_stats, global_step=carry.step_carry.step_count
+                    episode_stats,
+                    global_step=carry.step_carry.step_count,
                 )
 
         return state, IterationCarry(step_carry, policy)
@@ -462,7 +317,7 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         state, carry = self.initialize_iteration_carry(state, key=init_key)
 
         progress_bar = (
-            JITProgressBar(f"[green]Training {self.env.name}", total=total_timesteps)
+            JITProgressBar(f"Training {self.env.name}", total=total_timesteps)
             if show_progress_bar
             else None
         )
