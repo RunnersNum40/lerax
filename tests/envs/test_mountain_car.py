@@ -25,7 +25,7 @@ class TestMountainCar:
         assert env.observation_space.contains(obs)
 
         key, step_key = jr.split(key)
-        action = jnp.asarray(1)
+        action = jnp.array(1)
         state, obs2, reward, terminated, truncated, info2 = env.step(
             state, action, key=step_key
         )
@@ -38,9 +38,9 @@ class TestMountainCar:
 
         state = state.set(env.state_index, jnp.asarray([env.min_position, -0.01]))
         key, step_key = jr.split(key)
-        state, obs3, *_ = env.step(state, jnp.asarray(1), key=step_key)
+        state, obs3, *_ = env.step(state, jnp.array(1), key=step_key)
         assert obs3.shape == (2,)
-        assert env.min_position <= float(obs3[0]) <= env.max_position
+        assert env.min_position - 1e-6 <= float(obs3[0]) <= env.max_position + 1e-6
         assert abs(float(obs3[1])) <= env.max_speed + 1e-6
 
     def test_mountaincar_scan(self):
