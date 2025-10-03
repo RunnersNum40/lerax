@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import ClassVar
+
 import equinox as eqx
 from jax import lax
 from jax import numpy as jnp
@@ -12,6 +14,8 @@ from .base_env import AbstractEnv
 
 
 class ContinuousMountainCar(AbstractEnv[Float[Array, ""], Float[Array, "2"]]):
+    name: ClassVar[str] = "ContinuousMountainCar"
+
     state_index: eqx.nn.StateIndex[Float[Array, "2"]]
     action_space: Box
     observation_space: Box

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import ClassVar
+
 import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
@@ -13,6 +15,8 @@ class EchoEnv(AbstractEnv[Float[Array, " n"], Float[Array, " n"]]):
     """
     Echoes the action back as the observation, never terminates.
     """
+
+    name: ClassVar[str] = "echo"
 
     action_space: Box
     observation_space: Box
@@ -46,6 +50,8 @@ class FiniteEpisodeEnv(AbstractEnv[Float[Array, ""], Float[Array, ""]]):
     """
     Counts steps and terminates after ``done_at`` steps.
     """
+
+    name: ClassVar[str] = "finite_episode"
 
     state_index: eqx.nn.StateIndex[Int[Array, ""]]
     done_at: int
@@ -90,6 +96,8 @@ class PassThroughEnv(AbstractEnv[Float[Array, ""], Float[Array, ""]]):
     always returns observation = 0.0.
     """
 
+    name: ClassVar[str] = "pass_through"
+
     state_index: eqx.nn.StateIndex[None] = eqx.nn.StateIndex(None)
 
     def __init__(self): ...  # Override dataclass init to avoid unused argument warning
@@ -128,6 +136,7 @@ class DummyEnv(AbstractEnv[Float[Array, ""], Float[Array, ""]]):
     Never terminates/truncates.
     """
 
+    name: ClassVar[str] = "dummy"
     state_index: eqx.nn.StateIndex[Float[Array, ""]]
 
     def __init__(self, *, key):
@@ -168,6 +177,7 @@ class DiscreteActionEnv(AbstractEnv[Int[Array, ""], Float[Array, " n"]]):
     Never terminates/truncates.
     """
 
+    name: ClassVar[str] = "discrete_action"
     state_index: eqx.nn.StateIndex[None] = eqx.nn.StateIndex(None)
     observation_space: Box
     action_space: Discrete
