@@ -174,7 +174,7 @@ class JITProgressBar:
     def __init__(self, name: str, total: int | None, transient: bool = False):
         self.progress_bar = progress.Progress(
             progress.TextColumn("[progress.description]{task.description}"),
-            progress.SpinnerColumn(),
+            progress.SpinnerColumn(finished_text="[green]✔"),
             progress.MofNCompleteColumn(),
             progress.BarColumn(bar_width=None),
             progress.TaskProgressColumn(),
