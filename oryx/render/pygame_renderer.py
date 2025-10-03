@@ -2,13 +2,16 @@ from __future__ import annotations
 
 # Disable pygame greeting message
 import contextlib
+import warnings
 
 with contextlib.redirect_stdout(None):
-    import pygame
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        import pygame
+        from pygame import gfxdraw
 
 from jax import numpy as jnp
 from jaxtyping import ArrayLike, Float
-from pygame import gfxdraw
 
 from .base_renderer import WHITE, AbstractRenderer, Color, Transform
 

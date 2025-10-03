@@ -31,12 +31,11 @@ build-backend = "hatchling.build"
 
 [tool.pyright]
 reportIncompatibleMethodOverride = true
-reportIncompatibleVariableOverride = false  # Incompatible with eqx.AbstractVar
+reportIncompatibleVariableOverride = false # Incompatible with eqx.AbstractVar
 reportFunctionMemberAccess = false
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib", "-Werror", "--cov=oryx"]
-pythonpath = "."
 
 [tool.ruff.lint]
 fixable = ["I001", "F401"]

@@ -9,7 +9,7 @@ from .base_renderer import (
     Color,
     Transform,
 )
-from .pygame import PygameRenderer
+from .pygame_renderer import PygameRenderer
 from .terminal import TerminalRenderer
 from .video import VideoRenderer
 
