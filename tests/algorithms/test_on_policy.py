@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import equinox as eqx
 import jax
+import optax
 import pytest
 from jax import numpy as jnp
 from jax import random as jr
@@ -17,7 +18,8 @@ from tests.envs import DiscreteActionEnv, EchoEnv
 class OnPolicyAlgorithm[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
     env: AbstractEnvLike[ActType, ObsType]
     policy: AbstractActorCriticPolicy[Float, ActType, ObsType]
-    state_index: eqx.nn.StateIndex[None] = eqx.nn.StateIndex(None)
+    optimizer: optax.GradientTransformation
+    opt_state_index: eqx.nn.StateIndex[optax.OptState]
 
     gae_lambda: float = 0.0
     gamma: float = 0.0
@@ -31,6 +33,9 @@ class OnPolicyAlgorithm[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, Obs
     ):
         self.env = env
         self.policy = policy
+        self.optimizer = optax.adam(1e-3)
+        opt_state = self.optimizer.init(eqx.filter(self.policy, eqx.is_inexact_array))
+        self.opt_state_index = eqx.nn.StateIndex(opt_state)
 
     def train(self, state, policy, rollout_buffer, *, key):
         log = {
