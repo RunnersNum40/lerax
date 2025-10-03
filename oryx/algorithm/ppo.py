@@ -161,7 +161,7 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         else:
             value_loss = jnp.mean(jnp.square(values - rollout_buffer.returns)) / 2
 
-        entropy_loss = jnp.mean(entropy)
+        entropy_loss = -jnp.mean(entropy)
 
         # TODO: Add state magnitude loss
         # State loss is proportional to the squared norm of the latent state of the policy
@@ -171,7 +171,7 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
             policy_loss
             + value_loss * value_loss_coefficient
             + state_magnitude_loss * state_magnitude_coefficient
-            - entropy_loss * entropy_loss_coefficient
+            + entropy_loss * entropy_loss_coefficient
         )
 
         return loss, PPOStats(
