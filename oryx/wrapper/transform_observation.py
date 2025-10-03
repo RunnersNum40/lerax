@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from functools import partial
 from typing import Callable
 
 import equinox as eqx
@@ -75,16 +76,12 @@ class AbstractPureObservationWrapper[WrapperObsType, ActType, ObsType](
 
     env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
     func: eqx.AbstractVar[Callable[[ObsType], WrapperObsType]]
-    wrapper_observation_space: eqx.AbstractVar[AbstractSpace[WrapperObsType]]
+    observation_space: eqx.AbstractVar[AbstractSpace[WrapperObsType]]
 
     def observation(
         self, state: eqx.nn.State, obs: ObsType, *, key: Key
     ) -> tuple[eqx.nn.State, WrapperObsType]:
         return state, self.func(obs)
-
-    @property
-    def observation_space(self) -> AbstractSpace[WrapperObsType]:
-        return self.wrapper_observation_space
 
 
 class ClipObservation[ActType](
@@ -96,7 +93,7 @@ class ClipObservation[ActType](
 
     env: AbstractEnvLike[ActType, Float[Array, " ..."]]
     func: Callable[[Float[Array, " ..."]], Float[Array, " ..."]]
-    wrapper_observation_space: Box
+    observation_space: Box
 
     def __init__(self, env: AbstractEnvLike[ActType, Float[Array, " ..."]]):
         if not isinstance(env.observation_space, Box):
@@ -106,10 +103,12 @@ class ClipObservation[ActType](
             )
 
         self.env = env
-        self.func = lambda obs: jnp.clip(
-            obs, env.observation_space.low, env.observation_space.high
+        self.func = partial(
+            jnp.clip,
+            min=env.observation_space.low,
+            max=env.observation_space.high,
         )
-        self.wrapper_observation_space = env.observation_space
+        self.observation_space = env.observation_space
 
 
 class RescaleObservation[ActType](
@@ -119,7 +118,7 @@ class RescaleObservation[ActType](
 
     env: AbstractEnvLike[ActType, Float[Array, " ..."]]
     func: Callable[[Float[Array, " ..."]], Float[Array, " ..."]]
-    wrapper_observation_space: Box
+    observation_space: Box
 
     def __init__(
         self,
@@ -137,7 +136,7 @@ class RescaleObservation[ActType](
 
         self.env = env
         self.func = forward
-        self.wrapper_observation_space = new_box
+        self.observation_space = new_box
 
 
 class FlattenObservation[ActType, ObsType](
@@ -147,11 +146,11 @@ class FlattenObservation[ActType, ObsType](
 
     env: AbstractEnvLike[ActType, ObsType]
     func: Callable[[ObsType], Float[Array, " flat"]]
-    wrapper_observation_space: Box
+    observation_space: Box
 
     def __init__(self, env: AbstractEnvLike[ActType, ObsType]):
         self.env = env
-        self.func = lambda obs: flatten(self.env.observation_space, obs)
-        self.wrapper_observation_space = Box(
+        self.func = partial(flatten, env.observation_space)
+        self.observation_space = Box(
             -jnp.inf, jnp.inf, shape=(flat_dim(env.observation_space),)
         )

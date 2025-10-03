@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import cast
 
 import equinox as eqx
-import optax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real

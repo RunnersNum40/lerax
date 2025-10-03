@@ -69,17 +69,13 @@ class AbstractPureTransformActionWrapper[WrapperActType, ActType, ObsType](
 
     env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
     func: eqx.AbstractVar[Callable[[WrapperActType], ActType]]
-    wrapper_action_space: eqx.AbstractVar[AbstractSpace[WrapperActType]]
+    action_space: eqx.AbstractVar[AbstractSpace[WrapperActType]]
 
     def action(
         self, state: eqx.nn.State, action: WrapperActType, *, key: Key
     ) -> tuple[eqx.nn.State, ActType]:
         transformed_action = self.func(action)
         return state, transformed_action
-
-    @property
-    def action_space(self) -> AbstractSpace[WrapperActType]:
-        return self.wrapper_action_space
 
 
 class TransformAction[WrapperActType, ActType, ObsType](
@@ -89,7 +85,7 @@ class TransformAction[WrapperActType, ActType, ObsType](
 
     env: AbstractEnvLike[ActType, ObsType]
     func: Callable[[WrapperActType], ActType]
-    wrapper_action_space: AbstractSpace[WrapperActType]
+    action_space: AbstractSpace[WrapperActType]
 
     def __init__(
         self,
@@ -99,7 +95,7 @@ class TransformAction[WrapperActType, ActType, ObsType](
     ):
         self.env = env
         self.func = func
-        self.wrapper_action_space = action_space
+        self.action_space = action_space
 
 
 class ClipAction[ObsType](
@@ -113,7 +109,7 @@ class ClipAction[ObsType](
 
     env: AbstractEnvLike[Float[Array, " ..."], ObsType]
     func: Callable[[Float[Array, " ..."]], Float[Array, " ..."]]
-    wrapper_action_space: Box
+    action_space: Box
 
     def __init__(self, env: AbstractEnvLike[Float[Array, " ..."], ObsType]):
         if not isinstance(env.action_space, Box):
@@ -130,7 +126,7 @@ class ClipAction[ObsType](
 
         self.env = env
         self.func = clip
-        self.wrapper_action_space = action_space
+        self.action_space = action_space
 
 
 class RescaleAction[ObsType](
@@ -142,7 +138,7 @@ class RescaleAction[ObsType](
 
     env: AbstractEnvLike[Float[Array, " ..."], ObsType]
     func: Callable[[Float[Array, " ..."]], Float[Array, " ..."]]
-    wrapper_action_space: Box
+    action_space: Box
 
     def __init__(
         self,
@@ -160,4 +156,4 @@ class RescaleAction[ObsType](
 
         self.env = env
         self.func = rescale
-        self.wrapper_action_space = action_space
+        self.action_space = action_space

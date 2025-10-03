@@ -14,7 +14,7 @@ from tests.envs import EchoEnv
 from tests.policies import ConstantPolicy
 
 
-def _make_ppo(num_steps: int = 8) -> tuple[PPO, eqx.nn.State]:
+def make_ppo(num_steps: int = 8) -> tuple[PPO, eqx.nn.State]:
     key = jr.key(0)
     env = EchoEnv(space=Box(-jnp.ones(2), jnp.ones(2)))
     policy, _ = eqx.nn.make_with_state(CustomActorCriticPolicy)(env=env, key=key)
@@ -23,14 +23,14 @@ def _make_ppo(num_steps: int = 8) -> tuple[PPO, eqx.nn.State]:
         policy=policy,
         num_steps=num_steps,
         num_epochs=2,
-        num_mini_batches=2,
+        num_batches=2,
     )
     return algo, state
 
 
 class TestPPOLossAndTraining:
     def test_train_batch(self):
-        algo, state = _make_ppo(num_steps=8)
+        algo, state = make_ppo(num_steps=8)
         k_init, k_roll = jr.split(jr.key(1))
         state, carry = algo.initialize_iteration_carry(state, key=k_init)
         state, step_carry, buf, _ = algo.collect_rollout(
@@ -50,11 +50,8 @@ class TestPPOLossAndTraining:
             assert s.shape == ()
             assert jnp.isfinite(s)
 
-        lr = algo.learning_rate(state)
-        assert lr.shape == ()
-
     def test_train_epoch_and_train(self):
-        algo, state = _make_ppo(num_steps=8)
+        algo, state = make_ppo(num_steps=8)
         k_init, k_roll, k_epoch, k_train = jr.split(jr.key(2), 4)
         state, carry = algo.initialize_iteration_carry(state, key=k_init)
         state, _, buf, _ = algo.collect_rollout(
@@ -81,7 +78,7 @@ class TestPPOLossAndTraining:
         assert all(jnp.isfinite(v) for v in log.values())
 
     def test_learn_integration(self):
-        algo, state = _make_ppo(num_steps=8)
+        algo, state = make_ppo(num_steps=8)
         state, policy = algo.learn(state, total_timesteps=8, key=jr.key(3))
         env = algo.env
         state, obs, _ = env.reset(state.substate(env), key=jr.key(4))
@@ -132,52 +129,3 @@ class TestPPOLossAndTraining:
             expected_total_unclipped, rel=1e-6
         )
         assert expected_total_unclipped != pytest.approx(expected_total)
-
-
-def _setup_algo(*, anneal: bool):
-    key = jr.key(0)
-    env = EchoEnv(space=Box(-jnp.ones(2), jnp.ones(2)))
-    policy, _ = eqx.nn.make_with_state(CustomActorCriticPolicy)(env=env, key=key)
-    algo, state = eqx.nn.make_with_state(PPO)(
-        env=env,
-        policy=policy,
-        num_steps=8,
-        num_epochs=2,
-        num_mini_batches=2,
-        learning_rate=1e-3,
-        anneal_learning_rate=anneal,
-    )
-    return algo, state
-
-
-def _collect_once(algo, state, *, key):
-    state, carry = algo.initialize_iteration_carry(state, key=key)
-    state, _, buf, _ = algo.collect_rollout(
-        algo.policy, state, carry.step_carry, key=jr.split(key)[0]
-    )
-    return state, buf
-
-
-def test_learning_rate_anneals_down():
-    algo, state = _setup_algo(anneal=True)
-    state, buf = _collect_once(algo, state, key=jr.key(1))
-
-    lr0 = float(algo.learning_rate(state))
-    state, _, _ = algo.train(state, algo.policy, buf, key=jr.key(2))
-    lr1 = float(algo.learning_rate(state))
-    state, _, _ = algo.train(state, algo.policy, buf, key=jr.key(3))
-    lr2 = float(algo.learning_rate(state))
-
-    assert lr0 > lr1 > lr2
-
-
-def test_learning_rate_constant_when_no_anneal():
-    algo, state = _setup_algo(anneal=False)
-    state, buf = _collect_once(algo, state, key=jr.key(4))
-
-    lr0 = float(algo.learning_rate(state))
-    state, _, _ = algo.train(state, algo.policy, buf, key=jr.key(5))
-    lr1 = float(algo.learning_rate(state))
-
-    assert lr0 == pytest.approx(1e-3)
-    assert lr1 == pytest.approx(lr0)
