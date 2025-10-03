@@ -6,4 +6,4 @@ from oryx.env import CartPole
 
 env = OryxEnv(*eqx.nn.make_with_state(CartPole)())
 model = PPO("MlpPolicy", env, tensorboard_log="logs")
-model.learn(total_timesteps=2**17, progress_bar=True)
+model.learn(total_timesteps=2**16, progress_bar=True)
