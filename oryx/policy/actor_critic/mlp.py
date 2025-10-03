@@ -53,14 +53,14 @@ class MLPActorCriticPolicy[
     ):
         if isinstance(env.action_space, Discrete):
             act_size = int(env.action_space.n)
-            self.log_std = jnp.array([])
+            self.log_std = jnp.array([], dtype=float)
         elif isinstance(env.action_space, Box):
             if env.action_space.shape:
                 act_size = int(jnp.prod(jnp.asarray(env.action_space.shape)))
-                self.log_std = jnp.full((act_size,), log_std_init)
+                self.log_std = jnp.full((act_size,), log_std_init, dtype=float)
             else:
                 act_size = "scalar"
-                self.log_std = jnp.array(log_std_init)
+                self.log_std = jnp.array(log_std_init, dtype=float)
         else:
             raise NotImplementedError(
                 f"Action space {type(env.action_space)} not supported."

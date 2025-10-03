@@ -69,8 +69,8 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
     def __init__(self, n: Int[ArrayLike, ""], start: Int[ArrayLike, ""] = 0):
         assert n > 0, "n must be positive"  # pyright: ignore
 
-        self._n = jnp.asarray(n)
-        self.start = jnp.asarray(start)
+        self._n = jnp.array(n, dtype=float)
+        self.start = jnp.array(start, dtype=float)
 
     @property
     def n(self) -> Int[Array, ""]:
@@ -133,8 +133,8 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
         high: Float[ArrayLike, " ..."],
         shape: tuple[int, ...] | None = None,
     ):
-        low = jnp.asarray(low)
-        high = jnp.asarray(high)
+        low = jnp.asarray(low, dtype=float)
+        high = jnp.asarray(high, dtype=float)
         if shape is None:
             low, high = jnp.broadcast_arrays(low, high)
             shape = low.shape
@@ -361,8 +361,8 @@ class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]]):
         assert len(ns) == len(starts), "ns and starts must have the same length"
         assert all(n > 0 for n in ns), "all n must be positive"
 
-        self.ns = jnp.asarray(ns)
-        self.starts = jnp.asarray(starts)
+        self.ns = jnp.array(ns, dtype=float)
+        self.starts = jnp.array(starts, dtype=float)
 
     @property
     def shape(self) -> tuple[int, ...]:
