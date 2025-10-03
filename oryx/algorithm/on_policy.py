@@ -92,6 +92,12 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         )
         state = state.update(policy_state)
 
+        action = eqx.error_if(
+            action,
+            jnp.logical_not(self.env.action_space.contains(action)),
+            "Invalid action sampled from policy",
+        )
+
         env_state = state.substate(self.env)
         env_state, observation, reward, termination, truncation, info = self.env.step(
             env_state, action, key=env_key
