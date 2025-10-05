@@ -7,8 +7,6 @@ Models take inputs and produce outputs, and may have state.
 from .base_model import (
     AbstractModel,
     AbstractStatefulModel,
-    AbstractStochasticModel,
-    AbstractStochasticStatefulModel,
 )
 from .flatten import Flatten
 from .mlp import MLP
@@ -28,8 +26,6 @@ from .node import (
 __all__ = [
     "AbstractModel",
     "AbstractStatefulModel",
-    "AbstractStochasticStatefulModel",
-    "AbstractStochasticModel",
     "Flatten",
     "AbstractNeuralODE",
     "AbstractNODETerm",
