@@ -93,7 +93,7 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
 
         if x.ndim != 0:
             return False
-        x = x.item()
+        x = x.squeeze()
 
         if jnp.logical_not(jnp.array_equal(x, jnp.floor(x))):
             return False
