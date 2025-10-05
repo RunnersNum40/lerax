@@ -91,9 +91,10 @@ class ContinuousMountainCar(AbstractEnv[Float[Array, ""], Float[Array, "2"]]):
 
         reward = lax.cond(
             terminated,
-            lambda: 0.0,
             lambda: 100.0,
+            lambda: 0.0,
         )
+        reward -= force**2 * 0.1
 
         state_vals = jnp.asarray([position, velocity])
         state = state.set(self.state_index, state_vals)
