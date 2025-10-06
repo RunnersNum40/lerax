@@ -91,11 +91,13 @@ class JITSummaryWriter:
         """
 
         def log_fn(rewards, lengths, dones, global_step, walltime):
+            global_step = None if global_step is None else global_step - len(rewards)
             for reward, length, done in zip(
                 rewards,
                 lengths,
                 dones,
             ):
+                global_step = None if global_step is None else global_step + 1
                 if done:
                     self.summary_writer.add_scalar(
                         "episode/reward",
