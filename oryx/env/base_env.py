@@ -30,12 +30,6 @@ class AbstractEnvLike[ActType, ObsType](eqx.Module):
     ]:
         """
         Perform a step of the environment
-
-        :param state: The environment state
-        :param action: The action
-        :param key: Random key
-        :returns: The new environment state, the observation, the reward, termination
-            flag, truncation flag, and info dict
         """
 
     @abstractmethod

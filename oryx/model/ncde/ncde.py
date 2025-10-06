@@ -187,13 +187,6 @@ class AbstractNeuralCDE[
     ) -> tuple[eqx.nn.State, Float[Array, " out_size"]]:
         """
         Compute the next state and output given the current state and input.
-
-        :param state: The current state.
-        :param t1: The current time.
-        :param x1: The current input.
-        :param inference: Whether to compute the output using the full history of
-            inputs or starting from the cached state. Used to get a better gradient for
-            back propagation through time.
         """
         ts, xs, zs = self.next_state(state, t1, x1)
 
@@ -317,26 +310,6 @@ class MLPNeuralCDE(AbstractNeuralCDE):
         inference: bool = True,
         state_size: int = 16,
     ):
-        """
-        Create a new MLP Neural CDE model.
-
-        :param in_size: Number of input channels in the time series.
-        :param out_size: Number of output channels for the final prediction.
-        :param latent_size: Number of hidden channels in the latent state.
-        :param width_size: Width of the hidden layers in the MLPs.
-        :param depth: Number of hidden layers in the MLPs.
-        :param field_activation: Activation function for the field MLP.
-        :param field_final_activation: Final activation for the field MLP.
-        :param initial_state_activation: Activation function for the initial state MLP.
-        :param intial_state_final_activation: Final activation for the initial state MLP.
-        :param output_activation: Activation function for the output MLP.
-        :param output_final_activation: Final activation for the output MLP.
-        :param solver: Differential equation solver to use.
-        :param key: JAX PRNG key for initialization.
-        :param time_in_input: Whether to include time as an input feature.
-        :param inference: Whether to run in inference mode (no backprop through time).
-        :param state_size: Number of states to keep in the buffer/history.
-        """
         term_key, initial_key, output_key = jr.split(key, 3)
 
         self.solver = solver

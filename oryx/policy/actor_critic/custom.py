@@ -27,13 +27,6 @@ class CustomActorCriticPolicy[
 ](AbstractActorCriticPolicy[FeatureType, ActType, ObsType]):
     """
     Actor–critic policy with pluggable components.
-
-    Defaults:
-      - Feature extractor: Flatten
-      - Value model: MLP(feature_size → scalar)
-      - Action model:
-          * Discrete: MLP(feature_size → n_actions) with Categorical
-          * Box: MLP(feature_size → action_dim) with Normal + squashing
     """
 
     action_space: Box | Discrete

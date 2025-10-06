@@ -20,25 +20,6 @@ class RolloutBuffer[ActType, ObsType](AbstractBuffer):
     RolloutBuffer used by on-policy algorithms.
 
     Designed for scans and JIT compilation.
-
-    Example:
-    ```python
-    from jax import lax
-
-    def step(carry, x) -> RolloutBuffer:
-        # Do stuff with the carry and x
-        return carry, RolloutBuffer(
-            # Variable assignments here
-        )
-
-    rollout_buffer = lax.scan(step, init, xs) # Collect a filled buffer
-    rollout_buffer = rollout_buffer.compute_returns_and_advantages(
-        carry.value,
-        carry.done,
-        1.0,
-        0.99,
-    )
-    ```
     """
 
     observations: PyTree[ObsType]
@@ -107,11 +88,6 @@ class RolloutBuffer[ActType, ObsType](AbstractBuffer):
         Advantage Estimation.
 
         Works under JIT compilation.
-
-        :param last_value: The estimated value of the last state.
-        :param done: Whether the last state is terminal.
-        :param gae_lambda: The lambda parameter for GAE.
-        :param gamma: The discount factor for future rewards.
         """
         last_value = jnp.asarray(last_value)
         done = jnp.asarray(done)
