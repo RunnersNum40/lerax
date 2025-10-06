@@ -58,7 +58,7 @@ class LogState(eqx.Module):
             self,
             episode_length=self.episode_length + 1,
             episode_reward=self.episode_reward + reward,
-            episode_done=jnp.asarray(done),
+            episode_done=jnp.array(done, dtype=bool),
         )
 
 
