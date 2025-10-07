@@ -1,76 +1,13 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import Any
 
 from jax import numpy as jnp
-from jaxtyping import Array, ArrayLike, Num, PyTree
-
-from .base_space import (
-    AbstractSpace,
-    Box,
-    Discrete,
-    MultiBinary,
-    MultiDiscrete,
-)
-from .base_space import (
-    Dict as DictSpace,
-)
-from .base_space import (
-    Tuple as TupleSpace,
-)
+from jaxtyping import Array
 
 
-def flatten(
-    space: AbstractSpace, sample: PyTree[Num[ArrayLike, "..."]]
-) -> Num[Array, " size"]:
-    """
-    Convert sample from an arbitrary Oryx space into a 1-D array.
-    """
-    if isinstance(space, Box):
-        return jnp.asarray(sample).ravel()
-
-    elif isinstance(space, Discrete):
-        return jnp.asarray([sample])
-
-    elif isinstance(space, MultiBinary):
-        return jnp.asarray(sample).ravel()
-
-    elif isinstance(space, MultiDiscrete):
-        return jnp.asarray(sample).ravel()
-
-    elif isinstance(space, TupleSpace):
-        parts = [
-            flatten(subspace, sub_sample)
-            for subspace, sub_sample in zip(space.spaces, cast(tuple, sample))
-        ]
-        return jnp.concatenate(parts)
-
-    elif isinstance(space, DictSpace):
-        parts = [
-            flatten(space.spaces[key], sample[key])
-            for key in sorted(space.spaces.keys())
-        ]
-        return jnp.concatenate(parts)
-
-    else:
-        raise NotImplementedError(
-            f"Flattening not implemented for space {type(space)}."
-        )
-
-
-def flat_dim(space: AbstractSpace) -> int:
-    """Return the length of flatten(space, sample) without needing a sample."""
-    if isinstance(space, Discrete):
-        return 1
-
-    elif isinstance(space, (Box, MultiBinary, MultiDiscrete)):
-        return int(jnp.prod(jnp.asarray(space.shape)))
-
-    elif isinstance(space, TupleSpace):
-        return sum(flat_dim(s) for s in space.spaces)
-
-    elif isinstance(space, DictSpace):
-        return sum(flat_dim(space.spaces[k]) for k in sorted(space.spaces))
-
-    else:
-        raise NotImplementedError(f"flat_dim not implemented for space {type(space)}")
+def try_cast(x: Any) -> Array | None:
+    try:
+        return jnp.asarray(x)
+    except TypeError:
+        return None
