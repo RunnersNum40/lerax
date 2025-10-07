@@ -68,5 +68,5 @@ class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]]):
         return jnp.asarray(sample, dtype=float).ravel()
 
     @property
-    def flat_dim(self) -> Int[ArrayLike, ""]:
+    def flat_size(self) -> Int[ArrayLike, ""]:
         return jnp.array(len(self.ns), dtype=int)

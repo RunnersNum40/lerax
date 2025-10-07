@@ -69,7 +69,7 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
         return jnp.asarray(sample, dtype=float)
 
     @property
-    def flat_dim(self) -> Int[ArrayLike, ""]:
+    def flat_size(self) -> Int[ArrayLike, ""]:
         return jnp.array(1, dtype=int)
 
     @property

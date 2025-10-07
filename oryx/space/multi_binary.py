@@ -55,5 +55,5 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
         return jnp.asarray(sample, dtype=float).ravel()
 
     @property
-    def flat_dim(self) -> Int[ArrayLike, ""]:
+    def flat_size(self) -> Int[ArrayLike, ""]:
         return jnp.array(self.n, dtype=int)

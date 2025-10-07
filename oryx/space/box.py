@@ -7,6 +7,7 @@ from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
 from .base_space import AbstractSpace
+from .utils import try_cast
 
 
 class Box(AbstractSpace[Float[Array, " ..."]]):
@@ -111,7 +112,7 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
         return jnp.asarray(sample, dtype=float).ravel()
 
     @property
-    def flat_dim(self) -> Int[ArrayLike, ""]:
+    def flat_size(self) -> Int[ArrayLike, ""]:
         return jnp.prod(jnp.asarray(self._shape)).astype(int)
 
     @property

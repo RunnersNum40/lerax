@@ -154,5 +154,5 @@ class FlattenObservation[ActType, ObsType](
         self.observation_space = Box(
             -jnp.inf,
             jnp.inf,
-            shape=(int(jnp.asarray(self.env.observation_space.flat_dim)),),
+            shape=(int(jnp.asarray(self.env.observation_space.flat_size)),),
         )

@@ -71,8 +71,8 @@ class Tuple(AbstractSpace[tuple[Any, ...]]):
         return jnp.concatenate(parts)
 
     @property
-    def flat_dim(self) -> Int[ArrayLike, ""]:
-        return jnp.array(space.flat_dim for space in self.spaces).sum().astype(int)
+    def flat_size(self) -> Int[ArrayLike, ""]:
+        return jnp.array(space.flat_size for space in self.spaces).sum().astype(int)
 
     def __getitem__(self, index: int) -> AbstractSpace:
         return self.spaces[index]

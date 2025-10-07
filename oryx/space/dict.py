@@ -72,9 +72,9 @@ class Dict(AbstractSpace[dict[str, Any]]):
         return jnp.concatenate(parts)
 
     @property
-    def flat_dim(self) -> Int[ArrayLike, ""]:
+    def flat_size(self) -> Int[ArrayLike, ""]:
         return (
-            jnp.array(space.flat_dim for space in self.spaces.values())
+            jnp.array(space.flat_size for space in self.spaces.values())
             .sum()
             .astype(int)
         )

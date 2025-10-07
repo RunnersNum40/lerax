@@ -52,5 +52,5 @@ class AbstractSpace[SampleType](eqx.Module):
 
     @property
     @abstractmethod
-    def flat_dim(self) -> Int[ArrayLike, ""]:
+    def flat_size(self) -> Int[ArrayLike, ""]:
         """Returns the dimension of the flattened sample."""
