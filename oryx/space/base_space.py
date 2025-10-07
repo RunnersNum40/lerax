@@ -55,6 +55,15 @@ class AbstractSpace[SampleType](eqx.Module):
     def __hash__(self) -> int:
         """Returns a hash of the space."""
 
+    @abstractmethod
+    def flatten_sample(self, sample: SampleType) -> Float[Array, "..."]:
+        """Flattens a sample from the space into a 1-D array."""
+
+    @property
+    @abstractmethod
+    def flat_dim(self) -> Int[ArrayLike, ""]:
+        """Returns the dimension of the flattened sample."""
+
 
 class Discrete(AbstractSpace[Int[Array, ""]]):
     """
@@ -111,6 +120,13 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
     def __hash__(self) -> int:
         return hash((int(self._n), int(self.start)))
 
+    def flatten_sample(self, sample: Int[Array, ""]) -> Float[Array, ""]:
+        return jnp.asarray(sample, dtype=float)
+
+    @property
+    def flat_dim(self) -> Int[ArrayLike, ""]:
+        return jnp.array(1, dtype=int)
+
     @property
     def dtype(self) -> jnp.dtype:
         return self._n.dtype
@@ -124,8 +140,8 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
     """
 
     _shape: tuple[int, ...]
-    _high: Float[Array, " ..."]
-    _low: Float[Array, " ..."]
+    high: Float[Array, " ..."]
+    low: Float[Array, " ..."]
 
     def __init__(
         self,
@@ -143,56 +159,48 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
         assert low.shape == high.shape, "Box low and high must have the same shape"
 
         self._shape = shape
-        self._low = jnp.broadcast_to(low, shape)
-        self._high = jnp.broadcast_to(high, shape)
-
-    @property
-    def low(self) -> Float[Array, " ..."]:
-        return self._low
-
-    @property
-    def high(self) -> Float[Array, " ..."]:
-        return self._high
+        self.low = jnp.broadcast_to(low, shape)
+        self.high = jnp.broadcast_to(high, shape)
 
     @property
     def shape(self) -> tuple[int, ...]:
-        return self._low.shape
+        return self._shape
 
     def canonical(self) -> Float[Array, " ..."]:
-        return (self._low + self._high) / 2
+        return (self.low + self.high) / 2
 
     def sample(self, key: Key) -> Float[Array, " ..."]:
         bounded_key, unbounded_key, upper_bounded_key, lower_bounded_key = jr.split(
             key, 4
         )
 
-        bounded_above = jnp.isfinite(self._high)
-        bounded_below = jnp.isfinite(self._low)
+        bounded_above = jnp.isfinite(self.high)
+        bounded_below = jnp.isfinite(self.low)
 
         bounded = bounded_above & bounded_below
         unbounded = ~bounded_above & ~bounded_below
         upper_bounded = ~bounded_below & bounded_above
         lower_bounded = bounded_below & ~bounded_above
 
-        sample = jnp.empty(self.shape, dtype=self._low.dtype)
+        sample = jnp.empty(self._shape, dtype=self.low.dtype)
 
         sample = jnp.where(
             bounded,
-            jr.uniform(bounded_key, self.shape, minval=self._low, maxval=self._high),
+            jr.uniform(bounded_key, self._shape, minval=self.low, maxval=self.high),
             sample,
         )
 
-        sample = jnp.where(unbounded, jr.normal(unbounded_key, self.shape), sample)
+        sample = jnp.where(unbounded, jr.normal(unbounded_key, self._shape), sample)
 
         sample = jnp.where(
             upper_bounded,
-            self._high - jr.exponential(upper_bounded_key, self.shape),
+            self.high - jr.exponential(upper_bounded_key, self._shape),
             sample,
         )
 
         sample = jnp.where(
             lower_bounded,
-            self._low + jr.exponential(lower_bounded_key, self.shape),
+            self.low + jr.exponential(lower_bounded_key, self._shape),
             sample,
         )
 
@@ -206,25 +214,32 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
         if x.shape != self._shape:
             return False
 
-        return jnp.logical_and(jnp.all(x >= self._low), jnp.all(x <= self._high))
+        return jnp.logical_and(jnp.all(x >= self.low), jnp.all(x <= self.high))
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Box):
             return False
 
-        return bool(jnp.array_equal(self._low, other._low)) and bool(
-            jnp.array_equal(self._high, other._high)
+        return bool(jnp.array_equal(self.low, other.low)) and bool(
+            jnp.array_equal(self.high, other.high)
         )
 
     def __repr__(self) -> str:
-        return f"Box(low={self._low}, high={self._high})"
+        return f"Box(low={self.low}, high={self.high})"
 
     def __hash__(self) -> int:
-        return hash((self._low.tobytes(), self._high.tobytes()))
+        return hash((self.low.tobytes(), self.high.tobytes()))
+
+    def flatten_sample(self, sample: Float[Array, " ..."]) -> Float[Array, " size"]:
+        return jnp.asarray(sample, dtype=float).ravel()
+
+    @property
+    def flat_dim(self) -> Int[ArrayLike, ""]:
+        return jnp.prod(jnp.asarray(self._shape)).astype(int)
 
     @property
     def dtype(self) -> jnp.dtype:
-        return self._low.dtype
+        return self.low.dtype
 
 
 class Tuple(AbstractSpace[tuple[Any, ...]]):
@@ -279,6 +294,17 @@ class Tuple(AbstractSpace[tuple[Any, ...]]):
 
     def __hash__(self) -> int:
         return hash(tuple(hash(space) for space in self.spaces))
+
+    def flatten_sample(self, sample: tuple[Any, ...]) -> Float[Array, " size"]:
+        parts = [
+            subspace.flatten_sample(subsample)
+            for subsample, subspace in zip(sample, self.spaces)
+        ]
+        return jnp.concatenate(parts)
+
+    @property
+    def flat_dim(self) -> Int[ArrayLike, ""]:
+        return jnp.array(space.flat_dim for space in self.spaces).sum().astype(int)
 
     def __getitem__(self, index: int) -> AbstractSpace:
         return self.spaces[index]
@@ -342,6 +368,21 @@ class Dict(AbstractSpace[dict[str, Any]]):
     def __hash__(self) -> int:
         return hash(tuple((key, hash(space)) for key, space in self.spaces.items()))
 
+    def flatten_sample(self, sample: dict[str, Any]) -> Float[Array, " size"]:
+        parts = [
+            subspace.flatten_sample(sample[key])
+            for key, subspace in sorted(self.spaces.items())
+        ]
+        return jnp.concatenate(parts)
+
+    @property
+    def flat_dim(self) -> Int[ArrayLike, ""]:
+        return (
+            jnp.array(space.flat_dim for space in self.spaces.values())
+            .sum()
+            .astype(int)
+        )
+
     def __getitem__(self, index: str) -> AbstractSpace:
         return self.spaces[index]
 
@@ -403,6 +444,13 @@ class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]]):
     def __hash__(self) -> int:
         return hash((self.ns.tobytes(), self.starts.tobytes()))
 
+    def flatten_sample(self, sample: Int[ArrayLike, " n"]) -> Float[Array, " size"]:
+        return jnp.asarray(sample, dtype=float).ravel()
+
+    @property
+    def flat_dim(self) -> Int[ArrayLike, ""]:
+        return jnp.array(len(self.ns), dtype=int)
+
 
 class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
     """A space of binary values."""
@@ -444,3 +492,10 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
 
     def __hash__(self) -> int:
         return hash(self.n)
+
+    def flatten_sample(self, sample: Bool[ArrayLike, " n"]) -> Float[Array, " size"]:
+        return jnp.asarray(sample, dtype=float).ravel()
+
+    @property
+    def flat_dim(self) -> Int[ArrayLike, ""]:
+        return jnp.array(self.n, dtype=int)
