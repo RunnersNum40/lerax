@@ -10,7 +10,7 @@ from jax import random as jr
 from jaxtyping import Array, Bool, Float, Key
 
 from oryx.env import AbstractEnvLike
-from oryx.space import AbstractSpace, Box, flat_dim, flatten
+from oryx.space import AbstractSpace, Box
 
 from .base_wrapper import (
     AbstractNoActionSpaceWrapper,
@@ -150,7 +150,9 @@ class FlattenObservation[ActType, ObsType](
 
     def __init__(self, env: AbstractEnvLike[ActType, ObsType]):
         self.env = env
-        self.func = partial(flatten, env.observation_space)
+        self.func = self.env.observation_space.flatten_sample
         self.observation_space = Box(
-            -jnp.inf, jnp.inf, shape=(flat_dim(env.observation_space),)
+            -jnp.inf,
+            jnp.inf,
+            shape=(int(jnp.asarray(self.env.observation_space.flat_dim)),),
         )
