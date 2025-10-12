@@ -7,7 +7,6 @@ from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
 from .base_space import AbstractSpace
-from .utils import try_cast
 
 
 class Tuple(AbstractSpace[tuple[Any, ...]]):
