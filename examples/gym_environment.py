@@ -4,10 +4,10 @@ import equinox as eqx
 import gymnasium as gym
 from jax import random as jr
 
-from oryx.algorithm import PPO
-from oryx.compatibility.gym import GymnasiumEnv
-from oryx.policy import MLPActorCriticPolicy
-from oryx.wrapper import EpisodeStatistics, TimeLimit
+from lerax.algorithm import PPO
+from lerax.compatibility.gym import GymnasiumEnv
+from lerax.policy import MLPActorCriticPolicy
+from lerax.wrapper import EpisodeStatistics, TimeLimit
 
 policy_key, learn_key = jr.split(jr.key(0), 2)
 

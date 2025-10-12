@@ -3,10 +3,10 @@ from datetime import datetime
 import equinox as eqx
 from jax import random as jr
 
-from oryx.algorithm import PPO
-from oryx.env import CartPole
-from oryx.policy import MLPActorCriticPolicy
-from oryx.wrapper import EpisodeStatistics, TimeLimit
+from lerax.algorithm import PPO
+from lerax.env import CartPole
+from lerax.policy import MLPActorCriticPolicy
+from lerax.wrapper import EpisodeStatistics, TimeLimit
 
 policy_key, learn_key = jr.split(jr.key(0), 2)
 

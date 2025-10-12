@@ -1,4 +1,4 @@
-# Oryx
+# Lerax
 
 This is a work in progress implementation of a JAX based reinforcement learning library using Equinox.
 The main feature is Neural Differential Equation based models.

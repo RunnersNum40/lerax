@@ -1,5 +1,5 @@
 [project]
-name = "oryx"
+name = "lerax"
 version = "0.0.1"
 description = "Deep Reinforcement Learning with JAX and Equinox."
 readme = "README.md"
@@ -44,7 +44,7 @@ reportIncompatibleVariableOverride = false # Incompatible with eqx.AbstractVar
 reportFunctionMemberAccess = false
 
 [tool.pytest.ini_options]
-addopts = ["--import-mode=importlib", "-Werror", "--cov=oryx"]
+addopts = ["--import-mode=importlib", "-Werror", "--cov=lerax"]
 
 [tool.ruff.lint]
 fixable = ["I001", "F401"]

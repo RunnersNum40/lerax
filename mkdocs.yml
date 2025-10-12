@@ -1,10 +1,10 @@
-site_name: Oryx
-site_description: Docs for the Oryx library.
+site_name: Lerax
+site_description: Docs for the Lerax library.
 site_author: Theodore Pinkerton
-site_url: https://docs.tedpinkerton.ca/oryx
+site_url: https://docs.tedpinkerton.ca/lerax
 
-repo_url: https://github.com/Runnersnum40/oryx
-repo_name: RunnersNum40/oryx
+repo_url: https://github.com/Runnersnum40/lerax
+repo_name: RunnersNum40/lerax
 
 strict: true
 
