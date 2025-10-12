@@ -4,7 +4,7 @@ import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
 
-from oryx.env import CartPole
+from lerax.env import CartPole
 
 key = jr.key(0)
 dt = 1 / 16
