@@ -66,11 +66,7 @@ class MLPActorCriticPolicy[
                 f"Action space {type(env.action_space)} not supported."
             )
 
-        if isinstance(env.observation_space, Discrete):
-            obs_size = int(env.observation_space.n)
-        elif isinstance(env.observation_space, Box):
-            obs_size = int(jnp.prod(jnp.asarray(env.observation_space.shape)))
-        else:
+        if not isinstance(env.observation_space, (Discrete, Box)):
             raise NotImplementedError(
                 f"Observation space {type(env.observation_space)} not supported."
             )
@@ -81,7 +77,7 @@ class MLPActorCriticPolicy[
         feat_key, val_key, act_key = jr.split(key, 3)
 
         self.feature_extractor = MLP(
-            in_size=obs_size,
+            in_size=int(jnp.array(self.observation_space.flat_size)),
             out_size=feature_size,
             width_size=feature_width,
             depth=feature_depth,
