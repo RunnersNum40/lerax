@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-# Disable pygame greeting message
+# Disable pygame greeting message and pkg_resources warnings
 import contextlib
 import warnings
 
 with contextlib.redirect_stdout(None):
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        warnings.filterwarnings("ignore", category=Warning)
         import pygame
         from pygame import gfxdraw
 
