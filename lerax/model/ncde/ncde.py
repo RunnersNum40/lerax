@@ -261,7 +261,6 @@ class AbstractNeuralCDE[
 
 
 class MLPNeuralCDE(AbstractNeuralCDE):
-
     term: MLPNCDETerm
     solver: type[diffrax.AbstractSolver]
 
@@ -283,38 +282,44 @@ class MLPNeuralCDE(AbstractNeuralCDE):
         in_size: int,
         out_size: int,
         latent_size: int,
-        width_size: int,
-        depth: int,
+        *,
+        term: MLPNCDETerm | None = None,
+        initial: eqx.nn.MLP | None = None,
+        output: eqx.nn.MLP | None = None,
+        field_width: int = 64,
+        field_depth: int = 2,
         field_activation: Callable[
             [Float[Array, " width"]], Float[Array, " width"]
         ] = jnn.softplus,
         field_final_activation: Callable[
             [Float[Array, " width"]], Float[Array, " width"]
         ] = jnn.tanh,
+        initial_width: int = 64,
+        initial_depth: int = 1,
         initial_state_activation: Callable[
             [Float[Array, " width"]], Float[Array, " width"]
         ] = jnn.relu,
         initial_state_final_activation: Callable[
             [Float[Array, " width"]], Float[Array, " width"]
         ] = lambda x: x,
+        output_width: int = 64,
+        output_depth: int = 1,
         output_activation: Callable[
             [Float[Array, " width"]], Float[Array, " width"]
         ] = jnn.relu,
         output_final_activation: Callable[
             [Float[Array, " width"]], Float[Array, " width"]
         ] = lambda x: x,
-        *,
         solver: type[diffrax.AbstractSolver] = diffrax.Tsit5,
-        key: Key,
         time_in_input: bool = False,
         inference: bool = True,
         state_size: int = 16,
+        key: Key,
     ):
         term_key, initial_key, output_key = jr.split(key, 3)
 
         self.solver = solver
         self.time_in_input = time_in_input
-
         self.state_size = state_size
         self.inference = inference
 
@@ -322,35 +327,47 @@ class MLPNeuralCDE(AbstractNeuralCDE):
         self.latent_size = latent_size
         self.out_size = out_size
 
-        self.term = MLPNCDETerm(
-            input_size=in_size,
-            data_size=latent_size,
-            width_size=width_size,
-            depth=depth,
-            key=term_key,
-            add_time=time_in_input,
-            activation=field_activation,
-            final_activation=field_final_activation,
+        self.term = (
+            term
+            if term is not None
+            else MLPNCDETerm(
+                input_size=in_size,
+                data_size=latent_size,
+                width_size=field_width,
+                depth=field_depth,
+                key=term_key,
+                add_time=time_in_input,
+                activation=field_activation,
+                final_activation=field_final_activation,
+            )
         )
 
-        self.initial = eqx.nn.MLP(
-            in_size=in_size + int(time_in_input),
-            out_size=latent_size,
-            width_size=width_size,
-            depth=depth,
-            key=initial_key,
-            activation=initial_state_activation,
-            final_activation=initial_state_final_activation,
+        self.initial = (
+            initial
+            if initial is not None
+            else eqx.nn.MLP(
+                in_size=in_size + int(time_in_input),
+                out_size=latent_size,
+                width_size=initial_width,
+                depth=initial_depth,
+                key=initial_key,
+                activation=initial_state_activation,
+                final_activation=initial_state_final_activation,
+            )
         )
 
-        self.output = eqx.nn.MLP(
-            in_size=latent_size,
-            out_size=out_size,
-            width_size=width_size,
-            depth=depth,
-            key=output_key,
-            activation=output_activation,
-            final_activation=output_final_activation,
+        self.output = (
+            output
+            if output is not None
+            else eqx.nn.MLP(
+                in_size=latent_size,
+                out_size=out_size,
+                width_size=output_width,
+                depth=output_depth,
+                key=output_key,
+                activation=output_activation,
+                final_activation=output_final_activation,
+            )
         )
 
         self.state_index = eqx.nn.StateIndex(self.empty_state())
