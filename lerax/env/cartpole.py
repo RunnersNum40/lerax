@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import ClassVar, Literal
 
 import equinox as eqx
+from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Bool, Float, Int, Key
@@ -106,16 +107,33 @@ class CartPole(AbstractEnv[Int[Array, ""], Float[Array, "4"]]):
         )
         xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
 
-        if self.solver == SOLVER.explicit:
+        def explicit(
+            x: Float, x_dot: Float, theta: Float, theta_dot: Float
+        ) -> tuple[Float, Float, Float, Float]:
             x = x + self.tau * x_dot
             x_dot = x_dot + self.tau * xacc
             theta = theta + self.tau * theta_dot
             theta_dot = theta_dot + self.tau * thetaacc
-        else:
+            return x, x_dot, theta, theta_dot
+
+        def implicit(
+            x: Float, x_dot: Float, theta: Float, theta_dot: Float
+        ) -> tuple[Float, Float, Float, Float]:
             x_dot = x_dot + self.tau * xacc
             x = x + self.tau * x_dot
             theta_dot = theta_dot + self.tau * thetaacc
             theta = theta + self.tau * theta_dot
+            return x, x_dot, theta, theta_dot
+
+        x, x_dot, theta, theta_dot = lax.cond(
+            self.solver == SOLVER.explicit,
+            explicit,
+            implicit,
+            x,
+            x_dot,
+            theta,
+            theta_dot,
+        )
 
         state_vals = jnp.asarray([x, x_dot, theta, theta_dot])
         state = state.set(self.state_index, state_vals)

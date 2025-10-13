@@ -55,7 +55,7 @@ class JITSummaryWriter:
         scalar_value = eqx.error_if(
             scalar_value,
             jnp.logical_or(jnp.isnan(scalar_value), jnp.isinf(scalar_value)),
-            "Scalar value cannot be NaN",
+            "Scalar value cannot be NaN or Inf.",
         )
         debug_with_numpy_wrapper(self.summary_writer.add_scalar, thread=True)(
             tag, scalar_value, global_step, walltime
@@ -91,24 +91,25 @@ class JITSummaryWriter:
         """
 
         def log_fn(rewards, lengths, dones, global_step, walltime):
-            global_step = None if global_step is None else global_step - len(rewards)
-            for reward, length, done in zip(
-                rewards,
-                lengths,
-                dones,
+            for i, (reward, length, done) in enumerate(
+                zip(
+                    rewards,
+                    lengths,
+                    dones,
+                )
             ):
-                global_step = None if global_step is None else global_step + 1
+                step = global_step + i if global_step is not None else None
                 if done:
                     self.summary_writer.add_scalar(
                         "episode/reward",
                         reward,
-                        global_step=global_step,
+                        global_step=step,
                         walltime=walltime,
                     )
                     self.summary_writer.add_scalar(
                         "episode/length",
                         length,
-                        global_step=global_step,
+                        global_step=step,
                         walltime=walltime,
                     )
 

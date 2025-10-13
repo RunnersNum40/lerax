@@ -135,8 +135,8 @@ class TimeLimit[ActType, ObsType](
 
     def __init__(self, env: AbstractEnvLike[ActType, ObsType], max_episode_steps: int):
         self.env = env
-        self.state_index = eqx.nn.StateIndex(jnp.array(0))
-        self.max_episode_steps = jnp.asarray(max_episode_steps)
+        self.state_index = eqx.nn.StateIndex(jnp.array(0, dtype=int))
+        self.max_episode_steps = jnp.array(max_episode_steps, dtype=int)
 
     def reset(
         self, state: eqx.nn.State, *, key: Key
@@ -145,7 +145,7 @@ class TimeLimit[ActType, ObsType](
         env_state, obs, info = self.env.reset(env_state, key=key)
         state = state.update(env_state)
 
-        state = state.set(self.state_index, jnp.array(0))
+        state = state.set(self.state_index, jnp.array(0, dtype=int))
 
         return state, obs, info
 

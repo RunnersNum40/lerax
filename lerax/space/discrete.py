@@ -57,7 +57,7 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Discrete):
             return False
-        return bool(self._n == other._n) and bool(self.start == other.start)
+        return jnp.logical_and(self._n == other._n, self.start == other.start)
 
     def __repr__(self) -> str:
         return f"Discrete({self._n}, start={self.start})"

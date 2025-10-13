@@ -25,15 +25,8 @@ class PPOStats(eqx.Module):
 
 
 class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
-    """Proximal Policy Optimization (PPO) algorithm."""
-
     env: AbstractEnvLike[ActType, ObsType]
-    policy: AbstractActorCriticPolicy[Float, ActType, ObsType]
-    optimizer: eqx.AbstractVar[optax.GradientTransformation]
-    opt_state_index: eqx.AbstractVar[eqx.nn.StateIndex[optax.OptState]]
-
-    clipper: optax.GradientTransformation
-    clipper_index: eqx.nn.StateIndex
+    optimizer: optax.GradientTransformation
 
     gae_lambda: float = eqx.field(static=True)
     gamma: float = eqx.field(static=True)
@@ -54,7 +47,6 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
     def __init__(
         self,
         env: AbstractEnvLike[ActType, ObsType],
-        policy: AbstractActorCriticPolicy[Float, ActType, ObsType],
         *,
         num_steps: int = 2048,
         num_epochs: int = 16,
@@ -68,9 +60,9 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         state_magnitude_coefficient: float = 0.0,
         max_grad_norm: float = 0.5,
         normalize_advantages: bool = True,
+        learning_rate: float = 3e-4,
     ):
         self.env = env
-        self.policy = policy
 
         self.num_steps = int(num_steps)
         self.num_epochs = int(num_epochs)
@@ -88,15 +80,9 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         self.max_grad_norm = float(max_grad_norm)
         self.normalize_advantages = bool(normalize_advantages)
 
-        # Keep optimizer and clipper separate to allow defining the optimizer
-        # somewhere else in the future
-        self.clipper = optax.clip_by_global_norm(self.max_grad_norm)
-        clipper_state = self.clipper.init(eqx.filter(policy, eqx.is_inexact_array))
-        self.clipper_index = eqx.nn.StateIndex(clipper_state)
-
-        self.optimizer = optax.inject_hyperparams(optax.adam)(3e-4)
-        opt_state = self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array))
-        self.opt_state_index = eqx.nn.StateIndex(opt_state)
+        adam = optax.inject_hyperparams(optax.adam)(learning_rate)
+        clip = optax.clip_by_global_norm(self.max_grad_norm)
+        self.optimizer = optax.chain(clip, adam)
 
     @staticmethod
     def ppo_loss(
@@ -133,9 +119,7 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
 
         if clip_value_loss:
             clipped_values = rollout_buffer.values + jnp.clip(
-                values - rollout_buffer.values,
-                -clip_coefficient,
-                clip_coefficient,
+                values - rollout_buffer.values, -clip_coefficient, clip_coefficient
             )
             value_loss = (
                 jnp.mean(
@@ -150,9 +134,6 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
             value_loss = jnp.mean(jnp.square(values - rollout_buffer.returns)) / 2
 
         entropy_loss = -jnp.mean(entropy)
-
-        # TODO: Add state magnitude loss
-        # State loss is proportional to the squared norm of the latent state of the policy
         state_magnitude_loss = jnp.array(0.0)
 
         loss = (
@@ -177,15 +158,14 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
         self,
         state: eqx.nn.State,
         policy: AbstractActorCriticPolicy[Float, ActType, ObsType],
+        opt_state: optax.OptState,
         rollout_buffer: RolloutBuffer[ActType, ObsType],
     ) -> tuple[
-        eqx.nn.State, AbstractActorCriticPolicy[Float, ActType, ObsType], PPOStats
+        eqx.nn.State,
+        AbstractActorCriticPolicy[Float, ActType, ObsType],
+        optax.OptState,
+        PPOStats,
     ]:
-        """
-        Train the policy for one batch using the rollout buffer.
-
-        Assumes that the rollout buffer is a single batch of data.
-        """
         (_, stats), grads = self.ppo_loss_grad(
             policy,
             rollout_buffer,
@@ -197,98 +177,80 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
             self.entropy_loss_coefficient,
         )
 
-        clipper_state = state.get(self.clipper_index)
-        updates, clipper_state = self.clipper.update(grads, clipper_state)
-        state = state.set(self.clipper_index, clipper_state)
-
-        opt_state = state.get(self.opt_state_index)
-
-        updates, new_opt_state = self.optimizer.update(updates, opt_state)
-        state = state.set(self.opt_state_index, new_opt_state)
-
+        updates, new_opt_state = self.optimizer.update(
+            grads, opt_state, eqx.filter(policy, eqx.is_inexact_array)
+        )
         policy = eqx.apply_updates(policy, updates)
-
-        return state, policy, stats
+        return state, policy, new_opt_state, stats
 
     def train_epoch(
         self,
         state: eqx.nn.State,
         policy: AbstractActorCriticPolicy[Float, ActType, ObsType],
+        opt_state: optax.OptState,
         rollout_buffer: RolloutBuffer[ActType, ObsType],
         *,
         key: Key,
     ):
-        """
-        Train the policy for one epoch using the rollout buffer.
-
-        One epoch consists of multiple mini-batches.
-        """
-
         def batch_scan(
             carry: tuple[
-                eqx.nn.State, AbstractActorCriticPolicy[Float, ActType, ObsType]
+                eqx.nn.State,
+                AbstractActorCriticPolicy[Float, ActType, ObsType],
+                optax.OptState,
             ],
-            rollout_buffer: RolloutBuffer[ActType, ObsType],
-        ) -> tuple[
-            tuple[eqx.nn.State, AbstractActorCriticPolicy[Float, ActType, ObsType]],
-            PPOStats,
-        ]:
-            state, policy = carry
-            state, policy, stats = self.train_batch(state, policy, rollout_buffer)
-            return (state, policy), stats
+            rb: RolloutBuffer[ActType, ObsType],
+        ):
+            st, pol, opt_st = carry
+            st, pol, opt_st, stats = self.train_batch(st, pol, opt_st, rb)
+            return (st, pol, opt_st), stats
 
-        (state, policy), stats = filter_scan(
+        (state, policy, opt_state), stats = filter_scan(
             batch_scan,
-            (state, policy),
+            (state, policy, opt_state),
             rollout_buffer.batches(self.batch_size, key=key),
         )
-
         stats = jax.tree.map(jnp.mean, stats)
-
-        return state, policy, stats
+        return state, policy, opt_state, stats
 
     @staticmethod
     def explained_variance(
         returns: Float[Array, ""], values: Float[Array, ""]
     ) -> Float[Array, ""]:
         variance = jnp.var(returns)
-        explained_variance = 1 - jnp.var(returns - values) / (
-            variance + jnp.finfo(returns.dtype).eps
-        )
-        return explained_variance
+        return 1 - jnp.var(returns - values) / (variance + jnp.finfo(returns.dtype).eps)
 
     def train(
         self,
         state: eqx.nn.State,
         policy: AbstractActorCriticPolicy[Float, ActType, ObsType],
+        opt_state: optax.OptState,
         rollout_buffer: RolloutBuffer[ActType, ObsType],
         *,
         key: Key,
     ) -> tuple[
         eqx.nn.State,
         AbstractActorCriticPolicy[Float, ActType, ObsType],
+        optax.OptState,
         dict[str, Scalar],
     ]:
         def epoch_scan(
             carry: tuple[
-                eqx.nn.State, AbstractActorCriticPolicy[Float, ActType, ObsType], Key
+                eqx.nn.State,
+                AbstractActorCriticPolicy[Float, ActType, ObsType],
+                optax.OptState,
+                Key,
             ],
             _,
-        ) -> tuple[
-            tuple[
-                eqx.nn.State, AbstractActorCriticPolicy[Float, ActType, ObsType], Key
-            ],
-            PPOStats,
-        ]:
-            state, policy, key = carry
-            epoch_key, carry_key = jr.split(key, 2)
-            state, policy, stats = self.train_epoch(
-                state, policy, rollout_buffer, key=epoch_key
+        ):
+            st, pol, opt_st, ky = carry
+            epoch_key, next_key = jr.split(ky, 2)
+            st, pol, opt_st, stats = self.train_epoch(
+                st, pol, opt_st, rollout_buffer, key=epoch_key
             )
-            return (state, policy, carry_key), stats
+            return (st, pol, opt_st, next_key), stats
 
-        (state, policy, _), stats = filter_scan(
-            epoch_scan, (state, policy, key), length=self.num_epochs
+        (state, policy, opt_state, _), stats = filter_scan(
+            epoch_scan, (state, policy, opt_state, key), length=self.num_epochs
         )
 
         stats = jax.tree.map(jnp.mean, stats)
@@ -304,8 +266,7 @@ class PPO[ActType, ObsType](AbstractOnPolicyAlgorithm[ActType, ObsType]):
             "state_magnitude_loss": stats.state_magnitude_loss,
             "explained_variance": explained_variance,
         }
-
-        return state, policy, log
+        return state, policy, opt_state, log
 
     @classmethod
     def load(cls, path: str) -> PPO[ActType, ObsType]:

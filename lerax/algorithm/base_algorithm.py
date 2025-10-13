@@ -3,7 +3,6 @@ from __future__ import annotations
 from abc import abstractmethod
 
 import equinox as eqx
-import optax
 from jaxtyping import Key
 
 from lerax.env import AbstractEnvLike
@@ -14,22 +13,17 @@ class AbstractAlgorithm[ActType, ObsType](eqx.Module):
     """Base class for RL algorithms."""
 
     env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
-    policy: eqx.AbstractVar[AbstractPolicy]
-    optimizer: eqx.AbstractVar[optax.GradientTransformation]
-    opt_state_index: eqx.AbstractVar[eqx.nn.StateIndex[optax.OptState]]
 
     # TODO: Add support for callbacks
     @abstractmethod
     def learn(
         self,
-        state: eqx.nn.State,
-        total_timesteps: int,
-        *,
+        policy: AbstractPolicy[ActType, ObsType],
+        *args,
         key: Key,
-        show_progress_bar: bool = False,
-        tb_log_name: str | None = None,
+        **kwargs,
     ) -> tuple[eqx.nn.State, AbstractPolicy[ActType, ObsType]]:
-        """Return a trained model."""
+        """Train and return an updated policy."""
 
     @classmethod
     @abstractmethod
