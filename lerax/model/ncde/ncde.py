@@ -4,6 +4,7 @@ from typing import Callable
 
 import diffrax
 import equinox as eqx
+import jax
 from jax import lax
 from jax import nn as jnn
 from jax import numpy as jnp
@@ -254,6 +255,18 @@ class AbstractNeuralCDE[
             zs = self.solve(ts, z0, self.coeffs(ts, xs))
 
         return zs
+
+    def y1(
+        self, state: eqx.nn.State, inference: bool | None = None
+    ) -> Float[Array, " out_size"]:
+        """Get the last output in the state."""
+        return self.output(self.z1(state, inference))
+
+    def ys(
+        self, state: eqx.nn.State, inference: bool | None = None
+    ) -> Float[Array, " n out_size"]:
+        """Get all outputs in the state."""
+        return jax.vmap(self.output)(self.zs(state, inference))
 
     def reset(self, state: eqx.nn.State) -> eqx.nn.State:
         """Reset the state to an empty state."""
