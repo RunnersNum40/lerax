@@ -1,10 +1,14 @@
 import equinox as eqx
+import jax
 from jax import random as jr
 
 from lerax.algorithm import PPO
 from lerax.env import CartPole
 from lerax.policy import NCDEActorCriticPolicy
 from lerax.wrapper import EpisodeStatistics, TimeLimit
+
+# NCEDEs can benefit from higher precision
+jax.config.update("jax_enable_x64", True)
 
 policy_key, learn_key = jr.split(jr.key(0), 2)
 
