@@ -103,7 +103,3 @@ class AbstractActorCriticPolicy[FeatureType, ActType, ObsType](
             entropy = -log_prob.mean().squeeze()  # Fallback to negative log prob mean
 
         return state, value, log_prob.sum().squeeze(), entropy
-
-    @abstractmethod
-    def reset(self, state: eqx.nn.State) -> eqx.nn.State:
-        """Reset the policy state."""

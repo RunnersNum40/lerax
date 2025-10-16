@@ -22,6 +22,15 @@ class AbstractPolicy[ActType, ObsType](eqx.Module):
 
     @abstractmethod
     def predict(
-        self, state: eqx.nn.State, observation: ObsType, *, key: Key | None = None
+        self,
+        state: eqx.nn.State,
+        observation: ObsType,
+        *args,
+        key: Key | None = None,
+        **kwargs,
     ) -> tuple[eqx.nn.State, ActType]:
         """Choose an action from an observation."""
+
+    @abstractmethod
+    def reset(self, state: eqx.nn.State, *args, **kwargs) -> eqx.nn.State:
+        """Reset the policy's internal state."""
