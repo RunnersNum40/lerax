@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-import equinox as eqx
 from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
@@ -10,13 +9,23 @@ from jaxtyping import Array, Bool, Float, Key
 
 from lerax.space import Box
 
-from .base_env import AbstractEnv
+from .base_env import AbstractEnv, AbstractEnvState
 
 
-class ContinuousMountainCar(AbstractEnv[Float[Array, ""], Float[Array, "2"]]):
+class ContinuousMountainCarState(AbstractEnvState):
+    position: Float[Array, ""]
+    velocity: Float[Array, ""]
+
+    @classmethod
+    def from_array(cls, arr: Float[Array, "2"]) -> ContinuousMountainCarState:
+        return cls(position=arr[0], velocity=arr[1])
+
+
+class ContinuousMountainCar(
+    AbstractEnv[ContinuousMountainCarState, Float[Array, ""], Float[Array, "2"]]
+):
     name: ClassVar[str] = "ContinuousMountainCar"
 
-    state_index: eqx.nn.StateIndex[Float[Array, "2"]]
     action_space: Box
     observation_space: Box
 
@@ -49,28 +58,32 @@ class ContinuousMountainCar(AbstractEnv[Float[Array, ""], Float[Array, "2"]]):
         self.action_space = Box(self.min_action, self.max_action)
         self.observation_space = Box(self.low, self.high)
 
-        self.state_index = eqx.nn.StateIndex(jnp.zeros(2))
-
     def reset(
-        self, state: eqx.nn.State, *, key: Key, low: float = -0.6, high: float = -0.4
-    ) -> tuple[eqx.nn.State, Float[Array, "2"], dict]:
+        self,
+        *,
+        key: Key,
+        low: float = -0.6,
+        high: float = -0.4,
+    ) -> tuple[ContinuousMountainCarState, Float[Array, "2"], dict]:
         position = jr.uniform(key, minval=low, maxval=high)
         velocity = 0.0
 
         state_vals = jnp.asarray([position, velocity])
-        state = state.set(self.state_index, state_vals)
+        state = ContinuousMountainCarState.from_array(state_vals)
 
         return state, state_vals, {}
 
-    def step(self, state: eqx.nn.State, action: Float[Array, ""], *, key: Key) -> tuple[
-        eqx.nn.State,
+    def step(
+        self, state: ContinuousMountainCarState, action: Float[Array, ""], *, key: Key
+    ) -> tuple[
+        ContinuousMountainCarState,
         Float[Array, "2"],
         Float[Array, ""],
         Bool[Array, ""],
         Bool[Array, ""],
         dict,
     ]:
-        position, velocity = state.get(self.state_index)
+        position, velocity = state.position, state.velocity
         force = jnp.clip(action, self.min_action, self.max_action)
 
         velocity += self.power * force - jnp.cos(3 * position) * 0.0025
@@ -97,11 +110,11 @@ class ContinuousMountainCar(AbstractEnv[Float[Array, ""], Float[Array, "2"]]):
         reward -= force**2 * 0.1
 
         state_vals = jnp.asarray([position, velocity])
-        state = state.set(self.state_index, state_vals)
+        state = ContinuousMountainCarState.from_array(state_vals)
 
         return state, state_vals, reward, terminated, jnp.array(False), {}
 
-    def render(self, state: eqx.nn.State):
+    def render(self, state: ContinuousMountainCarState):
         raise NotImplementedError
 
     def close(self): ...

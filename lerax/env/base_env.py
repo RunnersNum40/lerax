@@ -8,7 +8,15 @@ from jaxtyping import Array, Bool, Float, Key
 from lerax.space import AbstractSpace
 
 
-class AbstractEnvLike[ActType, ObsType](eqx.Module):
+class AbstractEnvLikeState(eqx.Module):
+
+    @property
+    @abstractmethod
+    def unwrapped(self) -> AbstractEnvState:
+        """Return the unwrapped environment state"""
+
+
+class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType](eqx.Module):
     """Base class for RL environments or wrappers that behave like environments"""
 
     name: eqx.AbstractVar[str]
@@ -17,23 +25,19 @@ class AbstractEnvLike[ActType, ObsType](eqx.Module):
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
     @abstractmethod
-    def reset(
-        self, state: eqx.nn.State, *, key: Key
-    ) -> tuple[eqx.nn.State, ObsType, dict]:
+    def reset(self, *, key: Key) -> tuple[StateType, ObsType, dict]:
         """Reset the environment to an initial state"""
 
     @abstractmethod
     def step(
-        self, state: eqx.nn.State, action: ActType, *, key: Key
+        self, state: StateType, action: ActType, *, key: Key
     ) -> tuple[
-        eqx.nn.State, ObsType, Float[Array, ""], Bool[Array, ""], Bool[Array, ""], dict
+        StateType, ObsType, Float[Array, ""], Bool[Array, ""], Bool[Array, ""], dict
     ]:
-        """
-        Perform a step of the environment
-        """
+        """Perform a step of the environment"""
 
     @abstractmethod
-    def render(self, state: eqx.nn.State):
+    def render(self, state: StateType):
         """Render a frame from a state"""
 
     @abstractmethod
@@ -42,11 +46,20 @@ class AbstractEnvLike[ActType, ObsType](eqx.Module):
 
     @property
     @abstractmethod
-    def unwrapped(self) -> AbstractEnv[ActType, ObsType]:
+    def unwrapped(self) -> AbstractEnv:
         """Return the unwrapped environment"""
 
 
-class AbstractEnv[ActType, ObsType](AbstractEnvLike[ActType, ObsType]):
+class AbstractEnvState(AbstractEnvLikeState):
+    @property
+    def unwrapped(self) -> AbstractEnvState:
+        """Return the unwrapped environment state"""
+        return self
+
+
+class AbstractEnv[StateType: AbstractEnvState, ActType, ObsType](
+    AbstractEnvLike[StateType, ActType, ObsType]
+):
     """Base class for RL environments"""
 
     name: eqx.AbstractVar[str]
@@ -55,6 +68,6 @@ class AbstractEnv[ActType, ObsType](AbstractEnvLike[ActType, ObsType]):
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
     @property
-    def unwrapped(self) -> AbstractEnv[ActType, ObsType]:
+    def unwrapped(self) -> AbstractEnv[StateType, ActType, ObsType]:
         """Return the unwrapped environment"""
         return self

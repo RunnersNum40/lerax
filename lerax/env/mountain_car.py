@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import ClassVar, Literal
 
-import equinox as eqx
 from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
@@ -11,13 +10,21 @@ from jaxtyping import Array, Bool, Float, Int, Key
 from lerax.render import AbstractRenderer, Color, PygameRenderer, Transform
 from lerax.space import Box, Discrete
 
-from .base_env import AbstractEnv
+from .base_env import AbstractEnv, AbstractEnvState
 
 
-class MountainCar(AbstractEnv[Int[Array, ""], Float[Array, "2"]]):
+class MountainCarState(AbstractEnvState):
+    position: Float[Array, ""]
+    velocity: Float[Array, ""]
+
+    @classmethod
+    def from_array(cls, arr: Float[Array, "2"]) -> MountainCarState:
+        return cls(position=arr[0], velocity=arr[1])
+
+
+class MountainCar(AbstractEnv[MountainCarState, Int[Array, ""], Float[Array, "2"]]):
     name: ClassVar[str] = "MountainCar"
 
-    state_index: eqx.nn.StateIndex[Float[Array, "2"]]
     action_space: Discrete
     observation_space: Box
 
@@ -54,33 +61,33 @@ class MountainCar(AbstractEnv[Int[Array, ""], Float[Array, "2"]]):
         self.action_space = Discrete(3)
         self.observation_space = Box(self.low, self.high)
 
-        self.state_index = eqx.nn.StateIndex(jnp.zeros(2))
-
         if renderer == "auto":
             self.renderer = self.default_renderer()
         else:
             self.renderer = renderer
 
     def reset(
-        self, state: eqx.nn.State, *, key: Key, low: float = -0.6, high: float = -0.4
-    ) -> tuple[eqx.nn.State, Float[Array, "2"], dict]:
+        self, *, key: Key, low: float = -0.6, high: float = -0.4
+    ) -> tuple[MountainCarState, Float[Array, "2"], dict]:
         position = jr.uniform(key, minval=low, maxval=high)
         velocity = 0.0
 
         state_vals = jnp.asarray([position, velocity])
-        state = state.set(self.state_index, state_vals)
+        state = MountainCarState.from_array(state_vals)
 
         return state, state_vals, {}
 
-    def step(self, state: eqx.nn.State, action: Int[Array, ""], *, key: Key) -> tuple[
-        eqx.nn.State,
+    def step(
+        self, state: MountainCarState, action: Int[Array, ""], *, key: Key
+    ) -> tuple[
+        MountainCarState,
         Float[Array, "2"],
         Float[Array, ""],
         Bool[Array, ""],
         Bool[Array, ""],
         dict,
     ]:
-        position, velocity = state.get(self.state_index)
+        position, velocity = state.position, state.velocity
 
         velocity += (action - 1) * self.force + jnp.cos(3 * position) * (-self.gravity)
         velocity = jnp.clip(velocity, -self.max_speed, self.max_speed)
@@ -100,12 +107,12 @@ class MountainCar(AbstractEnv[Int[Array, ""], Float[Array, "2"]]):
         reward = jnp.array(-1.0)
 
         state_vals = jnp.asarray([position, velocity])
-        state = state.set(self.state_index, state_vals)
+        state = MountainCarState.from_array(state_vals)
 
         return state, state_vals, reward, terminated, jnp.array(False), {}
 
-    def render(self, state: eqx.nn.State):
-        x, _ = state.get(self.state_index)
+    def render(self, state: MountainCarState):
+        x = state.position
 
         assert self.renderer is not None, "Renderer is not initialized."
         self.renderer.clear()

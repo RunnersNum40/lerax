@@ -6,15 +6,15 @@ from lerax.env import AbstractEnv, AbstractEnvLike
 from lerax.space import AbstractSpace
 
 
-class AbstractWrapper[WrapperActType, WrapperObsType, ActType, ObsType](
-    AbstractEnvLike[WrapperActType, WrapperObsType]
-):
+class AbstractWrapper[
+    WrapperStateType, WrapperActType, WrapperObsType, StateType, ActType, ObsType
+](AbstractEnvLike[WrapperStateType, WrapperActType, WrapperObsType]):
     """Base class for environment wrappers"""
 
-    env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
+    env: eqx.AbstractVar[AbstractEnvLike[StateType, ActType, ObsType]]
 
     @property
-    def unwrapped(self) -> AbstractEnv[ActType, ObsType]:
+    def unwrapped(self) -> AbstractEnv[StateType, ActType, ObsType]:
         """Return the unwrapped environment"""
         return self.env.unwrapped
 
@@ -24,19 +24,27 @@ class AbstractWrapper[WrapperActType, WrapperObsType, ActType, ObsType](
         return self.env.name
 
 
-class AbstractNoRenderWrapper[WrapperActType, WrapperObsType, ActType, ObsType](
-    AbstractWrapper[WrapperActType, WrapperObsType, ActType, ObsType]
+class AbstractNoRenderWrapper[
+    WrapperStateType, WrapperActType, WrapperObsType, StateType, ActType, ObsType
+](
+    AbstractWrapper[
+        WrapperStateType, WrapperActType, WrapperObsType, StateType, ActType, ObsType
+    ]
 ):
     """A wrapper that does not affect rendering"""
 
-    env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
+    env: eqx.AbstractVar[AbstractEnvLike[StateType, ActType, ObsType]]
 
     def render(self, state: eqx.nn.State):
         return self.env.render(state)
 
 
-class AbstractNoCloseWrapper[WrapperActType, WrapperObsType, ActType, ObsType](
-    AbstractWrapper[WrapperActType, WrapperObsType, ActType, ObsType]
+class AbstractNoCloseWrapper[
+    WrapperStateType, WrapperActType, WrapperObsType, StateType, ActType, ObsType
+](
+    AbstractWrapper[
+        WrapperStateType, WrapperActType, WrapperObsType, StateType, ActType, ObsType
+    ]
 ):
     """A wrapper that does not affect closing"""
 
