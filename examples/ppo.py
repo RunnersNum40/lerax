@@ -18,5 +18,5 @@ state, policy = algo.learn(
     total_timesteps=2**16,
     key=learn_key,
     show_progress_bar=True,
-    tb_log_name=True,
+    tb_log=True,
 )

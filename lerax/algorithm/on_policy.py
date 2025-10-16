@@ -220,15 +220,15 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
     def init_tensorboard(
         self,
         policy: AbstractActorCriticPolicy[Float, ActType, ObsType],
-        tb_log_name: str | bool,
+        tb_log: str | bool,
     ) -> JITSummaryWriter | None:
-        if tb_log_name is False:
+        if tb_log is False:
             return None
 
-        if tb_log_name is True:
-            tb_log_name = f"logs/{type(policy).__name__}_{self.env.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        if tb_log is True:
+            tb_log = f"logs/{type(policy).__name__}_{self.env.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-        return JITSummaryWriter(tb_log_name)
+        return JITSummaryWriter(tb_log)
 
     def init_progress_bar(
         self,
@@ -252,7 +252,7 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         *,
         key: Key,
         show_progress_bar: bool = False,
-        tb_log_name: str | bool = False,
+        tb_log: str | bool = False,
     ) -> tuple[eqx.nn.State, AbstractActorCriticPolicy[Float, ActType, ObsType]]:
         init_key, learn_key = jr.split(key, 2)
 
@@ -264,22 +264,22 @@ class AbstractOnPolicyAlgorithm[ActType, ObsType](AbstractAlgorithm[ActType, Obs
         progress_bar = self.init_progress_bar(
             policy, total_timesteps, show_progress_bar
         )
-        tb_writer = self.init_tensorboard(policy, tb_log_name)
+        tb_writer = self.init_tensorboard(policy, tb_log)
         num_iterations = total_timesteps // self.num_steps
 
         def scan_iteration(
             carry: tuple[eqx.nn.State, IterationCarry[ActType, ObsType], Key], _
         ):
-            st, it_carry, ky = carry
-            iter_key, next_key = jr.split(ky, 2)
-            st, it_carry = self.iteration(
-                st,
+            state, it_carry, key = carry
+            iter_key, next_key = jr.split(key, 2)
+            state, it_carry = self.iteration(
+                state,
                 it_carry,
                 key=iter_key,
                 progress_bar=progress_bar,
                 tb_writer=tb_writer,
             )
-            return (st, it_carry, next_key), None
+            return (state, it_carry, next_key), None
 
         (state, carry, _), _ = filter_scan(
             scan_iteration, (state, carry, learn_key), length=num_iterations
