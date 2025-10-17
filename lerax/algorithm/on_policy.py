@@ -72,7 +72,7 @@ class AbstractOnPolicyAlgorithm[
     ]:
         action_key, env_key, reset_key = jr.split(key, 3)
 
-        policy_state, action, value, log_prob = policy(
+        policy_state, action, value, log_prob = policy.action_and_value(
             carry.policy_state, carry.last_obs, key=action_key
         )
 

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import cast
-
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
@@ -25,10 +23,9 @@ class MLPActorCriticPolicyState(AbstractPolicyState):
 
 
 class MLPActorCriticPolicy[
-    FeatureType: Array,
     ActType: (Float[Array, " dims"], Integer[Array, ""]),
     ObsType: Real[Array, "..."],
-](AbstractActorCriticPolicy[MLPActorCriticPolicyState, FeatureType, ActType, ObsType]):
+](AbstractActorCriticPolicy[MLPActorCriticPolicyState, ActType, ObsType]):
     """
     Actor–critic policy with MLP components.
     """
@@ -106,13 +103,13 @@ class MLPActorCriticPolicy[
 
     def extract_features(
         self, state: MLPActorCriticPolicyState, observation: ObsType
-    ) -> tuple[MLPActorCriticPolicyState, FeatureType]:
+    ) -> tuple[MLPActorCriticPolicyState, Float[Array, " feature_size"]]:
         """Extract features from an observation."""
         features = self.feature_extractor(jnp.ravel(observation))
-        return state, cast(FeatureType, features)
+        return state, features
 
     def action_dist_from_features(
-        self, state: MLPActorCriticPolicyState, features: FeatureType
+        self, state: MLPActorCriticPolicyState, features: Float[Array, " feature_size"]
     ) -> tuple[
         MLPActorCriticPolicyState,
         AbstractDistribution[ActType],
@@ -121,10 +118,7 @@ class MLPActorCriticPolicy[
         action_mean = self.action_model(features)
 
         if isinstance(self.action_space, Discrete):
-            action_dist: AbstractDistribution[ActType] = cast(
-                AbstractDistribution[ActType],
-                Categorical(logits=action_mean),
-            )
+            action_dist = Categorical(logits=action_mean)
         elif isinstance(self.action_space, Box):
             if self.action_space.shape == ():
                 base_dist = SquashedNormal(
@@ -136,7 +130,7 @@ class MLPActorCriticPolicy[
                     loc=action_mean,
                     scale_diag=jnp.exp(self.log_std),
                 )
-            action_dist = cast(AbstractDistribution[ActType], base_dist)
+            action_dist = base_dist
         else:
             raise NotImplementedError(
                 f"Action space {type(self.action_space)} not supported."
@@ -145,7 +139,7 @@ class MLPActorCriticPolicy[
         return state, action_dist
 
     def value_from_features(
-        self, state: MLPActorCriticPolicyState, features: FeatureType
+        self, state: MLPActorCriticPolicyState, features: Float[Array, " feature_size"]
     ) -> tuple[MLPActorCriticPolicyState, Float[Array, ""]]:
         """Return a value from features."""
         value = self.value_model(features)
@@ -154,3 +148,53 @@ class MLPActorCriticPolicy[
     def reset(self) -> MLPActorCriticPolicyState:
         """Reset the policy state."""
         return MLPActorCriticPolicyState()
+
+    def action_and_value(
+        self,
+        state: MLPActorCriticPolicyState,
+        observation: ObsType,
+        *,
+        key: Key | None = None,
+    ) -> tuple[MLPActorCriticPolicyState, ActType, Float[Array, ""], Float[Array, ""]]:
+        """
+        Get an action and value from an observation.
+
+        If `key` is provided, it will be used for sampling actions, if no key is
+        provided the policy will return the most likely action.
+        """
+        state, features = self.extract_features(state, observation)
+        state, action_dist = self.action_dist_from_features(state, features)
+        state, value = self.value_from_features(state, features)
+
+        if key is None:
+            action = action_dist.mode()
+            log_prob = action_dist.log_prob(action)
+        else:
+            action, log_prob = action_dist.sample_and_log_prob(key)
+
+        return state, action, value, log_prob.sum().squeeze()
+
+    def value(
+        self, state: MLPActorCriticPolicyState, observation: ObsType
+    ) -> tuple[MLPActorCriticPolicyState, Float[Array, ""]]:
+        """Get the value of an observation."""
+        state, features = self.extract_features(state, observation)
+        return self.value_from_features(state, features)
+
+    def evaluate_action(
+        self, state: MLPActorCriticPolicyState, observation: ObsType, action: ActType
+    ) -> tuple[
+        MLPActorCriticPolicyState, Float[Array, ""], Float[Array, ""], Float[Array, ""]
+    ]:
+        """Evaluate an action given an observation."""
+        state, features = self.extract_features(state, observation)
+        state, action_dist = self.action_dist_from_features(state, features)
+        state, value = self.value_from_features(state, features)
+        log_prob = action_dist.log_prob(action)
+
+        try:
+            entropy = action_dist.entropy().squeeze()
+        except NotImplementedError:
+            entropy = -log_prob.mean().squeeze()  # Fallback to negative log prob mean
+
+        return state, value, log_prob.sum().squeeze(), entropy
