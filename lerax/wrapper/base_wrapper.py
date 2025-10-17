@@ -2,12 +2,29 @@ from __future__ import annotations
 
 import equinox as eqx
 
-from lerax.env import AbstractEnv, AbstractEnvLike
-from lerax.space import AbstractSpace
+from lerax.env import (
+    AbstractEnv,
+    AbstractEnvLike,
+    AbstractEnvLikeState,
+    AbstractEnvState,
+)
+
+
+class AbstractWrapperState[StateType: AbstractEnvLikeState](AbstractEnvLikeState):
+    env_state: eqx.AbstractVar[StateType]
+
+    @property
+    def unwrapped(self) -> AbstractEnvState:
+        return self.env_state.unwrapped
 
 
 class AbstractWrapper[
-    WrapperStateType, WrapperActType, WrapperObsType, StateType, ActType, ObsType
+    WrapperStateType: AbstractEnvLikeState,
+    WrapperActType,
+    WrapperObsType,
+    StateType: AbstractEnvState,
+    ActType,
+    ObsType,
 ](AbstractEnvLike[WrapperStateType, WrapperActType, WrapperObsType]):
     """Base class for environment wrappers"""
 
@@ -22,73 +39,3 @@ class AbstractWrapper[
     def name(self) -> str:
         """Return the name of the environment"""
         return self.env.name
-
-
-class AbstractNoRenderWrapper[
-    WrapperStateType, WrapperActType, WrapperObsType, StateType, ActType, ObsType
-](
-    AbstractWrapper[
-        WrapperStateType, WrapperActType, WrapperObsType, StateType, ActType, ObsType
-    ]
-):
-    """A wrapper that does not affect rendering"""
-
-    env: eqx.AbstractVar[AbstractEnvLike[StateType, ActType, ObsType]]
-
-    def render(self, state: eqx.nn.State):
-        return self.env.render(state)
-
-
-class AbstractNoCloseWrapper[
-    WrapperStateType, WrapperActType, WrapperObsType, StateType, ActType, ObsType
-](
-    AbstractWrapper[
-        WrapperStateType, WrapperActType, WrapperObsType, StateType, ActType, ObsType
-    ]
-):
-    """A wrapper that does not affect closing"""
-
-    env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
-
-    def close(self):
-        return self.env.close()
-
-
-class AbstractNoRenderOrCloseWrapper[WrapperActType, WrapperObsType, ActType, ObsType](
-    AbstractNoRenderWrapper[WrapperActType, WrapperObsType, ActType, ObsType],
-    AbstractNoCloseWrapper[WrapperActType, WrapperObsType, ActType, ObsType],
-):
-    """A wrapper that does not affect rendering or closing the environment"""
-
-    env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
-
-
-class AbstractNoActionSpaceWrapper[WrapperObsType, ActType, ObsType](
-    AbstractWrapper[ActType, WrapperObsType, ActType, ObsType]
-):
-    """A wrapper that does not affect the action space"""
-
-    env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
-
-    @property
-    def action_space(self) -> AbstractSpace[ActType]:
-        return self.env.action_space
-
-
-class AbstractNoObservationSpaceWrapper[WrapperActType, ActType, ObsType](
-    AbstractWrapper[WrapperActType, ObsType, ActType, ObsType]
-):
-    """A wrapper that does not affect the observation space"""
-
-    env: eqx.AbstractVar[AbstractEnvLike[ActType, ObsType]]
-
-    @property
-    def observation_space(self) -> AbstractSpace[ObsType]:
-        return self.env.observation_space
-
-
-class AbstractNoActionOrObservationSpaceWrapper[ActType, ObsType](
-    AbstractNoActionSpaceWrapper[ObsType, ActType, ObsType],
-    AbstractNoObservationSpaceWrapper[ActType, ActType, ObsType],
-):
-    """A wrapper that does not affect the action or observation space"""

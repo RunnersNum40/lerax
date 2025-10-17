@@ -1,5 +1,6 @@
 from .base_wrapper import (
     AbstractWrapper,
+    AbstractWrapperState,
 )
 from .misc import (
     AutoClose,
@@ -23,6 +24,7 @@ from .transform_reward import (
 
 __all__ = [
     "AbstractWrapper",
+    "AbstractWrapperState",
     "AutoClose",
     "EpisodeStatistics",
     "Identity",
