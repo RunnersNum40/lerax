@@ -11,7 +11,7 @@ from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Int, Key, PyTree, Shaped
 
-from ..base_model import AbstractStatefulModel
+from ..base_model import AbstractModelState, AbstractStatefulModel
 from .term import AbstractNCDETerm, MLPNCDETerm
 
 type Coeffs = tuple[
@@ -21,11 +21,11 @@ type Coeffs = tuple[
     PyTree[Shaped[Array, "times-1 ?*shape"]],
 ]
 
-type CDEState = tuple[
-    Float[Array, " n"],  # Time
-    Float[Array, " n input_size"],  # Inputs
-    Float[Array, " n latent_size"],  # States
-]
+
+class NCDEState(AbstractModelState):
+    ts: Float[Array, " n"]
+    xs: Float[Array, " n input_size"]
+    zs: Float[Array, " n latent_size"]
 
 
 class AbstractNeuralCDE[
@@ -33,7 +33,9 @@ class AbstractNeuralCDE[
     OutputType: Callable[[Array], Float[Array, " latent_size"]],
 ](
     AbstractStatefulModel[
-        [Float[Array, ""], Float[Array, " in_size"]], Float[Array, " out_size"]
+        NCDEState,
+        [Float[Array, ""], Float[Array, " in_size"]],
+        Float[Array, " out_size"],
     ],
 ):
     """
@@ -46,7 +48,7 @@ class AbstractNeuralCDE[
 
     The state_size defines the maximum number of inputs and corresponding states that
     are tracked. In theory the latest latent vector should contain all the important
-    information about the history of inputs and states, but the longer the history
+    information about the history of inputs and states, but longer history
     allows more accurate gradients to be computed for back propagation through time.
     Inference mode can be used to disable the history and only use the latest state for
     faster computation without back propagation through time.
@@ -64,15 +66,8 @@ class AbstractNeuralCDE[
     time_in_input: eqx.AbstractVar[bool]
 
     state_size: eqx.AbstractVar[int]
-    state_index: eqx.AbstractVar[eqx.nn.StateIndex[CDEState]]
 
     inference: eqx.AbstractVar[bool]
-
-    def empty_state(self) -> CDEState:
-        times = jnp.full((self.state_size,), jnp.nan)
-        inputs = jnp.full((self.state_size, self.in_size), jnp.nan)
-        states = jnp.full((self.state_size, self.latent_size), jnp.nan)
-        return times, inputs, states
 
     def coeffs(self, ts: Float[Array, " n"], xs: Float[Array, " n in_size"]) -> Coeffs:
         if self.time_in_input:
@@ -134,7 +129,7 @@ class AbstractNeuralCDE[
 
     def next_state(
         self,
-        state: eqx.nn.State,
+        state: NCDEState,
         t1: Float[Array, ""],
         x1: Float[Array, " in_size"],
     ) -> tuple[
@@ -143,7 +138,7 @@ class AbstractNeuralCDE[
         Float[Array, " num_steps latent_size"],
     ]:
         """Add new time and input pair to the state."""
-        ts, xs, zs = state.get(self.state_index)
+        ts, xs, zs = state.ts, state.xs, state.zs
         latest_index = self.latest_index(ts)
         ts = eqx.error_if(
             ts,
@@ -181,11 +176,11 @@ class AbstractNeuralCDE[
 
     def __call__(
         self,
-        state: eqx.nn.State,
+        state: NCDEState,
         t1: Float[Array, ""],
         x1: Float[Array, " in_size"],
         inference: bool | None = None,
-    ) -> tuple[eqx.nn.State, Float[Array, " out_size"]]:
+    ) -> tuple[NCDEState, Float[Array, " out_size"]]:
         """
         Compute the next state and output given the current state and input.
         """
@@ -205,35 +200,35 @@ class AbstractNeuralCDE[
             z1 = self.solve(sliced_ts, z0, self.coeffs(sliced_ts, sliced_xs))[1]
 
         zs = zs.at[self.latest_index(ts)].set(z1)
-        state = state.set(self.state_index, (ts, xs, zs))
+        state = NCDEState(ts, xs, zs)
 
         return state, self.output(z1)
 
-    def t1(self, state: eqx.nn.State) -> Float[Array, ""]:
+    def t1(self, state: NCDEState) -> Float[Array, ""]:
         """Get the last time in the state."""
-        ts, _, _ = state.get(self.state_index)
+        ts = state.ts
         return jnp.nanmax(ts)
 
-    def ts(self, state: eqx.nn.State) -> Float[Array, " n"]:
+    def ts(self, state: NCDEState) -> Float[Array, " n"]:
         """Get all times in the state."""
-        ts, _, _ = state.get(self.state_index)
+        ts = state.ts
         return ts
 
-    def x1(self, state: eqx.nn.State) -> Float[Array, " in_size"]:
+    def x1(self, state: NCDEState) -> Float[Array, " in_size"]:
         """Get the last input in the state."""
-        ts, xs, _ = state.get(self.state_index)
+        ts, xs = state.ts, state.xs
         return xs[self.latest_index(ts)]
 
-    def xs(self, state: eqx.nn.State) -> Float[Array, " n in_size"]:
+    def xs(self, state: NCDEState) -> Float[Array, " n in_size"]:
         """Get all inputs in the state."""
-        _, xs, _ = state.get(self.state_index)
+        xs = state.xs
         return xs
 
     def z1(
-        self, state: eqx.nn.State, inference: bool | None = None
+        self, state: NCDEState, inference: bool | None = None
     ) -> Float[Array, " latent_size"]:
         """Get the last state in the state."""
-        ts, xs, zs = state.get(self.state_index)
+        ts, xs, zs = state.ts, state.xs, state.zs
 
         if inference or self.inference:
             z0 = self.z0(ts[0], xs[0])
@@ -244,11 +239,11 @@ class AbstractNeuralCDE[
         return z1
 
     def zs(
-        self, state: eqx.nn.State, inference: bool | None = None
+        self, state: NCDEState, inference: bool | None = None
     ) -> Float[Array, " n latent_size"]:
         """Get all states in the state."""
 
-        ts, xs, zs = state.get(self.state_index)
+        ts, xs, zs = state.ts, state.xs, state.zs
 
         if inference or self.inference:
             z0 = self.z0(ts[0], xs[0])
@@ -257,20 +252,23 @@ class AbstractNeuralCDE[
         return zs
 
     def y1(
-        self, state: eqx.nn.State, inference: bool | None = None
+        self, state: NCDEState, inference: bool | None = None
     ) -> Float[Array, " out_size"]:
         """Get the last output in the state."""
         return self.output(self.z1(state, inference))
 
     def ys(
-        self, state: eqx.nn.State, inference: bool | None = None
+        self, state: NCDEState, inference: bool | None = None
     ) -> Float[Array, " n out_size"]:
         """Get all outputs in the state."""
         return jax.vmap(self.output)(self.zs(state, inference))
 
-    def reset(self, state: eqx.nn.State) -> eqx.nn.State:
+    def reset(self) -> NCDEState:
         """Reset the state to an empty state."""
-        return state.set(self.state_index, self.empty_state())
+        times = jnp.full((self.state_size,), jnp.nan)
+        inputs = jnp.full((self.state_size, self.in_size), jnp.nan)
+        states = jnp.full((self.state_size, self.latent_size), jnp.nan)
+        return NCDEState(times, inputs, states)
 
 
 class MLPNeuralCDE(AbstractNeuralCDE):
@@ -286,7 +284,6 @@ class MLPNeuralCDE(AbstractNeuralCDE):
     out_size: int
 
     state_size: int
-    state_index: eqx.nn.StateIndex[CDEState]
 
     inference: bool
 
@@ -382,5 +379,3 @@ class MLPNeuralCDE(AbstractNeuralCDE):
                 final_activation=output_final_activation,
             )
         )
-
-        self.state_index = eqx.nn.StateIndex(self.empty_state())

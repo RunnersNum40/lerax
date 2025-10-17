@@ -6,6 +6,7 @@ Models take inputs and produce outputs, and may have state.
 
 from .base_model import (
     AbstractModel,
+    AbstractModelState,
     AbstractStatefulModel,
 )
 from .flatten import Flatten
@@ -15,6 +16,7 @@ from .ncde import (
     AbstractNeuralCDE,
     MLPNCDETerm,
     MLPNeuralCDE,
+    NCDEState,
 )
 from .node import (
     AbstractNeuralODE,
@@ -25,6 +27,7 @@ from .node import (
 
 __all__ = [
     "AbstractModel",
+    "AbstractModelState",
     "AbstractStatefulModel",
     "Flatten",
     "AbstractNeuralODE",
@@ -35,5 +38,6 @@ __all__ = [
     "AbstractNCDETerm",
     "MLPNeuralCDE",
     "MLPNCDETerm",
+    "NCDEState",
     "MLP",
 ]
