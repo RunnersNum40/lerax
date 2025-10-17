@@ -8,8 +8,9 @@ from jax import random as jr
 from jaxtyping import Array, Float, Key, Scalar
 
 from lerax.buffer import RolloutBuffer
-from lerax.env import AbstractEnvLikeState
-from lerax.policy import AbstractActorCriticPolicy, AbstractPolicyState
+from lerax.policy import (
+    AbstractStatefulActorCriticPolicy,
+)
 from lerax.utils import filter_scan
 
 from .on_policy import AbstractOnPolicyAlgorithm
@@ -24,12 +25,7 @@ class PPOStats(eqx.Module):
     state_magnitude_loss: Float[Array, ""]
 
 
-class PPO[
-    EnvStateType: AbstractEnvLikeState,
-    PolicyStateType: AbstractPolicyState,
-    ActType,
-    ObsType,
-](AbstractOnPolicyAlgorithm[EnvStateType, PolicyStateType, ActType, ObsType]):
+class PPO(AbstractOnPolicyAlgorithm):
     optimizer: optax.GradientTransformation
 
     gae_lambda: float = eqx.field(static=True)
@@ -85,10 +81,12 @@ class PPO[
         clip = optax.clip_by_global_norm(self.max_grad_norm)
         self.optimizer = optax.chain(clip, adam)
 
+    # Needs to be static so the first argument can be a policy
+    # eqx.filter_value_and_grad doesn't support argnums
     @staticmethod
     def ppo_loss(
-        policy: AbstractActorCriticPolicy[PolicyStateType, Float, ActType, ObsType],
-        rollout_buffer: RolloutBuffer[PolicyStateType, ActType, ObsType],
+        policy: AbstractStatefulActorCriticPolicy,
+        rollout_buffer: RolloutBuffer,
         normalize_advantages: bool,
         clip_coefficient: float,
         clip_value_loss: bool,
@@ -157,14 +155,10 @@ class PPO[
 
     def train_batch(
         self,
-        policy: AbstractActorCriticPolicy[PolicyStateType, Float, ActType, ObsType],
+        policy: AbstractStatefulActorCriticPolicy,
         opt_state: optax.OptState,
-        rollout_buffer: RolloutBuffer[PolicyStateType, ActType, ObsType],
-    ) -> tuple[
-        AbstractActorCriticPolicy[PolicyStateType, Float, ActType, ObsType],
-        optax.OptState,
-        PPOStats,
-    ]:
+        rollout_buffer: RolloutBuffer,
+    ) -> tuple[AbstractStatefulActorCriticPolicy, optax.OptState, PPOStats]:
         (_, stats), grads = self.ppo_loss_grad(
             policy,
             rollout_buffer,
@@ -184,22 +178,18 @@ class PPO[
 
     def train_epoch(
         self,
-        policy: AbstractActorCriticPolicy[PolicyStateType, Float, ActType, ObsType],
+        policy: AbstractStatefulActorCriticPolicy,
         opt_state: optax.OptState,
-        rollout_buffer: RolloutBuffer[PolicyStateType, ActType, ObsType],
+        rollout_buffer: RolloutBuffer,
         *,
         key: Key,
-    ) -> tuple[
-        AbstractActorCriticPolicy[PolicyStateType, Float, ActType, ObsType],
-        optax.OptState,
-        PPOStats,
-    ]:
+    ) -> tuple[AbstractStatefulActorCriticPolicy, optax.OptState, PPOStats]:
         def batch_scan(
             carry: tuple[
-                AbstractActorCriticPolicy[PolicyStateType, Float, ActType, ObsType],
+                AbstractStatefulActorCriticPolicy,
                 optax.OptState,
             ],
-            rb: RolloutBuffer[PolicyStateType, ActType, ObsType],
+            rb: RolloutBuffer,
         ):
             pol, opt_st = carry
             pol, opt_st, stats = self.train_batch(pol, opt_st, rb)
@@ -222,23 +212,14 @@ class PPO[
 
     def train(
         self,
-        policy: AbstractActorCriticPolicy[PolicyStateType, Float, ActType, ObsType],
+        policy: AbstractStatefulActorCriticPolicy,
         opt_state: optax.OptState,
-        rollout_buffer: RolloutBuffer[PolicyStateType, ActType, ObsType],
+        rollout_buffer: RolloutBuffer,
         *,
         key: Key,
-    ) -> tuple[
-        AbstractActorCriticPolicy[PolicyStateType, Float, ActType, ObsType],
-        optax.OptState,
-        dict[str, Scalar],
-    ]:
+    ) -> tuple[AbstractStatefulActorCriticPolicy, optax.OptState, dict[str, Scalar]]:
         def epoch_scan(
-            carry: tuple[
-                AbstractActorCriticPolicy[PolicyStateType, Float, ActType, ObsType],
-                optax.OptState,
-                Key,
-            ],
-            _,
+            carry: tuple[AbstractStatefulActorCriticPolicy, optax.OptState, Key], _
         ):
             pol, opt_st, ky = carry
             epoch_key, next_key = jr.split(ky, 2)

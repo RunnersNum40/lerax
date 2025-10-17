@@ -11,13 +11,22 @@ class AbstractPolicyState(eqx.Module):
     """State container for stateful policies."""
 
 
-# TODO: Break out stateful and non-stateful policies
-# TODO: Break out stochastic and non-stochastic policies
-class AbstractPolicy[StateType: AbstractPolicyState, ActType, ObsType](eqx.Module):
+class AbstractPolicy[ActType, ObsType](eqx.Module):
     """
     Base class for policies.
 
     Policies map from observations to actions.
+    """
+
+    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
+    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+
+
+class AbstractStatefulPolicy[StateType: AbstractPolicyState, ActType, ObsType](
+    AbstractPolicy[ActType, ObsType]
+):
+    """
+    Base class for stateful policies.
     """
 
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
