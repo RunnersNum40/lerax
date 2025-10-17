@@ -14,7 +14,7 @@ assert env.renderer is not None
 env.renderer.open()
 
 key, reset_key = jr.split(key)
-state, _, _ = env.reset(state, key=reset_key)
+state, _, _ = env.reset(key=reset_key)
 
 for _ in range(256):
     key, action_key, step_key, reset_key = jr.split(key, 4)
@@ -22,7 +22,7 @@ for _ in range(256):
     action = env.action_space.sample(action_key)
     state, _, _, termination, truncation, _ = env.step(state, action, key=step_key)
     if jnp.logical_or(termination, truncation):
-        state = env.reset(state, key=reset_key)[0]
+        state = env.reset(key=reset_key)[0]
 
     env.render(state)
     time.sleep(dt)

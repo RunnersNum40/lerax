@@ -1,4 +1,3 @@
-import equinox as eqx
 from jax import random as jr
 
 from lerax.algorithm import PPO
@@ -10,10 +9,10 @@ policy_key, learn_key = jr.split(jr.key(0), 2)
 
 env = EpisodeStatistics(TimeLimit(CartPole(), max_episode_steps=512))
 policy = MLPActorCriticPolicy(env=env, key=policy_key)
-algo, state = eqx.nn.make_with_state(PPO)(env=env)
+algo = PPO()
 
-state, policy = algo.learn(
-    state,
+policy = algo.learn(
+    env,
     policy,
     total_timesteps=2**16,
     key=learn_key,
