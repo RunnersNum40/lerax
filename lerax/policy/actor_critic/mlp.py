@@ -17,7 +17,7 @@ from lerax.model import MLP
 from lerax.space import Box, Discrete
 
 from ..base_policy import AbstractPolicyState
-from .actor_critic import AbstractActorCriticPolicy
+from .base_actor_critic import AbstractActorCriticPolicy
 
 
 class MLPActorCriticPolicyState(AbstractPolicyState):
