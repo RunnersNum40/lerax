@@ -3,19 +3,18 @@ from __future__ import annotations
 import dataclasses
 from functools import partial
 
-import equinox as eqx
 import jax
 from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Key, PyTree
 
-from lerax.utils import clone_state
+from lerax.policy import AbstractPolicyState
 
 from .base_buffer import AbstractBuffer
 
 
-class RolloutBuffer[ActType, ObsType](AbstractBuffer):
+class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuffer):
     """
     RolloutBuffer used by on-policy algorithms.
 
@@ -31,7 +30,7 @@ class RolloutBuffer[ActType, ObsType](AbstractBuffer):
     values: Float[Array, " *size"]
     returns: Float[Array, " *size"]
     advantages: Float[Array, " *size"]
-    states: PyTree[eqx.nn.State]
+    states: StateType
 
     def __init__(
         self,
@@ -42,7 +41,7 @@ class RolloutBuffer[ActType, ObsType](AbstractBuffer):
         truncations: Bool[ArrayLike, " *size"],
         log_probs: Float[ArrayLike, " *size"],
         values: Float[ArrayLike, " *size"],
-        states: PyTree[eqx.nn.State],
+        states: StateType,
         returns: Float[ArrayLike, " *size"] | None = None,
         advantages: Float[ArrayLike, " *size"] | None = None,
     ):
@@ -64,7 +63,7 @@ class RolloutBuffer[ActType, ObsType](AbstractBuffer):
         self.log_probs = jnp.asarray(log_probs)
         self.values = jnp.asarray(values)
         # Assume the state has been used already and clone to compensate
-        self.states = clone_state(states)
+        self.states = states
         self.returns = (
             jnp.asarray(returns)
             if returns is not None
@@ -82,7 +81,7 @@ class RolloutBuffer[ActType, ObsType](AbstractBuffer):
         done: Bool[ArrayLike, ""],
         gae_lambda: Float[ArrayLike, ""],
         gamma: Float[ArrayLike, ""],
-    ) -> RolloutBuffer[ActType, ObsType]:
+    ) -> RolloutBuffer[StateType, ActType, ObsType]:
         """
         Compute returns and advantages for the rollout buffer using Generalized
         Advantage Estimation.
@@ -124,7 +123,7 @@ class RolloutBuffer[ActType, ObsType](AbstractBuffer):
 
     def batches(
         self, batch_size: int, *, key: Key | None = None
-    ) -> RolloutBuffer[ActType, ObsType]:
+    ) -> RolloutBuffer[StateType, ActType, ObsType]:
         """
         Return rollout buffer with batches of the given size.
 
