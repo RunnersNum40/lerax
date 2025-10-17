@@ -5,7 +5,7 @@ import dataclasses
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
-from lerax.env import AbstractEnvLike, AbstractEnvLikeState, AbstractEnvState
+from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.space import AbstractSpace
 
 from .base_wrapper import (
@@ -14,7 +14,7 @@ from .base_wrapper import (
 )
 
 
-class Identity[StateType: AbstractEnvState, ActType, ObsType](
+class Identity[StateType: AbstractEnvLikeState, ActType, ObsType](
     AbstractWrapper[StateType, ActType, ObsType, StateType, ActType, ObsType]
 ):
     env: AbstractEnvLike[StateType, ActType, ObsType]
@@ -33,7 +33,7 @@ class Identity[StateType: AbstractEnvState, ActType, ObsType](
         return self.env.step(state, action, key=key)
 
 
-class EpisodeStatisticsState[StateType: AbstractEnvState](AbstractWrapperState):
+class EpisodeStatisticsState[StateType: AbstractEnvLikeState](AbstractWrapperState):
     env_state: StateType
 
     episode_length: Int[Array, ""]
@@ -76,7 +76,7 @@ class EpisodeStatisticsState[StateType: AbstractEnvState](AbstractWrapperState):
         }
 
 
-class EpisodeStatistics[StateType: AbstractEnvState, ActType, ObsType](
+class EpisodeStatistics[StateType: AbstractEnvLikeState, ActType, ObsType](
     AbstractWrapper[
         EpisodeStatisticsState[StateType], ActType, ObsType, StateType, ActType, ObsType
     ]
@@ -137,7 +137,7 @@ class TimeLimitState[StateType: AbstractEnvLikeState](AbstractWrapperState):
         self.env_state = env_state
 
 
-class TimeLimit[StateType: AbstractEnvState, ActType, ObsType](
+class TimeLimit[StateType: AbstractEnvLikeState, ActType, ObsType](
     AbstractWrapper[
         TimeLimitState[StateType], ActType, ObsType, StateType, ActType, ObsType
     ]
@@ -193,7 +193,7 @@ class TimeLimit[StateType: AbstractEnvState, ActType, ObsType](
         self.env.close()
 
 
-class AutoClose[StateType: AbstractEnvState, ActType, ObsType]():
+class AutoClose[StateType: AbstractEnvLikeState, ActType, ObsType]():
     """
     Closes the environment automatically when it is deleted.
 

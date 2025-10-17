@@ -7,14 +7,14 @@ import equinox as eqx
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Float, Key
 
-from lerax.env import AbstractEnvLike, AbstractEnvState
+from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 
 from .base_wrapper import AbstractWrapper
 
 
-class AbstractPureTransformRewardWrapper[StateType: AbstractEnvState, ActType, ObsType](
-    AbstractWrapper[StateType, ActType, ObsType, StateType, ActType, ObsType]
-):
+class AbstractPureTransformRewardWrapper[
+    StateType: AbstractEnvLikeState, ActType, ObsType
+](AbstractWrapper[StateType, ActType, ObsType, StateType, ActType, ObsType]):
     """
     Apply a *pure* (stateless) function to every reward emitted by the wrapped
     environment.
@@ -39,11 +39,11 @@ class AbstractPureTransformRewardWrapper[StateType: AbstractEnvState, ActType, O
         self.env.close()
 
 
-class ClipReward[StateType: AbstractEnvState, ActType, ObsType](
+class ClipReward[StateType: AbstractEnvLikeState, ActType, ObsType](
     AbstractPureTransformRewardWrapper[StateType, ActType, ObsType]
 ):
     """
-    Element-wise clip of rewards:  `reward ↦ clamp(min, max)`.
+    Element-wise clip of rewards:  `reward -> clamp(min, max)`.
     """
 
     env: AbstractEnvLike[StateType, ActType, ObsType]

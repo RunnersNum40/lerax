@@ -7,7 +7,7 @@ import equinox as eqx
 from jax import numpy as jnp
 from jaxtyping import Array, Float, Key
 
-from lerax.env import AbstractEnvLike, AbstractEnvState
+from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.space import AbstractSpace, Box
 
 from .base_wrapper import AbstractWrapper
@@ -15,7 +15,7 @@ from .utils import rescale_box
 
 
 class AbstractPureObservationWrapper[
-    WrapperObsType, StateType: AbstractEnvState, ActType, ObsType
+    WrapperObsType, StateType: AbstractEnvLikeState, ActType, ObsType
 ](AbstractWrapper[StateType, ActType, WrapperObsType, StateType, ActType, ObsType]):
     """
     Apply a pure function to every observation that leaves the environment.
@@ -42,7 +42,7 @@ class AbstractPureObservationWrapper[
         self.env.close()
 
 
-class ClipObservation[StateType: AbstractEnvState](
+class ClipObservation[StateType: AbstractEnvLikeState](
     AbstractPureObservationWrapper[
         Float[Array, " ..."], StateType, Float[Array, " ..."], Float[Array, " ..."]
     ],
@@ -71,7 +71,7 @@ class ClipObservation[StateType: AbstractEnvState](
         self.observation_space = env.observation_space
 
 
-class RescaleObservation[StateType: AbstractEnvState](
+class RescaleObservation[StateType: AbstractEnvLikeState](
     AbstractPureObservationWrapper[
         Float[Array, " ..."], StateType, Float[Array, " ..."], Float[Array, " ..."]
     ],
@@ -101,7 +101,7 @@ class RescaleObservation[StateType: AbstractEnvState](
         self.observation_space = new_box
 
 
-class FlattenObservation[StateType: AbstractEnvState, ObsType](
+class FlattenObservation[StateType: AbstractEnvLikeState, ObsType](
     AbstractPureObservationWrapper[
         Float[Array, " flat"], StateType, Float[Array, " ..."], ObsType
     ]

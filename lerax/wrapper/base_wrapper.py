@@ -22,7 +22,7 @@ class AbstractWrapper[
     WrapperStateType: AbstractEnvLikeState,
     WrapperActType,
     WrapperObsType,
-    StateType: AbstractEnvState,
+    StateType: AbstractEnvLikeState,
     ActType,
     ObsType,
 ](AbstractEnvLike[WrapperStateType, WrapperActType, WrapperObsType]):
@@ -31,7 +31,7 @@ class AbstractWrapper[
     env: eqx.AbstractVar[AbstractEnvLike[StateType, ActType, ObsType]]
 
     @property
-    def unwrapped(self) -> AbstractEnv[StateType, ActType, ObsType]:
+    def unwrapped(self) -> AbstractEnv:
         """Return the unwrapped environment"""
         return self.env.unwrapped
 

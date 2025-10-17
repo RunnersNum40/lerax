@@ -6,7 +6,7 @@ import equinox as eqx
 from jax import numpy as jnp
 from jaxtyping import Array, Float, Key
 
-from lerax.env import AbstractEnvLike, AbstractEnvState
+from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.space import AbstractSpace, Box
 
 from .base_wrapper import AbstractWrapper
@@ -14,7 +14,7 @@ from .utils import rescale_box
 
 
 class AbstractPureTransformActionWrapper[
-    WrapperActType, StateType: AbstractEnvState, ActType, ObsType
+    WrapperActType, StateType: AbstractEnvLikeState, ActType, ObsType
 ](
     AbstractWrapper[
         StateType,
@@ -47,9 +47,9 @@ class AbstractPureTransformActionWrapper[
         self.env.close()
 
 
-class TransformAction[WrapperActType, StateType: AbstractEnvState, ActType, ObsType](
-    AbstractPureTransformActionWrapper[WrapperActType, StateType, ActType, ObsType]
-):
+class TransformAction[
+    WrapperActType, StateType: AbstractEnvLikeState, ActType, ObsType
+](AbstractPureTransformActionWrapper[WrapperActType, StateType, ActType, ObsType]):
     """Apply a function to the action before passing it to the environment"""
 
     env: AbstractEnvLike[StateType, ActType, ObsType]
@@ -67,7 +67,7 @@ class TransformAction[WrapperActType, StateType: AbstractEnvState, ActType, ObsT
         self.action_space = action_space
 
 
-class ClipAction[StateType: AbstractEnvState, ObsType](
+class ClipAction[StateType: AbstractEnvLikeState, ObsType](
     AbstractPureTransformActionWrapper[
         Float[Array, " ..."], StateType, Float[Array, " ..."], ObsType
     ],
@@ -98,7 +98,7 @@ class ClipAction[StateType: AbstractEnvState, ObsType](
         self.action_space = action_space
 
 
-class RescaleAction[StateType: AbstractEnvState, ObsType](
+class RescaleAction[StateType: AbstractEnvLikeState, ObsType](
     AbstractPureTransformActionWrapper[
         Float[Array, " ..."], StateType, Float[Array, " ..."], ObsType
     ],

@@ -41,9 +41,9 @@ class MLPActorCriticPolicy[
     action_model: MLP
     log_std: Float[Array, " action_size"]
 
-    def __init__(
+    def __init__[StateType: AbstractEnvLikeState](
         self,
-        env: AbstractEnvLike[AbstractEnvLikeState, ActType, ObsType],
+        env: AbstractEnvLike[StateType, ActType, ObsType],
         *,
         feature_size: int = 64,
         feature_width: int = 64,
