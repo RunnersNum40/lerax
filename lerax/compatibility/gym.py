@@ -12,7 +12,7 @@ from jax.debug import callback as debug_callback
 from jax.experimental import io_callback
 from jaxtyping import Array, Bool, Float, Key
 
-from lerax.env import AbstractEnv
+from lerax.env import AbstractEnv, AbstractEnvState
 from lerax.space import AbstractSpace, Box, Discrete
 
 
@@ -47,7 +47,11 @@ def to_numpy_tree(x):
     return jax.tree.map(jax_to_numpy, x)
 
 
-class GymnasiumEnv(AbstractEnv[Array, Array]):
+class GymEnvState(AbstractEnvState):
+    pass
+
+
+class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array]):
     """
     Wrapper of a Gymnasium environment to make it compatible with Lerax.
 
@@ -58,7 +62,6 @@ class GymnasiumEnv(AbstractEnv[Array, Array]):
 
     name: ClassVar[str] = "GymnasiumEnv"
 
-    state_index: eqx.nn.StateIndex[None]
     action_space: Box | Discrete
     observation_space: Box | Discrete
 
@@ -68,7 +71,6 @@ class GymnasiumEnv(AbstractEnv[Array, Array]):
         self.env = env
         self.action_space = gym_space_to_lerax_space(env.action_space)
         self.observation_space = gym_space_to_lerax_space(env.observation_space)
-        self.state_index = eqx.nn.StateIndex(None)
 
     def _reset(self, *args, **kwargs):
         # TODO: Log a warning that the info dict is discarded
@@ -77,9 +79,7 @@ class GymnasiumEnv(AbstractEnv[Array, Array]):
         obs = jnp.asarray(obs, dtype=self.observation_space.dtype)
         return obs, {}
 
-    def reset(
-        self, state: eqx.nn.State, *args, key: Key, **kwargs
-    ) -> tuple[eqx.nn.State, Array, dict]:
+    def reset(self, *args, key: Key, **kwargs) -> tuple[GymEnvState, Array, dict]:
         # TODO: Determine if we want to pass a seed or not
         # I think it's a nice perk to increase reproducibility but it might
         # be unexpected for some users
@@ -88,7 +88,7 @@ class GymnasiumEnv(AbstractEnv[Array, Array]):
             jr.randint(key, (), 0, jnp.iinfo(jnp.int32).max),
         )
 
-        return state, *io_callback(
+        return GymEnvState(), *io_callback(
             self._reset,
             (self.observation_space.canonical(), {}),
             *args,
@@ -108,9 +108,9 @@ class GymnasiumEnv(AbstractEnv[Array, Array]):
         )
 
     def step(
-        self, state: eqx.nn.State, action: Array, *, key: Key
+        self, state: GymEnvState, action: Array, *, key: Key
     ) -> tuple[
-        eqx.nn.State, Array, Float[Array, ""], Bool[Array, ""], Bool[Array, ""], dict
+        GymEnvState, Array, Float[Array, ""], Bool[Array, ""], Bool[Array, ""], dict
     ]:
         return state, *io_callback(
             self._step,
@@ -125,7 +125,7 @@ class GymnasiumEnv(AbstractEnv[Array, Array]):
             ordered=True,
         )
 
-    def render(self, state: eqx.nn.State):
+    def render(self, state: GymEnvState):
         # TODO: Log a warning that render is bypassed
         pass
 
@@ -133,7 +133,7 @@ class GymnasiumEnv(AbstractEnv[Array, Array]):
         debug_callback(self.env.close, ordered=True)
 
 
-class LeraxEnv(gym.Env):
+class LeraxToGymEnv[StateType: AbstractEnvState](gym.Env):
     """
     Wrapper of an Lerax environment to make it compatible with Gymnasium.
 
@@ -147,20 +147,18 @@ class LeraxEnv(gym.Env):
 
     render_mode: str | None = None
 
-    env: AbstractEnv
-    state: eqx.nn.State
+    env: AbstractEnv[StateType, Array, Array]
+    state: StateType
     key: Key
 
     def __init__(
         self,
-        env: AbstractEnv,
-        state: eqx.nn.State,
+        env: AbstractEnv[StateType, Array, Array],
         render_mode: Literal["human"] | None = None,
     ):
-        self.env = env
-        self.state = state
-
         self.key = jr.key(0)
+
+        self.env = env
 
         self.action_space = lerax_to_gym_space(env.action_space)
         self.observation_space = lerax_to_gym_space(env.observation_space)
@@ -173,7 +171,7 @@ class LeraxEnv(gym.Env):
             self.key = jr.key(int(seed))
 
         self.key, reset_key = jr.split(self.key)
-        self.state, obs, info = self.env.reset(self.state, key=reset_key)
+        self.state, obs, info = self.env.reset(key=reset_key)
         return jax_to_numpy(obs), to_numpy_tree(info)
 
     def step(self, action):
