@@ -25,14 +25,10 @@ class NCDEActorCriticPolicy[
     ActType: (Float[Array, " dims"], Integer[Array, ""]),
     ObsType: Real[Array, "..."],
 ](AbstractActorCriticPolicy[FeatureType, ActType, ObsType]):
-    """
-    Actor–critic policy with an NCDE feature extractor.
-    """
+    """Actor–critic policy with an NCDE feature extractor."""
 
     action_space: Box | Discrete
     observation_space: Box | Discrete
-
-    time_index: eqx.nn.StateIndex[Float[Array, ""]]
 
     feature_extractor: MLPNeuralCDE
     value_model: MLP
@@ -40,10 +36,11 @@ class NCDEActorCriticPolicy[
     log_std: Float[Array, " action_size"]
 
     dt: float = eqx.field(static=True)
+    time_index: eqx.nn.StateIndex[Float[Array, ""]]
 
     def __init__(
         self,
-        env: AbstractEnvLike[ActType, ObsType],
+        env: AbstractEnvLike[StateType, ActType, ObsType],
         *,
         feature_size: int = 64,
         latent_size: int = 64,
@@ -86,15 +83,16 @@ class NCDEActorCriticPolicy[
         self.action_space = env.action_space
         self.observation_space = env.observation_space
 
-        fe_key, val_key, act_key = jr.split(key, 3)
-        in_size = int(jnp.asarray(self.observation_space.flat_size))
+        feat_key, val_key, act_key = jr.split(key, 3)
+
+        obs_flat = int(jnp.asarray(self.observation_space.flat_size))
 
         # TODO: Allow inference mode
         # Inference mode must be disabled when evaluating action values during
         # training but could be disabled during rollout. Currently there is no
         # way to know which mode we are in.
         self.feature_extractor = MLPNeuralCDE(
-            in_size=in_size,
+            in_size=obs_flat,
             out_size=feature_size,
             latent_size=latent_size,
             field_width=field_width,
@@ -103,10 +101,10 @@ class NCDEActorCriticPolicy[
             initial_depth=initial_depth,
             output_width=output_width,
             output_depth=output_depth,
+            state_size=state_size,
             time_in_input=time_in_input,
             inference=False,
-            state_size=state_size,
-            key=fe_key,
+            key=feat_key,
         )
 
         self.value_model = MLP(
@@ -116,6 +114,7 @@ class NCDEActorCriticPolicy[
             depth=value_depth,
             key=val_key,
         )
+
         self.action_model = MLP(
             in_size=feature_size,
             out_size=act_size,
@@ -124,21 +123,21 @@ class NCDEActorCriticPolicy[
             key=act_key,
         )
 
-        self.time_index = eqx.nn.StateIndex(jnp.asarray(0.0))
         self.dt = float(dt)
+        self.time_index = eqx.nn.StateIndex(jnp.array(0.0, dtype=float))
 
     def extract_features(
         self, state: eqx.nn.State, observation: ObsType
     ) -> tuple[eqx.nn.State, FeatureType]:
-        t = state.get(self.time_index)
-        t1 = t + self.dt
+        t0 = state.get(self.time_index)
+        t1 = t0 + self.dt
+        state = state.set(self.time_index, t1)
 
-        obs_flat = jnp.ravel(observation)
+        x1 = self.observation_space.flatten_sample(observation)
 
         fe_state = state.substate(self.feature_extractor)
-        fe_state, features = self.feature_extractor(fe_state, t1, obs_flat)
+        fe_state, features = self.feature_extractor(fe_state, t1, x1)
         state = state.update(fe_state)
-        state = state.set(self.time_index, t1)
 
         return state, cast(FeatureType, features)
 
@@ -173,8 +172,7 @@ class NCDEActorCriticPolicy[
         return state, value
 
     def reset(self, state: eqx.nn.State) -> eqx.nn.State:
+        state = state.set(self.time_index, jnp.array(0.0, dtype=float))
         fe_state = state.substate(self.feature_extractor)
         fe_state = self.feature_extractor.reset(fe_state)
-        state = state.update(fe_state)
-        state = state.set(self.time_index, jnp.asarray(0.0))
-        return state
+        return state.update(fe_state)

@@ -8,13 +8,12 @@ from jaxtyping import Array, Float, Key
 from lerax.distribution import AbstractDistribution
 from lerax.space import AbstractSpace
 
-from ..base_policy import AbstractPolicy
+from ..base_policy import AbstractPolicy, AbstractPolicyState
 
 
-# TODO: Add support for split actor and critic observations
-class AbstractActorCriticPolicy[FeatureType, ActType, ObsType](
-    AbstractPolicy[ActType, ObsType]
-):
+class AbstractActorCriticPolicy[
+    StateType: AbstractPolicyState, FeatureType, ActType, ObsType
+](AbstractPolicy[StateType, ActType, ObsType]):
     """
     Base class for actor-critic policies.
 
@@ -27,28 +26,28 @@ class AbstractActorCriticPolicy[FeatureType, ActType, ObsType](
 
     @abstractmethod
     def extract_features(
-        self, state: eqx.nn.State, observation: ObsType
-    ) -> tuple[eqx.nn.State, FeatureType]:
+        self, state: StateType, observation: ObsType
+    ) -> tuple[StateType, FeatureType]:
         """Extract features from an observation."""
 
     @abstractmethod
     def action_dist_from_features(
-        self, state: eqx.nn.State, features: FeatureType
+        self, state: StateType, features: FeatureType
     ) -> tuple[
-        eqx.nn.State,
+        StateType,
         AbstractDistribution[ActType],
     ]:
         """Return an action distribution from features."""
 
     @abstractmethod
     def value_from_features(
-        self, state: eqx.nn.State, features: FeatureType
-    ) -> tuple[eqx.nn.State, Float]:
+        self, state: StateType, features: FeatureType
+    ) -> tuple[StateType, Float]:
         """Return a value from features."""
 
     def __call__(
-        self, state: eqx.nn.State, observation: ObsType, *, key: Key | None = None
-    ) -> tuple[eqx.nn.State, ActType, Float[Array, ""], Float[Array, ""]]:
+        self, state: StateType, observation: ObsType, *, key: Key | None = None
+    ) -> tuple[StateType, ActType, Float[Array, ""], Float[Array, ""]]:
         """
         Get an action and value from an observation.
 
@@ -68,8 +67,8 @@ class AbstractActorCriticPolicy[FeatureType, ActType, ObsType](
         return state, action, value, log_prob.sum().squeeze()
 
     def predict(
-        self, state: eqx.nn.State, observation: ObsType, *, key: Key | None = None
-    ) -> tuple[eqx.nn.State, ActType]:
+        self, state: StateType, observation: ObsType, *, key: Key | None = None
+    ) -> tuple[StateType, ActType]:
         """Get an action from an observation."""
         state, features = self.extract_features(state, observation)
         state, action_dist = self.action_dist_from_features(state, features)
@@ -82,15 +81,15 @@ class AbstractActorCriticPolicy[FeatureType, ActType, ObsType](
         return state, action
 
     def value(
-        self, state: eqx.nn.State, observation: ObsType
-    ) -> tuple[eqx.nn.State, Float[Array, ""]]:
+        self, state: StateType, observation: ObsType
+    ) -> tuple[StateType, Float[Array, ""]]:
         """Get the value of an observation."""
         state, features = self.extract_features(state, observation)
         return self.value_from_features(state, features)
 
     def evaluate_action(
-        self, state: eqx.nn.State, observation: ObsType, action: ActType
-    ) -> tuple[eqx.nn.State, Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
+        self, state: StateType, observation: ObsType, action: ActType
+    ) -> tuple[StateType, Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
         """Evaluate an action given an observation."""
         state, features = self.extract_features(state, observation)
         state, action_dist = self.action_dist_from_features(state, features)

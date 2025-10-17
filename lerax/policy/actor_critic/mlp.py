@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import cast
 
-import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
@@ -13,18 +12,23 @@ from lerax.distribution import (
     SquashedMultivariateNormalDiag,
     SquashedNormal,
 )
-from lerax.env import AbstractEnvLike
+from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.model import MLP
 from lerax.space import Box, Discrete
 
+from ..base_policy import AbstractPolicyState
 from .actor_critic import AbstractActorCriticPolicy
+
+
+class MLPActorCriticPolicyState(AbstractPolicyState):
+    pass
 
 
 class MLPActorCriticPolicy[
     FeatureType: Array,
     ActType: (Float[Array, " dims"], Integer[Array, ""]),
     ObsType: Real[Array, "..."],
-](AbstractActorCriticPolicy[FeatureType, ActType, ObsType]):
+](AbstractActorCriticPolicy[MLPActorCriticPolicyState, FeatureType, ActType, ObsType]):
     """
     Actor–critic policy with MLP components.
     """
@@ -39,7 +43,7 @@ class MLPActorCriticPolicy[
 
     def __init__(
         self,
-        env: AbstractEnvLike[ActType, ObsType],
+        env: AbstractEnvLike[AbstractEnvLikeState, ActType, ObsType],
         *,
         feature_size: int = 64,
         feature_width: int = 64,
@@ -101,16 +105,16 @@ class MLPActorCriticPolicy[
         )
 
     def extract_features(
-        self, state: eqx.nn.State, observation: ObsType
-    ) -> tuple[eqx.nn.State, FeatureType]:
+        self, state: MLPActorCriticPolicyState, observation: ObsType
+    ) -> tuple[MLPActorCriticPolicyState, FeatureType]:
         """Extract features from an observation."""
         features = self.feature_extractor(jnp.ravel(observation))
         return state, cast(FeatureType, features)
 
     def action_dist_from_features(
-        self, state: eqx.nn.State, features: FeatureType
+        self, state: MLPActorCriticPolicyState, features: FeatureType
     ) -> tuple[
-        eqx.nn.State,
+        MLPActorCriticPolicyState,
         AbstractDistribution[ActType],
     ]:
         """Return an action distribution from features."""
@@ -141,12 +145,12 @@ class MLPActorCriticPolicy[
         return state, action_dist
 
     def value_from_features(
-        self, state: eqx.nn.State, features: FeatureType
-    ) -> tuple[eqx.nn.State, Float[Array, ""]]:
+        self, state: MLPActorCriticPolicyState, features: FeatureType
+    ) -> tuple[MLPActorCriticPolicyState, Float[Array, ""]]:
         """Return a value from features."""
         value = self.value_model(features)
         return state, value
 
-    def reset(self, state: eqx.nn.State) -> eqx.nn.State:
+    def reset(self) -> MLPActorCriticPolicyState:
         """Reset the policy state."""
-        return state
+        return MLPActorCriticPolicyState()
