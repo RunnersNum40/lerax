@@ -66,7 +66,7 @@ class _FilterScan(eqx.Module):
 filter_scan = eqx.module_update_wrapper(_FilterScan())
 
 
-def debug_wrapper[**InType](
+def callback_wrapper[**InType](
     func: Callable[InType, Any], ordered: bool = False
 ) -> Callable[InType, None]:
     """
@@ -86,7 +86,7 @@ def debug_wrapper[**InType](
     return wrapped
 
 
-def debug_with_numpy_wrapper(
+def callback_with_numpy_wrapper(
     func: Callable[..., Any], ordered: bool = False
 ) -> Callable[..., None]:
     """
@@ -97,7 +97,7 @@ def debug_with_numpy_wrapper(
     parameter information is lost.
     """
 
-    @partial(debug_wrapper, ordered=ordered)
+    @partial(callback_wrapper, ordered=ordered)
     @wraps(func)
     def wrapped(*args, **kwargs) -> None:
         args, kwargs = jax.tree.map(
@@ -108,7 +108,7 @@ def debug_with_numpy_wrapper(
     return wrapped
 
 
-def debug_with_list_wrapper(
+def callback_with_list_wrapper(
     func: Callable[..., Any], ordered: bool = False
 ) -> Callable[..., None]:
     """
@@ -119,7 +119,7 @@ def debug_with_list_wrapper(
     parameter information is lost.
     """
 
-    @partial(debug_wrapper, ordered=ordered)
+    @partial(callback_wrapper, ordered=ordered)
     @wraps(func)
     def wrapped(*args, **kwargs) -> None:
         args, kwargs = jax.tree.map(

@@ -7,9 +7,9 @@ from rich import progress, text
 from tensorboardX import SummaryWriter
 
 from lerax.utils import (
-    debug_with_list_wrapper,
-    debug_with_numpy_wrapper,
-    debug_wrapper,
+    callback_with_list_wrapper,
+    callback_with_numpy_wrapper,
+    callback_wrapper,
 )
 
 
@@ -57,7 +57,7 @@ class JITSummaryWriter:
             jnp.logical_or(jnp.isnan(scalar_value), jnp.isinf(scalar_value)),
             "Scalar value cannot be NaN or Inf.",
         )
-        debug_with_numpy_wrapper(self.summary_writer.add_scalar)(
+        callback_with_numpy_wrapper(self.summary_writer.add_scalar)(
             tag, scalar_value, global_step, walltime
         )
 
@@ -113,7 +113,7 @@ class JITSummaryWriter:
                         walltime=walltime,
                     )
 
-        debug_with_numpy_wrapper(log_fn)(
+        callback_with_numpy_wrapper(log_fn)(
             episode_stats.episode_reward,
             episode_stats.episode_length,
             episode_stats.episode_done,
@@ -192,10 +192,10 @@ class JITProgressBar:
         self.task = self.progress_bar.add_task(f"[yellow]{name}", total=total)
 
     def start(self) -> None:
-        debug_wrapper(self.progress_bar.start)()
+        callback_wrapper(self.progress_bar.start)()
 
     def stop(self) -> None:
-        debug_wrapper(self.progress_bar.stop)()
+        callback_wrapper(self.progress_bar.stop)()
 
     def update(
         self,
@@ -206,7 +206,7 @@ class JITProgressBar:
         visible: Bool[ArrayLike, ""] | None = None,
         refresh: Bool[ArrayLike, ""] = False,
     ) -> None:
-        debug_with_list_wrapper(self.progress_bar.update)(
+        callback_with_list_wrapper(self.progress_bar.update)(
             self.task,
             total=total,
             completed=completed,
