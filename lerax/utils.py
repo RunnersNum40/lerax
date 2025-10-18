@@ -42,6 +42,7 @@ class _FilterScan(eqx.Module):
     ):
         init_arr, static = eqx.partition(init, eqx.is_array)
 
+        @eqx.filter_jit
         def _f(carry_arr, x):
             carry = eqx.combine(carry_arr, static)
             carry, y = f(carry, x)
