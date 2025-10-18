@@ -11,7 +11,7 @@ from jax import scipy as jsp
 from matplotlib import pyplot as plt
 
 from lerax.model import MLPNeuralCDE, NCDEState
-from lerax.utils import debug_wrapper, filter_scan
+from lerax.utils import callback_wrapper, filter_scan
 
 
 def random_matrix(n: int, min_eig: float, max_eig: float, *, key: Any) -> Any:
@@ -114,7 +114,7 @@ def epoch_scan(carry, i):
     (state, model, opt_state), losses = filter_scan(
         batch_scan, (state, model, opt_state), (xs[idx], ts[idx], y1[idx])
     )
-    debug_wrapper(print)("Epoch", i)
+    callback_wrapper(print)("Epoch", i)
     return (state, model, opt_state, carry_key), jnp.mean(losses)
 
 
