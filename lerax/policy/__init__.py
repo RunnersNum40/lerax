@@ -3,6 +3,7 @@ from .actor_critic import (
     AbstractStatefulActorCriticPolicy,
     AbstractStatelessActorCriticPolicy,
     MLPActorCriticPolicy,
+    NCDEActorCriticPolicy,
 )
 from .base_policy import AbstractPolicy, AbstractPolicyState
 
@@ -13,4 +14,5 @@ __all__ = [
     "AbstractStatelessActorCriticPolicy",
     "AbstractStatefulActorCriticPolicy",
     "MLPActorCriticPolicy",
+    "NCDEActorCriticPolicy",
 ]
