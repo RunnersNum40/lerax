@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import threading
 from functools import partial, wraps
 from typing import Any, Callable
 
@@ -68,27 +67,17 @@ filter_scan = eqx.module_update_wrapper(_FilterScan())
 
 
 def debug_wrapper[**InType](
-    func: Callable[InType, Any], ordered: bool = False, thread: bool | None = None
+    func: Callable[InType, Any], ordered: bool = False
 ) -> Callable[InType, None]:
     """
     Return a JIT‑safe version of *func*.
 
     :param func: The function to wrap.
     :param ordered: If True, the callback will be executed in the order of the arguments
-    :param thread: If True, the callback will be executed in a separate thread.
     """
-    if thread is None:
-        thread = not ordered
-
-    if ordered and thread:
-        # TODO: Add a warning or error here
-        pass
 
     def _callback(*args: InType.args, **kwargs: InType.kwargs) -> None:
-        if thread:
-            threading.Thread(target=func, args=args, kwargs=kwargs, daemon=True).start()
-        else:
-            func(*args, **kwargs)
+        func(*args, **kwargs)
 
     @wraps(func)
     def wrapped(*args: InType.args, **kwargs: InType.kwargs) -> None:
@@ -98,7 +87,7 @@ def debug_wrapper[**InType](
 
 
 def debug_with_numpy_wrapper(
-    func: Callable[..., Any], ordered: bool = False, thread: bool | None = None
+    func: Callable[..., Any], ordered: bool = False
 ) -> Callable[..., None]:
     """
     Like `debug_wrapper` but converts every jax.Array/`jnp.ndarray` argument
@@ -108,7 +97,7 @@ def debug_with_numpy_wrapper(
     parameter information is lost.
     """
 
-    @partial(debug_wrapper, ordered=ordered, thread=thread)
+    @partial(debug_wrapper, ordered=ordered)
     @wraps(func)
     def wrapped(*args, **kwargs) -> None:
         args, kwargs = jax.tree.map(
@@ -120,7 +109,7 @@ def debug_with_numpy_wrapper(
 
 
 def debug_with_list_wrapper(
-    func: Callable[..., Any], ordered: bool = False, thread: bool | None = None
+    func: Callable[..., Any], ordered: bool = False
 ) -> Callable[..., None]:
     """
     Like `debug_wrapper` but converts every jax.Array/`jnp.ndarray` argument
@@ -130,7 +119,7 @@ def debug_with_list_wrapper(
     parameter information is lost.
     """
 
-    @partial(debug_wrapper, ordered=ordered, thread=thread)
+    @partial(debug_wrapper, ordered=ordered)
     @wraps(func)
     def wrapped(*args, **kwargs) -> None:
         args, kwargs = jax.tree.map(
