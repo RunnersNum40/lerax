@@ -2,6 +2,7 @@
 
 This is a work in progress implementation of a JAX based reinforcement learning library using Equinox.
 The main feature is Neural Differential Equation based models.
+This is meant as a cleaner and more complete continuation of earlier work in this repo [NCDE-RL](https://github.com/RunnersNum40/NCDE-RL)
 NDEs can be extraordinarily computationally intensive, this library is intended to provide an optimized implementation of NDEs and other RL algorithms using just in time compilation (JIT).
 Paired with environments that support JIT, high performance is possible using the Anakin architecture for fully GPU based RL.
 
