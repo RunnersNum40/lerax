@@ -133,3 +133,6 @@ def callback_with_list_wrapper(
         func(*args, **kwargs)
 
     return wrapped
+
+
+print_callback = callback_with_list_wrapper(print, ordered=True)
