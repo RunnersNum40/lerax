@@ -102,6 +102,16 @@ class AbstractNeuralCDE[
         z0: Float[Array, " latent_size"],
         coeffs: Coeffs,
     ) -> Float[Array, " n latent_size"]:
+        ts = eqx.error_if(
+            ts, jnp.logical_not(self.valid_ts(ts)), "Invalid times provided"
+        )
+        z0 = eqx.error_if(z0, jnp.logical_not(self.valid_z0(z0)), "Invalid z0 provided")
+        coeffs = eqx.error_if(
+            coeffs,
+            jnp.logical_not(self.valid_coeffs(coeffs)),
+            "Invalid coeffs provided",
+        )
+
         if isinstance(self.solver, diffrax.AbstractAdaptiveSolver):
             stepsize_controller = diffrax.PIDController(rtol=1e-3, atol=1e-6)
             dt0 = None
