@@ -9,7 +9,7 @@ from jax import lax
 from jax import nn as jnn
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Float, Int, Key, PyTree, Shaped
+from jaxtyping import Array, Bool, Float, Int, Key, PyTree, Shaped
 
 from ..base_model import AbstractModelState, AbstractStatefulModel
 from .term import AbstractNCDETerm, MLPNCDETerm
@@ -67,6 +67,26 @@ class AbstractNeuralCDE[
 
     state_size: eqx.AbstractVar[int]
 
+    @staticmethod
+    def valid_ts(ts: Float[Array, " n"]) -> Bool[Array, ""]:
+        """Check if the initial time is valid (not NaN or Inf)."""
+        return jnp.isfinite(ts[0])
+
+    @staticmethod
+    def valid_z0(zs: Float[Array, " latent_size"]) -> Bool[Array, ""]:
+        """Check if all latent state variables are valid (not NaN or Inf)."""
+        return jnp.isfinite(zs).all()
+
+    @staticmethod
+    def valid_coeffs(coeffs: Coeffs) -> Bool[Array, ""]:
+        """Check if the initial coefficients are valid (not NaN or Inf)."""
+        return jnp.all(
+            jnp.isfinite(
+                jnp.array(
+                    jax.tree.leaves(jax.tree.map(lambda x: jnp.take(x, 0), coeffs))
+                )
+            )
+        )
 
     def coeffs(self, ts: Float[Array, " n"], xs: Float[Array, " n in_size"]) -> Coeffs:
         if self.time_in_input:
