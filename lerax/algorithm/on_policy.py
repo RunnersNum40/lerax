@@ -104,7 +104,7 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
                 truncations=carry.last_truncation,
                 log_probs=log_prob,
                 values=value,
-                states=policy_state,
+                states=carry.policy_state,
             ),
             episode_stats,
             info,
