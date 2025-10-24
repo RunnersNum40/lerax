@@ -55,7 +55,7 @@ class AbstractNeuralCDE[
     """
 
     term: eqx.AbstractVar[AbstractNCDETerm]
-    solver: eqx.AbstractVar[type[diffrax.AbstractSolver]]
+    solver: eqx.AbstractVar[diffrax.AbstractSolver]
 
     in_size: eqx.AbstractVar[int]
     latent_size: eqx.AbstractVar[int]
@@ -82,8 +82,7 @@ class AbstractNeuralCDE[
         z0: Float[Array, " latent_size"],
         coeffs: Coeffs,
     ) -> Float[Array, " n latent_size"]:
-        solver = self.solver()
-        if isinstance(solver, diffrax.AbstractAdaptiveSolver):
+        if isinstance(self.solver, diffrax.AbstractAdaptiveSolver):
             stepsize_controller = diffrax.PIDController(rtol=1e-3, atol=1e-6)
             dt0 = None
         else:
@@ -95,8 +94,8 @@ class AbstractNeuralCDE[
         saveat = diffrax.SaveAt(ts=ts)
 
         solution = diffrax.diffeqsolve(
-            term,
-            solver,
+            terms=term,
+            solver=self.solver,
             t0=jnp.nanmin(ts),
             t1=jnp.nanmax(ts),
             dt0=dt0,
@@ -272,7 +271,7 @@ class AbstractNeuralCDE[
 
 class MLPNeuralCDE(AbstractNeuralCDE):
     term: MLPNCDETerm
-    solver: type[diffrax.AbstractSolver]
+    solver: diffrax.AbstractSolver
 
     initial: eqx.nn.MLP
     output: eqx.nn.MLP
@@ -319,14 +318,14 @@ class MLPNeuralCDE(AbstractNeuralCDE):
         output_final_activation: Callable[
             [Float[Array, " width"]], Float[Array, " width"]
         ] = lambda x: x,
-        solver: type[diffrax.AbstractSolver] = diffrax.Tsit5,
+        solver: diffrax.AbstractSolver | None = None,
         time_in_input: bool = False,
         state_size: int = 16,
         key: Key,
     ):
         term_key, initial_key, output_key = jr.split(key, 3)
 
-        self.solver = solver
+        self.solver = solver or diffrax.Tsit5()
         self.time_in_input = time_in_input
         self.state_size = state_size
 
