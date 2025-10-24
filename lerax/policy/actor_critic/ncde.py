@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import equinox as eqx
+import jax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
@@ -51,8 +52,8 @@ class NCDEActorCriticPolicy[
         self,
         env: AbstractEnvLike[StateType, ActType, ObsType],
         *,
-        feature_size: int = 64,
-        latent_size: int = 64,
+        feature_size: int = 8,
+        latent_size: int = 8,
         field_width: int = 64,
         field_depth: int = 2,
         initial_width: int = 64,
@@ -106,7 +107,6 @@ class NCDEActorCriticPolicy[
             output_width=output_width,
             output_depth=output_depth,
             time_in_input=False,
-            inference=True,
             state_size=state_size,
             key=enc_key,
         )
@@ -156,9 +156,8 @@ class NCDEActorCriticPolicy[
     def _step_encoder(
         self, state: NCDEPolicyState, obs: ObsType
     ) -> tuple[NCDEPolicyState, Float[Array, " feat"]]:
-        x = jnp.ravel(obs)
         t_next = state.t + self.dt
-        cde_state, y = self.encoder(state.cde, t_next, x)
+        cde_state, y = self.encoder(state.cde, t_next, jnp.ravel(obs))
         return NCDEPolicyState(t=t_next, cde=cde_state), y
 
     def reset(self) -> NCDEPolicyState:
@@ -182,7 +181,7 @@ class NCDEActorCriticPolicy[
     def evaluate_action(
         self, state: NCDEPolicyState, observation: ObsType, action: ActType
     ) -> tuple[NCDEPolicyState, Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
-        features = self.encoder.y1(state.cde, inference=False)
+        features = self.encoder(state.cde, state.t + self.dt, jnp.ravel(observation))[1]
         dist = self.action_dist_from_features(features)
         value = self.value_model(features)
         log_prob = dist.log_prob(action)
