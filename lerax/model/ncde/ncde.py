@@ -263,9 +263,9 @@ class AbstractNeuralCDE[
 
     def reset(self) -> NCDEState:
         """Reset the state to an empty state."""
-        times = jnp.full((self.state_size,), jnp.nan)
-        inputs = jnp.full((self.state_size, self.in_size), jnp.nan)
-        states = jnp.full((self.state_size, self.latent_size), jnp.nan)
+        times = jnp.full((self.state_size,), jnp.nan, dtype=float)
+        inputs = jnp.full((self.state_size, self.in_size), jnp.nan, dtype=float)
+        states = jnp.full((self.state_size, self.latent_size), jnp.nan, dtype=float)
         return NCDEState(times, inputs, states)
 
 
