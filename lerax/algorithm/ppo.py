@@ -98,6 +98,20 @@ class PPO(AbstractOnPolicyAlgorithm):
             rollout_buffer.states, rollout_buffer.observations, rollout_buffer.actions
         )
 
+        values = eqx.error_if(
+            values, jnp.any(jnp.logical_not(jnp.isfinite(values))), "Non-finite values."
+        )
+        log_probs = eqx.error_if(
+            log_probs,
+            jnp.any(jnp.logical_not(jnp.isfinite(log_probs))),
+            "Non-finite log_probs.",
+        )
+        entropy = eqx.error_if(
+            entropy,
+            jnp.any(jnp.logical_not(jnp.isfinite(entropy))),
+            "Non-finite entropy.",
+        )
+
         log_ratios = log_probs - rollout_buffer.log_probs
         ratios = jnp.exp(log_ratios)
         approx_kl = jnp.mean(ratios - log_ratios) - 1
@@ -173,6 +187,17 @@ class PPO(AbstractOnPolicyAlgorithm):
         updates, new_opt_state = self.optimizer.update(
             grads, opt_state, eqx.filter(policy, eqx.is_inexact_array)
         )
+
+        # Check if updates are nan or inf
+        values = jax.tree.leaves(jax.tree.map(jnp.ravel, updates))[0]
+        flat = jnp.array(values)
+        valid = jnp.all(jnp.isfinite(flat))
+        invalid = jnp.logical_not(valid)
+
+        updates = eqx.error_if(
+            updates, invalid, "Invalid gradients detected (NaN or Inf)."
+        )
+
         policy = eqx.apply_updates(policy, updates)
         return policy, new_opt_state, stats
 
