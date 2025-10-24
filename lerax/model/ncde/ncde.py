@@ -67,7 +67,6 @@ class AbstractNeuralCDE[
 
     state_size: eqx.AbstractVar[int]
 
-    inference: eqx.AbstractVar[bool]
 
     def coeffs(self, ts: Float[Array, " n"], xs: Float[Array, " n in_size"]) -> Coeffs:
         if self.time_in_input:
@@ -174,12 +173,12 @@ class AbstractNeuralCDE[
 
         return ts, xs, zs
 
+    # TODO: Add option to skip history during inference for speed
     def __call__(
         self,
         state: NCDEState,
         t1: Float[Array, ""],
         x1: Float[Array, " in_size"],
-        inference: bool | None = None,
     ) -> tuple[NCDEState, Float[Array, " out_size"]]:
         """
         Compute the next state and output given the current state and input.
@@ -225,40 +224,40 @@ class AbstractNeuralCDE[
         return xs
 
     def z1(
-        self, state: NCDEState, inference: bool | None = None
+        self, state: NCDEState, inference: bool = False
     ) -> Float[Array, " latent_size"]:
         """Get the last state in the state."""
         ts, xs, zs = state.ts, state.xs, state.zs
 
-        if inference or self.inference:
+        if inference:
+            z1 = zs[self.latest_index(ts)]
+        else:
             z0 = self.z0(ts[0], xs[0])
             z1 = self.solve(ts, z0, self.coeffs(ts, xs))[self.latest_index(ts)]
-        else:
-            z1 = zs[self.latest_index(ts)]
 
         return z1
 
     def zs(
-        self, state: NCDEState, inference: bool | None = None
+        self, state: NCDEState, inference: bool = False
     ) -> Float[Array, " n latent_size"]:
         """Get all states in the state."""
 
         ts, xs, zs = state.ts, state.xs, state.zs
 
-        if inference or self.inference:
+        if not inference:
             z0 = self.z0(ts[0], xs[0])
             zs = self.solve(ts, z0, self.coeffs(ts, xs))
 
         return zs
 
     def y1(
-        self, state: NCDEState, inference: bool | None = None
+        self, state: NCDEState, inference: bool = False
     ) -> Float[Array, " out_size"]:
         """Get the last output in the state."""
         return self.output(self.z1(state, inference))
 
     def ys(
-        self, state: NCDEState, inference: bool | None = None
+        self, state: NCDEState, inference: bool = False
     ) -> Float[Array, " n out_size"]:
         """Get all outputs in the state."""
         return jax.vmap(self.output)(self.zs(state, inference))
@@ -322,7 +321,6 @@ class MLPNeuralCDE(AbstractNeuralCDE):
         ] = lambda x: x,
         solver: type[diffrax.AbstractSolver] = diffrax.Tsit5,
         time_in_input: bool = False,
-        inference: bool = True,
         state_size: int = 16,
         key: Key,
     ):
@@ -331,7 +329,6 @@ class MLPNeuralCDE(AbstractNeuralCDE):
         self.solver = solver
         self.time_in_input = time_in_input
         self.state_size = state_size
-        self.inference = inference
 
         self.in_size = in_size
         self.latent_size = latent_size
