@@ -136,3 +136,21 @@ def callback_with_list_wrapper(
 
 
 print_callback = callback_with_list_wrapper(print, ordered=True)
+
+
+def unstack_pytree[T](tree: T, *, axis: int = 0) -> tuple[T]:
+    """
+    Split a stacked pytree along `axis` into a Python list of pytrees.
+    """
+
+    times = jnp.array(jax.tree.leaves(jax.tree.map(lambda x: x.shape[axis], tree)))
+    tree = eqx.error_if(
+        tree,
+        jnp.logical_not(jnp.equal(times, times[0])),
+        "All leaves must have the same size along the specified axis.",
+    )
+
+    outer_structure = jax.tree.structure(tree)
+    unstacked = jax.tree.map(partial(jnp.unstack, axis=axis), tree)
+    transposed = jax.tree.transpose(outer_structure, None, unstacked)
+    return transposed
