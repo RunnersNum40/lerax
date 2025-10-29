@@ -5,6 +5,7 @@ from abc import abstractmethod
 import equinox as eqx
 from jaxtyping import Array, Bool, Float, Key
 
+from lerax.render import AbstractRenderer
 from lerax.space import AbstractSpace
 
 
@@ -66,6 +67,8 @@ class AbstractEnv[StateType: AbstractEnvState, ActType, ObsType](
 
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+
+    renderer: eqx.AbstractVar[AbstractRenderer | None]
 
     @property
     def unwrapped(self) -> AbstractEnv[StateType, ActType, ObsType]:
