@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from abc import abstractmethod
 
 import equinox as eqx
@@ -7,6 +8,7 @@ from jaxtyping import Array, Bool, Float, Key
 
 from lerax.render import AbstractRenderer
 from lerax.space import AbstractSpace
+from lerax.utils import unstack_pytree
 
 
 class AbstractEnvLikeState(eqx.Module):
@@ -40,6 +42,14 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType](eqx.Mod
     @abstractmethod
     def render(self, state: StateType):
         """Render a frame from a state"""
+
+    def render_stacked(self, states: StateType, dt: float = 0.0):
+        """Render multiple frames from stacked states"""
+        inner_state = states.unwrapped
+        unstacked_states = unstack_pytree(inner_state)
+        for state in unstacked_states:
+            self.unwrapped.render(state)
+            time.sleep(dt)
 
     @abstractmethod
     def close(self):

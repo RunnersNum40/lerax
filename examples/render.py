@@ -1,5 +1,3 @@
-import time
-
 from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
@@ -7,7 +5,6 @@ from jax import random as jr
 from lerax.algorithm import PPO
 from lerax.env import AbstractEnvLikeState, CartPole
 from lerax.policy import MLPActorCriticPolicy
-from lerax.utils import unstack_pytree
 from lerax.wrapper import EpisodeStatistics, TimeLimit
 
 key = jr.key(0)
@@ -55,7 +52,5 @@ _, env_states = lax.scan(
 renderer = env.unwrapped.renderer
 assert renderer is not None
 renderer.open()
-for s in unstack_pytree(env_states):
-    env.render(s)  # pyright: ignore
-    time.sleep(1 / 64)
+env.render_stacked(env_states, dt=1 / 60)  # pyright: ignore
 renderer.close()
