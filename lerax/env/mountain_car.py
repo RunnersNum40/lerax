@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import ClassVar, Literal
 
+import diffrax
 from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
@@ -14,12 +15,7 @@ from .base_env import AbstractEnv, AbstractEnvState
 
 
 class MountainCarState(AbstractEnvState):
-    position: Float[Array, ""]
-    velocity: Float[Array, ""]
-
-    @classmethod
-    def from_array(cls, arr: Float[Array, "2"]) -> MountainCarState:
-        return cls(position=arr[0], velocity=arr[1])
+    y: Float[Array, "2"]
 
 
 class MountainCar(AbstractEnv[MountainCarState, Int[Array, ""], Float[Array, "2"]]):
@@ -41,10 +37,18 @@ class MountainCar(AbstractEnv[MountainCarState, Int[Array, ""], Float[Array, "2"
 
     renderer: AbstractRenderer | None
 
+    tau: float
+    solver: diffrax.AbstractSolver
+    dt0: float | None
+    stepsize_controller: diffrax.AbstractStepSizeController
+
     def __init__(
         self,
         goal_velocity: float = 0,
+        *,
         renderer: AbstractRenderer | Literal["auto"] | None = None,
+        solver: diffrax.AbstractSolver | None = None,
+        tau: float = 1.0,
     ):
         self.min_position = -1.2
         self.max_position = 0.6
@@ -66,16 +70,25 @@ class MountainCar(AbstractEnv[MountainCarState, Int[Array, ""], Float[Array, "2"
         else:
             self.renderer = renderer
 
+        self.tau = float(tau)
+        self.solver = solver or diffrax.Heun()
+        is_adaptive = isinstance(self.solver, diffrax.AbstractAdaptiveSolver)
+        self.dt0 = None if is_adaptive else self.tau
+        self.stepsize_controller = (
+            diffrax.PIDController(rtol=1e-5, atol=1e-5)
+            if is_adaptive
+            else diffrax.ConstantStepSize()
+        )
+
     def reset(
         self, *, key: Key, low: float = -0.6, high: float = -0.4
     ) -> tuple[MountainCarState, Float[Array, "2"], dict]:
         position = jr.uniform(key, minval=low, maxval=high)
         velocity = 0.0
 
-        state_vals = jnp.asarray([position, velocity])
-        state = MountainCarState.from_array(state_vals)
+        state = MountainCarState(jnp.asarray([position, velocity]))
 
-        return state, state_vals, {}
+        return state, state.y, {}
 
     def step(
         self, state: MountainCarState, action: Int[Array, ""], *, key: Key
@@ -87,32 +100,44 @@ class MountainCar(AbstractEnv[MountainCarState, Int[Array, ""], Float[Array, "2"
         Bool[Array, ""],
         dict,
     ]:
-        position, velocity = state.position, state.velocity
+        def rhs(t, y, args):
+            x, x_d = y
+            force = (action - 1) * self.force
 
-        velocity += (action - 1) * self.force + jnp.cos(3 * position) * (-self.gravity)
-        velocity = jnp.clip(velocity, -self.max_speed, self.max_speed)
+            x = jnp.clip(x, self.min_position, self.max_position)
+            x_d = jnp.clip(x_d, -self.max_speed, self.max_speed)
 
-        position += velocity
-        position = jnp.clip(position, self.min_position, self.max_position)
+            x_dd = force + (-self.gravity) * jnp.cos(3.0 * x)
+            return jnp.array([x_d, x_dd])
 
-        velocity = lax.cond(
-            jnp.logical_and(position == self.min_position, velocity < 0),
-            lambda: jnp.array(0.0),
-            lambda: velocity,
+        sol = diffrax.diffeqsolve(
+            diffrax.ODETerm(rhs),
+            self.solver,
+            t0=0.0,
+            t1=self.tau,
+            dt0=self.dt0,
+            y0=state.y,
+            stepsize_controller=self.stepsize_controller,
+            saveat=diffrax.SaveAt(t1=True),
+        )
+        assert sol.ys is not None
+        x, v = sol.ys[0]
+
+        v = jnp.clip(v, -self.max_speed, self.max_speed)
+        x = jnp.clip(x, self.min_position, self.max_position)
+        v = lax.cond(
+            jnp.logical_and(x == self.min_position, v < 0.0), lambda: 0.0, lambda: v
         )
 
-        terminated = jnp.logical_and(
-            position >= self.goal_position, velocity >= self.goal_velocity
-        )
+        terminated = jnp.logical_and(x >= self.goal_position, v >= self.goal_velocity)
         reward = jnp.array(-1.0)
 
-        state_vals = jnp.asarray([position, velocity])
-        state = MountainCarState.from_array(state_vals)
+        state = MountainCarState(jnp.asarray([x, v]))
 
-        return state, state_vals, reward, terminated, jnp.array(False), {}
+        return state, state.y, reward, terminated, jnp.array(False), {}
 
     def render(self, state: MountainCarState):
-        x = state.position
+        x = state.y[0]
 
         assert self.renderer is not None, "Renderer is not initialized."
         self.renderer.clear()

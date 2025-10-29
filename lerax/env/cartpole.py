@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import ClassVar, Literal
 
-import equinox as eqx
-from jax import lax
+import diffrax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Bool, Float, Int, Key
@@ -14,20 +13,8 @@ from lerax.space import Box, Discrete
 from .base_env import AbstractEnv, AbstractEnvState
 
 
-class SOLVER(eqx.Enumeration):
-    explicit = "explicit"
-    implicit = "implicit"
-
-
 class CartPoleState(AbstractEnvState):
-    x: Float[Array, ""]
-    x_dot: Float[Array, ""]
-    theta: Float[Array, ""]
-    theta_dot: Float[Array, ""]
-
-    @classmethod
-    def from_array(cls, arr: Float[Array, "4"]) -> CartPoleState:
-        return cls(x=arr[0], x_dot=arr[1], theta=arr[2], theta_dot=arr[3])
+    y: Float[Array, "4"]
 
 
 class CartPole(AbstractEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]):
@@ -44,16 +31,21 @@ class CartPole(AbstractEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]):
     polemass_length: float
     force_mag: float
     tau: float
-    solver: SOLVER
     theta_threshold_radians: float
     x_threshold: float
 
     renderer: AbstractRenderer | None
 
+    solver: diffrax.AbstractSolver
+    dt0: float | None
+    stepsize_controller: diffrax.AbstractStepSizeController
+
     def __init__(
         self,
-        solver: SOLVER = SOLVER.implicit,
+        *,
         renderer: AbstractRenderer | Literal["auto"] | None = None,
+        solver: diffrax.AbstractSolver | None = None,
+        tau: float = 0.02,
     ):
         self.gravity = 9.8
         self.masscart = 1.0
@@ -62,8 +54,16 @@ class CartPole(AbstractEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]):
         self.length = 0.5
         self.polemass_length = self.masspole * self.length
         self.force_mag = 10.0
-        self.tau = 0.02
-        self.solver = solver
+
+        self.tau = tau
+        self.solver = solver or diffrax.Heun()
+        is_adaptive = isinstance(self.solver, diffrax.AbstractAdaptiveSolver)
+        self.dt0 = None if is_adaptive else self.tau
+        self.stepsize_controller = (
+            diffrax.PIDController(rtol=1e-5, atol=1e-5)
+            if is_adaptive
+            else diffrax.ConstantStepSize()
+        )
 
         self.theta_threshold_radians = 12 * 2 * jnp.pi / 360
         self.x_threshold = 2.4
@@ -87,10 +87,9 @@ class CartPole(AbstractEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]):
     def reset(
         self, *, key: Key, low: float = -0.05, high: float = 0.05
     ) -> tuple[CartPoleState, Float[Array, "4"], dict]:
-        new_state = jr.uniform(key, (4,), minval=low, maxval=high)
-        state = CartPoleState.from_array(new_state)
+        state = CartPoleState(jr.uniform(key, (4,), minval=low, maxval=high))
 
-        return state, new_state, {}
+        return state, state.y, {}
 
     def step(self, state: CartPoleState, action: Int[Array, ""], *, key: Key) -> tuple[
         CartPoleState,
@@ -100,71 +99,49 @@ class CartPole(AbstractEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]):
         Bool[Array, ""],
         dict,
     ]:
-        force = (action * 2 - 1) * self.force_mag
+        def rhs(t, y, args):
+            x, x_dot, theta, theta_dot = y
+            force = (action * 2 - 1) * self.force_mag
 
-        temp = (
-            force
-            + self.polemass_length * jnp.square(state.theta_dot) * jnp.sin(state.theta)
-        ) / self.total_mass
-        thetaacc = (
-            self.gravity * jnp.sin(state.theta) - jnp.cos(state.theta) * temp
-        ) / (
-            self.length
-            * (
-                4.0 / 3.0
-                - self.masspole * jnp.square(jnp.cos(state.theta)) / self.total_mass
+            temp = (
+                force + self.polemass_length * theta_dot**2 * jnp.sin(theta)
+            ) / self.total_mass
+            theta_dd = (self.gravity * jnp.sin(theta) - jnp.cos(theta) * temp) / (
+                self.length
+                * (4.0 / 3.0 - self.masspole * (jnp.cos(theta) ** 2) / self.total_mass)
             )
-        )
-        xacc = (
-            temp
-            - self.polemass_length * thetaacc * jnp.cos(state.theta) / self.total_mass
-        )
+            x_dd = (
+                temp
+                - self.polemass_length * theta_dd * jnp.cos(theta) / self.total_mass
+            )
 
-        def explicit(
-            x: Float, x_dot: Float, theta: Float, theta_dot: Float
-        ) -> tuple[Float, Float, Float, Float]:
-            x = x + self.tau * x_dot
-            x_dot = x_dot + self.tau * xacc
-            theta = theta + self.tau * theta_dot
-            theta_dot = theta_dot + self.tau * thetaacc
-            return x, x_dot, theta, theta_dot
+            return jnp.array([x_dot, x_dd, theta_dot, theta_dd])
 
-        def implicit(
-            x: Float, x_dot: Float, theta: Float, theta_dot: Float
-        ) -> tuple[Float, Float, Float, Float]:
-            x_dot = x_dot + self.tau * xacc
-            x = x + self.tau * x_dot
-            theta_dot = theta_dot + self.tau * thetaacc
-            theta = theta + self.tau * theta_dot
-            return x, x_dot, theta, theta_dot
-
-        x, x_dot, theta, theta_dot = lax.cond(
-            self.solver == SOLVER.explicit,
-            explicit,
-            implicit,
-            state.x,
-            state.x_dot,
-            state.theta,
-            state.theta_dot,
+        sol = diffrax.diffeqsolve(
+            diffrax.ODETerm(rhs),
+            self.solver,
+            t0=0.0,
+            t1=self.tau,
+            dt0=self.dt0,
+            stepsize_controller=self.stepsize_controller,
+            y0=state.y,
+            saveat=diffrax.SaveAt(t1=True),
         )
 
-        state_vals = jnp.asarray([x, x_dot, theta, theta_dot])
-        state = CartPoleState.from_array(state_vals)
+        assert sol.ys is not None
+        state = CartPoleState(sol.ys[0])
+        x, theta = state.y[0], state.y[2]
 
-        within_x = jnp.logical_and(x >= -self.x_threshold, x <= self.x_threshold)
-        within_theta = jnp.logical_and(
-            theta >= -self.theta_threshold_radians,
-            theta <= self.theta_threshold_radians,
+        within_x = (x >= -self.x_threshold) & (x <= self.x_threshold)
+        within_theta = (theta >= -self.theta_threshold_radians) & (
+            theta <= self.theta_threshold_radians
         )
-        terminated = jnp.logical_not(jnp.logical_and(within_x, within_theta))
-
+        terminated = ~(within_x & within_theta)
         reward = jnp.array(1.0)
-
-        return state, state_vals, reward, terminated, jnp.array(False), {}
+        return state, state.y, reward, terminated, jnp.array(False), {}
 
     def render(self, state: CartPoleState):
-        x = state.x
-        theta = state.theta
+        x, theta = state.y[0], state.y[2]
 
         assert self.renderer is not None, "Renderer is not set."
         self.renderer.clear()
