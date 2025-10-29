@@ -166,6 +166,19 @@ class NCDEActorCriticPolicy[
     def reset(self) -> NCDEPolicyState:
         return NCDEPolicyState(t=jnp.array(0.0), cde=self.encoder.reset())
 
+    def __call__(
+        self, state: NCDEPolicyState, observation: ObsType, *, key: Key | None = None
+    ) -> tuple[NCDEPolicyState, ActType]:
+        state, features = self._step_encoder(state, observation)
+        action_dist = self.action_dist_from_features(features)
+
+        if key is None:
+            action = action_dist.mode()
+        else:
+            action = action_dist.sample(key)
+
+        return state, action
+
     def action_and_value(
         self, state: NCDEPolicyState, observation: ObsType, *, key: Key | None = None
     ) -> tuple[NCDEPolicyState, ActType, Float[Array, ""], Float[Array, ""]]:

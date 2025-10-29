@@ -17,6 +17,10 @@ class NullStatefulActorCriticPolicyState(AbstractPolicyState):
 class AbstractActorCriticPolicy[ActType, ObsType](AbstractPolicy[ActType, ObsType]):
     """Base class for actor-critic policies."""
 
+    name: eqx.AbstractClassVar[str]
+    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
+    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+
 
 class AbstractStatelessActorCriticPolicy[
     ActType,
@@ -34,6 +38,15 @@ class AbstractStatelessActorCriticPolicy[
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+
+    @abstractmethod
+    def __call__(self, observation: ObsType, *, key: Key | None = None) -> ActType:
+        """
+        Get an action from an observation.
+
+        If `key` is provided, it will be used for sampling actions, if no key is
+        provided the policy will return the most likely action.
+        """
 
     @abstractmethod
     def action_and_value(
@@ -80,6 +93,17 @@ class AbstractStatefulActorCriticPolicy[
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
     @abstractmethod
+    def __call__(
+        self, state: StateType, observation: ObsType, *, key: Key | None = None
+    ) -> tuple[StateType, ActType]:
+        """
+        Get an action from an observation.
+
+        If `key` is provided, it will be used for sampling actions, if no key is
+        provided the policy will return the most likely action.
+        """
+
+    @abstractmethod
     def action_and_value(
         self, state: StateType, observation: ObsType, *, key: Key | None = None
     ) -> tuple[StateType, ActType, Float[Array, ""], Float[Array, ""]]:
@@ -124,6 +148,15 @@ class StatefulWrapper[ActType, ObsType](
     @property
     def observation_space(self) -> AbstractSpace[ObsType]:
         return self.policy.observation_space
+
+    def __call__(
+        self,
+        state: NullStatefulActorCriticPolicyState,
+        observation: ObsType,
+        *,
+        key: Key | None = None,
+    ) -> tuple[NullStatefulActorCriticPolicyState, ActType]:
+        return state, self.policy(observation, key=key)
 
     def action_and_value(
         self,

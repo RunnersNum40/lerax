@@ -137,6 +137,17 @@ class MLPActorCriticPolicy[
         """Return a value from features."""
         return self.value_model(features)
 
+    def __call__(self, observation: ObsType, *, key: Key | None = None) -> ActType:
+        features = self.extract_features(observation)
+        action_dist = self.action_dist_from_features(features)
+
+        if key is None:
+            action = action_dist.mode()
+        else:
+            action = action_dist.sample(key)
+
+        return action
+
     def action_and_value(
         self, observation: ObsType, *, key: Key | None = None
     ) -> tuple[ActType, Float[Array, ""], Float[Array, ""]]:
