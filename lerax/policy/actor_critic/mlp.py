@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import ClassVar
+
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
@@ -24,6 +26,8 @@ class MLPActorCriticPolicy[
     """
     Actor–critic policy with MLP components.
     """
+
+    name: ClassVar[str] = "MLPActorCriticPolicy"
 
     action_space: Box | Discrete
     observation_space: Box | Discrete

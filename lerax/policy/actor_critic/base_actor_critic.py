@@ -31,6 +31,7 @@ class AbstractStatelessActorCriticPolicy[
     Internally stateless policies can be converted to stateful ones using into_stateful().
     """
 
+    name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
@@ -74,6 +75,7 @@ class AbstractStatefulActorCriticPolicy[
     This class is intended for policies that maintain an internal state, such as RNNs.
     """
 
+    name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
@@ -110,6 +112,10 @@ class StatefulWrapper[ActType, ObsType](
 
     def __init__(self, policy: AbstractStatelessActorCriticPolicy[ActType, ObsType]):
         self.policy = policy
+
+    @property
+    def name(self) -> str:
+        return self.policy.name
 
     @property
     def action_space(self) -> AbstractSpace[ActType]:

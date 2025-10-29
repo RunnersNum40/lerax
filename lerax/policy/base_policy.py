@@ -18,6 +18,7 @@ class AbstractPolicy[ActType, ObsType](eqx.Module):
     Policies map from observations to actions.
     """
 
+    name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
@@ -29,6 +30,7 @@ class AbstractStatefulPolicy[StateType: AbstractPolicyState, ActType, ObsType](
     Base class for stateful policies.
     """
 
+    name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 

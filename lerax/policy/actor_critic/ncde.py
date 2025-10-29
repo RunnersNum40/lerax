@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from typing import ClassVar
+
 import equinox as eqx
-import jax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
@@ -37,6 +38,8 @@ class NCDEActorCriticPolicy[
     """
     Actor–critic with a shared MLPNeuralCDE encoder and MLP heads.
     """
+
+    name: ClassVar[str] = "NCDEActorCriticPolicy"
 
     action_space: Box | Discrete
     observation_space: Box | Discrete

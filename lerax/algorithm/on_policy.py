@@ -216,7 +216,7 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
             return None
 
         if tb_log is True:
-            tb_log = f"logs/{type(policy).__name__}_{env.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            tb_log = f"logs/{policy.name}_{env.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
         return JITSummaryWriter(tb_log)
 
@@ -228,7 +228,7 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
         show_progress_bar: bool,
     ) -> JITProgressBar | None:
         if show_progress_bar:
-            name = f"Training {type(policy).__name__} on {env.name}"
+            name = f"Training {policy.name} on {env.name}"
             progress_bar = JITProgressBar(name, total=total_timesteps)
             progress_bar.start()
             return progress_bar
