@@ -5,15 +5,25 @@ import jax
 import optax
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Float, Key, Scalar
+from jaxtyping import Array, Bool, Float, Key, PyTree, Scalar
 
 from lerax.buffer import RolloutBuffer
 from lerax.policy import (
     AbstractStatefulActorCriticPolicy,
+    NCDEActorCriticPolicy,
 )
 from lerax.utils import filter_scan
 
 from .on_policy import AbstractOnPolicyAlgorithm
+
+
+def any_nan_or_inf(tree: PyTree) -> Bool[Array, ""]:
+    return jnp.logical_not(
+        jax.tree.reduce_associative(
+            jnp.logical_and,
+            jax.tree.map(lambda leaf: jnp.all(jnp.isfinite(leaf)), tree),
+        )
+    )
 
 
 class PPOStats(eqx.Module):
@@ -184,21 +194,17 @@ class PPO(AbstractOnPolicyAlgorithm):
             self.entropy_loss_coefficient,
         )
 
+        if isinstance(grads, NCDEActorCriticPolicy):
+            grads = eqx.error_if(
+                grads, any_nan_or_inf(grads.encoder), "Non-finite encoder grads."
+            )
+
         updates, new_opt_state = self.optimizer.update(
             grads, opt_state, eqx.filter(policy, eqx.is_inexact_array)
         )
-
-        # Check if updates are nan or inf
-        values = jax.tree.leaves(jax.tree.map(jnp.ravel, updates))[0]
-        flat = jnp.array(values)
-        valid = jnp.all(jnp.isfinite(flat))
-        invalid = jnp.logical_not(valid)
-
-        updates = eqx.error_if(
-            updates, invalid, "Invalid gradients detected (NaN or Inf)."
-        )
-
+        updates = eqx.error_if(updates, any_nan_or_inf(updates), "Non-finite update.")
         policy = eqx.apply_updates(policy, updates)
+
         return policy, new_opt_state, stats
 
     def train_epoch(

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+import diffrax
 import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
@@ -55,19 +56,20 @@ class NCDEActorCriticPolicy[
         self,
         env: AbstractEnvLike[StateType, ActType, ObsType],
         *,
-        feature_size: int = 8,
-        latent_size: int = 8,
-        field_width: int = 64,
-        field_depth: int = 2,
-        initial_width: int = 64,
+        solver: diffrax.AbstractSolver | None = None,
+        feature_size: int = 4,
+        latent_size: int = 4,
+        field_width: int = 8,
+        field_depth: int = 1,
+        initial_width: int = 16,
         initial_depth: int = 1,
-        output_width: int = 64,
+        output_width: int = 16,
         output_depth: int = 1,
-        value_width: int = 64,
-        value_depth: int = 2,
-        action_width: int = 64,
-        action_depth: int = 2,
-        state_size: int = 16,
+        value_width: int = 16,
+        value_depth: int = 1,
+        action_width: int = 16,
+        action_depth: int = 1,
+        history_length: int = 4,
         dt: float = 1.0,
         log_std_init: float = 0.0,
         key: Key,
@@ -103,6 +105,7 @@ class NCDEActorCriticPolicy[
             in_size=obs_flat,
             out_size=feature_size,
             latent_size=latent_size,
+            solver=solver,
             field_width=field_width,
             field_depth=field_depth,
             initial_width=initial_width,
@@ -110,7 +113,7 @@ class NCDEActorCriticPolicy[
             output_width=output_width,
             output_depth=output_depth,
             time_in_input=False,
-            state_size=state_size,
+            history_length=history_length,
             key=enc_key,
         )
 

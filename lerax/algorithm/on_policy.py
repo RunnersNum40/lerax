@@ -262,21 +262,27 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
         tb_writer = self.init_tensorboard(env, _policy, tb_log)
         num_iterations = total_timesteps // self.num_steps
 
-        def scan_iteration(carry: tuple[IterationCarry, Key], _):
-            it_carry, key = carry
-            iter_key, next_key = jr.split(key, 2)
-            it_carry = self.iteration(
-                env,
-                it_carry,
-                key=iter_key,
-                progress_bar=progress_bar,
-                tb_writer=tb_writer,
-            )
-            return (it_carry, next_key), None
+        @eqx.filter_jit
+        def learn(carry: IterationCarry) -> IterationCarry:
+            def scan_iteration(carry: tuple[IterationCarry, Key], _):
+                it_carry, key = carry
+                iter_key, next_key = jr.split(key, 2)
+                it_carry = self.iteration(
+                    env,
+                    it_carry,
+                    key=iter_key,
+                    progress_bar=progress_bar,
+                    tb_writer=tb_writer,
+                )
+                return (it_carry, next_key), None
 
-        (carry, _), _ = filter_scan(
-            scan_iteration, (carry, learn_key), length=num_iterations
-        )
+            (carry, _), _ = filter_scan(
+                scan_iteration, (carry, learn_key), length=num_iterations
+            )
+
+            return carry
+
+        carry = learn(carry)
 
         if progress_bar is not None:
             progress_bar.stop()

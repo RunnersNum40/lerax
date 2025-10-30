@@ -88,7 +88,7 @@ class MLPNCDETerm(AbstractNCDETerm):
     def __init__(
         self,
         input_size: int,
-        data_size: int,
+        state_size: int,
         width_size: int,
         depth: int,
         activation: Callable[
@@ -103,8 +103,8 @@ class MLPNCDETerm(AbstractNCDETerm):
     ):
         self.add_time = add_time
         self.tensor_mlp = TensorMLP(
-            in_shape=(data_size + int(add_time),),
-            out_shape=(data_size, input_size),
+            in_shape=(state_size + int(add_time),),
+            out_shape=(state_size, input_size),
             width_size=width_size,
             depth=depth,
             activation=activation,
@@ -113,8 +113,8 @@ class MLPNCDETerm(AbstractNCDETerm):
         )
 
     def __call__(
-        self, t: ScalarLike, z: Float[Array, " data_size"], args
-    ) -> Float[Array, " data_size input_size"]:
+        self, t: ScalarLike, z: Float[Array, " state_size"], args
+    ) -> Float[Array, " state_size input_size"]:
         if self.add_time:
             return self.tensor_mlp(
                 jnp.concatenate([z, jnp.expand_dims(t, axis=-1)], axis=-1)
