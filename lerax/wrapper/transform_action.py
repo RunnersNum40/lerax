@@ -34,6 +34,10 @@ class AbstractPureTransformActionWrapper[
     func: eqx.AbstractVar[Callable[[WrapperActType], ActType]]
     action_space: eqx.AbstractVar[AbstractSpace[WrapperActType]]
 
+    @property
+    def observation_space(self) -> AbstractSpace[ObsType]:
+        return self.env.observation_space
+
     def reset(self, *, key: Key) -> tuple[StateType, ObsType, dict]:
         return self.env.reset(key=key)
 

@@ -8,6 +8,7 @@ from lerax.env import (
     AbstractEnvLikeState,
     AbstractEnvState,
 )
+from lerax.space import AbstractSpace
 
 
 class AbstractWrapperState[StateType: AbstractEnvLikeState](AbstractEnvLikeState):
@@ -29,6 +30,9 @@ class AbstractWrapper[
     """Base class for environment wrappers"""
 
     env: eqx.AbstractVar[AbstractEnvLike[StateType, ActType, ObsType]]
+
+    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
+    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
     @property
     def unwrapped(self) -> AbstractEnv:

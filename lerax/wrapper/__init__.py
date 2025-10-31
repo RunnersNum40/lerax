@@ -17,6 +17,7 @@ from .transform_observation import (
     ClipObservation,
     FlattenObservation,
     RescaleObservation,
+    TransformObservation,
 )
 from .transform_reward import (
     ClipReward,
@@ -35,5 +36,6 @@ __all__ = [
     "ClipObservation",
     "FlattenObservation",
     "RescaleObservation",
+    "TransformObservation",
     "ClipReward",
 ]

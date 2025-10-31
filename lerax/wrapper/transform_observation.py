@@ -25,6 +25,10 @@ class AbstractPureObservationWrapper[
     func: eqx.AbstractVar[Callable[[ObsType], WrapperObsType]]
     observation_space: eqx.AbstractVar[AbstractSpace[WrapperObsType]]
 
+    @property
+    def action_space(self) -> AbstractSpace[ActType]:
+        return self.env.action_space
+
     def reset(self, *, key: Key) -> tuple[StateType, WrapperObsType, dict]:
         state, observation, info = self.env.reset(key=key)
         return state, self.func(observation), info
@@ -40,6 +44,24 @@ class AbstractPureObservationWrapper[
 
     def close(self):
         self.env.close()
+
+
+class TransformObservation[
+    WrapperObsType, StateType: AbstractEnvLikeState, ActType, ObsType
+](AbstractPureObservationWrapper[WrapperObsType, StateType, ActType, ObsType]):
+    env: AbstractEnvLike[StateType, ActType, ObsType]
+    func: Callable[[ObsType], WrapperObsType]
+    observation_space: AbstractSpace[WrapperObsType]
+
+    def __init__(
+        self,
+        env: AbstractEnvLike[StateType, ActType, ObsType],
+        func: Callable[[ObsType], WrapperObsType],
+        observation_space: AbstractSpace[WrapperObsType],
+    ):
+        self.env = env
+        self.func = func
+        self.observation_space = observation_space
 
 
 class ClipObservation[StateType: AbstractEnvLikeState](
