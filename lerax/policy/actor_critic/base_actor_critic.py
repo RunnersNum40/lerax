@@ -127,14 +127,14 @@ class AbstractStatefulActorCriticPolicy[
         """Get the value of an observation."""
 
 
-class StatefulWrapper[ActType, ObsType](
+class StatefulWrapper[PolicyType: AbstractStatelessActorCriticPolicy, ActType, ObsType](
     AbstractStatefulActorCriticPolicy[
         NullStatefulActorCriticPolicyState, ActType, ObsType
     ]
 ):
-    policy: AbstractStatelessActorCriticPolicy[ActType, ObsType]
+    policy: PolicyType
 
-    def __init__(self, policy: AbstractStatelessActorCriticPolicy[ActType, ObsType]):
+    def __init__(self, policy: PolicyType):
         self.policy = policy
 
     @property
@@ -199,6 +199,6 @@ class StatefulWrapper[ActType, ObsType](
         """Reset the policy state."""
         return NullStatefulActorCriticPolicyState()
 
-    def into_stateless(self) -> AbstractStatelessActorCriticPolicy[ActType, ObsType]:
+    def into_stateless(self) -> PolicyType:
         """Convert this stateful policy into a stateless one."""
         return self.policy

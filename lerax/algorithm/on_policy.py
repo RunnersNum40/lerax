@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from datetime import datetime
+from typing import cast
 
 import equinox as eqx
 import optax
@@ -17,6 +18,7 @@ from lerax.policy import (
     AbstractPolicyState,
     AbstractStatefulActorCriticPolicy,
     AbstractStatelessActorCriticPolicy,
+    StatefulWrapper,
 )
 from lerax.utils import filter_scan
 
@@ -288,6 +290,11 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
             progress_bar.stop()
 
         if isinstance(policy, AbstractStatelessActorCriticPolicy):
-            return carry.policy.into_stateless()
+            if isinstance(carry.policy, StatefulWrapper):
+                return carry.policy.into_stateless()
+            else:
+                raise TypeError(
+                    f"Unknown expected StatefulWrapper policy type. Got {type(carry.policy)}. This is likely a bug."
+                )
         else:
-            return carry.policy
+            return cast(PolicyType, carry.policy)
