@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import equinox as eqx
+import numpy as np
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Scalar, ScalarLike
 from rich import progress, text
@@ -84,33 +85,22 @@ class JITSummaryWriter:
         episode_stats: EpisodeStatisticsAccumulator,
         *,
         global_step: Int[ArrayLike, ""] | None = None,
-        walltime: Float[ArrayLike, ""] | None = None,
     ) -> None:
         """
         Log episode statistics to the summary writer.
         """
 
-        def log_fn(rewards, lengths, dones, global_step, walltime):
-            for i, (reward, length, done) in enumerate(
-                zip(
-                    rewards,
-                    lengths,
-                    dones,
-                )
-            ):
-                step = global_step + i if global_step is not None else None
-                if done:
+        def log_fn(rewards, lengths, dones, global_step):
+            for i, (reward, length, done) in enumerate(zip(rewards, lengths, dones)):
+                step = global_step + i * len(done) if global_step is not None else None
+                if np.any(done):
+                    reward = np.sum(reward * done) / np.sum(done)
                     self.summary_writer.add_scalar(
-                        "episode/reward",
-                        reward,
-                        global_step=step,
-                        walltime=walltime,
+                        "episode/reward", reward, global_step=step
                     )
+                    length = np.sum(length * done) / np.sum(done)
                     self.summary_writer.add_scalar(
-                        "episode/length",
-                        length,
-                        global_step=step,
-                        walltime=walltime,
+                        "episode/length", length, global_step=step
                     )
 
         callback_with_numpy_wrapper(log_fn)(
@@ -118,12 +108,11 @@ class JITSummaryWriter:
             episode_stats.episode_length,
             episode_stats.episode_done,
             global_step,
-            walltime,
         )
 
 
 def superscript_digit(digit: int) -> str:
-    return "⁰¹²³⁴⁵⁶⁷⁸⁹"[digit]
+    return "⁰¹²³⁴⁵⁶⁷⁸⁹"[digit % 10]
 
 
 def superscript_int(i: int) -> str:

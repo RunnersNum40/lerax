@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import cast
 
 import equinox as eqx
+import jax
 import optax
 from jax import lax
 from jax import numpy as jnp
@@ -27,7 +28,6 @@ from .utils import EpisodeStatisticsAccumulator, JITProgressBar, JITSummaryWrite
 
 
 class StepCarry(eqx.Module):
-    step_count: Int[Array, ""]
     last_obs: Array
     last_termination: Bool[Array, ""]
     last_truncation: Bool[Array, ""]
@@ -37,6 +37,7 @@ class StepCarry(eqx.Module):
 
 
 class IterationCarry(eqx.Module):
+    iteration: Int[Array, ""]
     step_carry: StepCarry
     policy: AbstractStatefulActorCriticPolicy
     opt_state: optax.OptState
@@ -49,6 +50,8 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
 
     gae_lambda: eqx.AbstractVar[float]
     gamma: eqx.AbstractVar[float]
+
+    num_envs: eqx.AbstractVar[int]
     num_steps: eqx.AbstractVar[int]
     batch_size: eqx.AbstractVar[int]
 
@@ -91,7 +94,6 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
 
         return (
             StepCarry(
-                carry.step_count + 1,
                 observation,
                 termination,
                 truncation,
@@ -117,7 +119,6 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
         env: AbstractEnvLike,
         policy: AbstractStatefulActorCriticPolicy,
         carry: StepCarry,
-        *,
         key: Key,
     ) -> tuple[StepCarry, RolloutBuffer, EpisodeStatisticsAccumulator | None]:
         def scan_step(carry: tuple[StepCarry, Key], _):
@@ -160,29 +161,39 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
         tb_writer: JITSummaryWriter | None,
     ) -> IterationCarry:
         rollout_key, train_key = jr.split(key, 2)
-        step_carry, rollout_buffer, episode_stats = self.collect_rollout(
-            env, carry.policy, carry.step_carry, key=rollout_key
-        )
-        policy, opt_state = carry.policy, carry.opt_state
+        step_carry, rollout_buffer, episode_stats = eqx.filter_vmap(
+            self.collect_rollout, in_axes=(None, None, 0, 0)
+        )(env, carry.policy, carry.step_carry, jr.split(rollout_key, self.num_envs))
         policy, opt_state, log = self.train(
-            policy, opt_state, rollout_buffer, key=train_key
+            carry.policy, carry.opt_state, rollout_buffer, key=train_key
         )
 
         if progress_bar is not None:
-            progress_bar.update(advance=self.num_steps)
+            progress_bar.update(advance=self.num_steps * self.num_envs)
+
         if tb_writer is not None:
+            global_step = carry.iteration * self.num_steps * self.num_envs
             log["learning_rate"] = optax.tree_utils.tree_get(
                 opt_state, "learning_rate", jnp.nan
             )
-            tb_writer.add_dict(
-                log, prefix="train", global_step=carry.step_carry.step_count
-            )
+            tb_writer.add_dict(log, prefix="train", global_step=global_step)
             if episode_stats is not None:
-                tb_writer.log_episode_stats(
-                    episode_stats, global_step=carry.step_carry.step_count
-                )
+                tb_writer.log_episode_stats(episode_stats, global_step=global_step)
 
-        return IterationCarry(step_carry, policy, opt_state)
+        return IterationCarry(carry.iteration + 1, step_carry, policy, opt_state)
+
+    def init_step_carry(
+        self, env: AbstractEnvLike, policy: AbstractStatefulActorCriticPolicy, key: Key
+    ) -> StepCarry:
+        env_state, next_obs, _ = env.reset(key=key)
+        policy_state = policy.reset()
+        return StepCarry(
+            next_obs,
+            jnp.array(False),
+            jnp.array(False),
+            env_state,
+            policy_state,
+        )
 
     def init_iteration_carry(
         self,
@@ -191,21 +202,13 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
         *,
         key: Key,
     ) -> IterationCarry:
-        env_state, next_obs, _ = env.reset(key=key)
-        policy_state = policy.reset()
-        opt_state = self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array))
-
         return IterationCarry(
-            StepCarry(
-                jnp.asarray(0),
-                next_obs,
-                jnp.asarray(False),
-                jnp.asarray(False),
-                env_state,
-                policy_state,
+            jnp.array(0),
+            jax.vmap(self.init_step_carry, in_axes=(None, None, 0))(
+                env, policy, jr.split(key, self.num_envs)
             ),
             policy,
-            opt_state,
+            self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array)),
         )
 
     def init_tensorboard(
@@ -262,7 +265,7 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
             env, _policy, total_timesteps, show_progress_bar
         )
         tb_writer = self.init_tensorboard(env, _policy, tb_log)
-        num_iterations = total_timesteps // self.num_steps
+        num_iterations = total_timesteps // (self.num_steps * self.num_envs)
 
         @eqx.filter_jit
         def learn(carry: IterationCarry) -> IterationCarry:

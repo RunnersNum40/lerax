@@ -40,11 +40,11 @@ class PPO(AbstractOnPolicyAlgorithm):
 
     gae_lambda: float = eqx.field(static=True)
     gamma: float = eqx.field(static=True)
+
+    num_envs: int = eqx.field(static=True)
     num_steps: int = eqx.field(static=True)
     batch_size: int = eqx.field(static=True)
-
     num_epochs: int = eqx.field(static=True)
-    num_mini_batches: int = eqx.field(static=True)
 
     normalize_advantages: bool = eqx.field(static=True)
     clip_coefficient: float = eqx.field(static=True)
@@ -57,7 +57,8 @@ class PPO(AbstractOnPolicyAlgorithm):
     def __init__(
         self,
         *,
-        num_steps: int = 2048,
+        num_envs: int = 4,
+        num_steps: int = 1024,
         num_epochs: int = 16,
         num_batches: int = 32,
         gae_lambda: float = 0.95,
@@ -71,21 +72,21 @@ class PPO(AbstractOnPolicyAlgorithm):
         normalize_advantages: bool = True,
         learning_rate: float = 3e-4,
     ):
-        self.num_steps = int(num_steps)
-        self.num_epochs = int(num_epochs)
-        self.num_mini_batches = int(num_batches)
-        self.batch_size = self.num_steps // self.num_mini_batches
+        self.gae_lambda = gae_lambda
+        self.gamma = gamma
 
-        self.gae_lambda = float(gae_lambda)
-        self.gamma = float(gamma)
+        self.num_envs = num_envs
+        self.num_steps = num_steps
+        self.num_epochs = num_epochs
+        self.batch_size = self.num_steps // num_batches
 
-        self.clip_coefficient = float(clip_coefficient)
-        self.clip_value_loss = bool(clip_value_loss)
-        self.entropy_loss_coefficient = float(entropy_loss_coefficient)
-        self.value_loss_coefficient = float(value_loss_coefficient)
-        self.state_magnitude_coefficient = float(state_magnitude_coefficient)
-        self.max_grad_norm = float(max_grad_norm)
-        self.normalize_advantages = bool(normalize_advantages)
+        self.clip_coefficient = clip_coefficient
+        self.clip_value_loss = clip_value_loss
+        self.entropy_loss_coefficient = entropy_loss_coefficient
+        self.value_loss_coefficient = value_loss_coefficient
+        self.state_magnitude_coefficient = state_magnitude_coefficient
+        self.max_grad_norm = max_grad_norm
+        self.normalize_advantages = normalize_advantages
 
         adam = optax.inject_hyperparams(optax.adam)(learning_rate)
         clip = optax.clip_by_global_norm(self.max_grad_norm)

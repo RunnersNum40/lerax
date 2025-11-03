@@ -122,29 +122,48 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBu
         return dataclasses.replace(self, advantages=advantages, returns=returns)
 
     def batches(
-        self, batch_size: int, *, key: Key | None = None
+        self,
+        batch_size: int,
+        *,
+        key: Key | None = None,
+        batch_axes: tuple[int, ...] | int | None = None,
     ) -> RolloutBuffer[StateType, ActType, ObsType]:
-        """
-        Return rollout buffer with batches of the given size.
+        ndim = self.rewards.ndim
 
-        The buffer is shuffled if a key is provided.
-
-        This method reshapes the buffer into batches of the specified size. It is not
-        the same as a list of butches, but rather a single buffer where each batch is a
-        slice of the original data.
-        """
-        if key is None:
-            indices = jnp.arange(self.shape[0])
+        if batch_axes is None:
+            axes = tuple(range(ndim))
+        elif isinstance(batch_axes, int):
+            axes = (batch_axes,)
         else:
-            indices = jr.permutation(key, self.shape[0])
+            axes = tuple(batch_axes)
 
-        if self.shape[0] % batch_size != 0:
-            # TODO: Add warning if batch_size does not divide the number of samples
-            indices = indices[: self.shape[0] - self.shape[0] % batch_size]
+        axes = tuple(a + ndim if a < 0 else a for a in axes)
+        if len(set(axes)) != len(axes) or any(a < 0 or a >= ndim for a in axes):
+            raise ValueError(f"Invalid batch_axes {batch_axes} for array ndim={ndim}.")
+
+        def flatten_selected(x):
+            moved = jnp.moveaxis(x, axes, tuple(range(len(axes))))
+            lead = 1
+            for i in range(len(axes)):
+                lead *= moved.shape[i]
+
+            return moved.reshape((lead,) + moved.shape[len(axes) :])
+
+        flat_self = jax.tree.map(flatten_selected, self)
+
+        total = flat_self.rewards.shape[0]
+        indices = jnp.arange(total) if key is None else jr.permutation(key, total)
+
+        if total % batch_size != 0:
+            total_trim = total - (total % batch_size)
+            indices = indices[:total_trim]
 
         indices = indices.reshape(-1, batch_size)
 
-        return jax.tree.map(partial(jnp.take, indices=indices, axis=0), self)
+        return jax.tree.map(
+            lambda x: jnp.take(x, indices, axis=0) if isinstance(x, jnp.ndarray) else x,
+            flat_self,
+        )
 
     @property
     def shape(self) -> tuple[int, ...]:
