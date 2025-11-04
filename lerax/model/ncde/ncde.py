@@ -8,7 +8,7 @@ from jax import lax
 from jax import nn as jnn
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Float, Int, Key, PyTree, Shaped
+from jaxtyping import Array, Float, Key, PyTree, Shaped
 
 from ..base_model import AbstractModelState, AbstractStatefulModel
 from .term import AbstractNCDETerm, MLPNCDETerm

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import dataclasses
-from functools import partial
 
 import jax
 from jax import lax
