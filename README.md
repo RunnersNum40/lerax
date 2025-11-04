@@ -76,10 +76,8 @@ Check out the [Gymnasium wrapper](lerax/compatibility/gym.py) for how to wrap Gy
 - Use it
   - Personal research
 - Optimise for performance under JIT compilation
-  - Good vectorization support
   - Sharding support for distributed training
 - Round out features
-  - Rendering support
   - Expand RL variants to include more algorithms
   - Create a more comprehensive set of environments
 
