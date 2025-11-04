@@ -71,7 +71,9 @@ class AbstractStatelessActorCriticPolicy[
 
     def into_stateful(
         self,
-    ) -> StatefulWrapper[ActType, ObsType]:
+    ) -> StatefulWrapper[
+        AbstractStatelessActorCriticPolicy[ActType, ObsType], ActType, ObsType
+    ]:
         """Convert this stateless policy into a stateful one."""
         return StatefulWrapper(self)
 
