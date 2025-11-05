@@ -27,7 +27,7 @@ issues = "https://github.com/RunnersNum40/lerax/issues"
 source = "https://github.com/RunnersNum40/lerax.git"
 
 [project.optional-dependencies]
-compatibility = ["gymnasium", "stable-baselines3"]
+compatibility = ["gymnasium", "stable-baselines3", "gymnax", "flax"]
 docs = ["mkdocs-material"]
 test = [
   "pytest",
