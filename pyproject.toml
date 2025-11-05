@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE"]
-authors = [{ name = "Theodore Pinkerton", email = "p_t@fastmail.net" }]
+authors = [{ name = "Theodore Pinkerton", email = "ted@tedpinkerton.ca" }]
 dependencies = [
   "diffrax",
   "distreqx",
