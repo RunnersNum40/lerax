@@ -84,23 +84,14 @@ class CartPole(AbstractEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]):
         else:
             self.renderer = renderer
 
-    def reset(
-        self, *, key: Key, low: float = -0.05, high: float = 0.05
-    ) -> tuple[CartPoleState, Float[Array, "4"], dict]:
-        state = CartPoleState(jr.uniform(key, (4,), minval=low, maxval=high))
+    def initial(self, *, key: Key) -> CartPoleState:
+        return CartPoleState(jr.uniform(key, (4,), minval=-0.05, maxval=0.05))
 
-        return state, state.y, {}
-
-    def step(self, state: CartPoleState, action: Int[Array, ""], *, key: Key) -> tuple[
-        CartPoleState,
-        Float[Array, "4"],
-        Float[Array, ""],
-        Bool[Array, ""],
-        Bool[Array, ""],
-        dict,
-    ]:
+    def transition(
+        self, state: CartPoleState, action: Int[Array, ""], *, key: Key
+    ) -> CartPoleState:
         def rhs(t, y, args):
-            x, x_dot, theta, theta_dot = y
+            _, x_dot, theta, theta_dot = y
             force = (action * 2 - 1) * self.force_mag
 
             temp = (
@@ -129,16 +120,39 @@ class CartPole(AbstractEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]):
         )
 
         assert sol.ys is not None
-        state = CartPoleState(sol.ys[0])
-        x, theta = state.y[0], state.y[2]
+        return CartPoleState(sol.ys[0])
 
+    def observation(self, state: CartPoleState, *, key: Key) -> Float[Array, "4"]:
+        return state.y
+
+    def reward(
+        self,
+        state: CartPoleState,
+        action: Int[Array, ""],
+        next_state: CartPoleState,
+        *,
+        key: Key,
+    ) -> Float[Array, ""]:
+        return jnp.array(1.0)
+
+    def terminal(self, state: CartPoleState, *, key: Key) -> Bool[Array, ""]:
+        x, theta = state.y[0], state.y[2]
         within_x = (x >= -self.x_threshold) & (x <= self.x_threshold)
         within_theta = (theta >= -self.theta_threshold_radians) & (
             theta <= self.theta_threshold_radians
         )
-        terminated = ~(within_x & within_theta)
-        reward = jnp.array(1.0)
-        return state, state.y, reward, terminated, jnp.array(False), {}
+        return ~(within_x & within_theta)
+
+    def truncate(self, state: CartPoleState) -> Bool[Array, ""]:
+        return jnp.array(False)
+
+    def state_info(self, state: CartPoleState) -> dict:
+        return {}
+
+    def transition_info(
+        self, state: CartPoleState, action: Int[Array, ""], next_state: CartPoleState
+    ) -> dict:
+        return {}
 
     def render(self, state: CartPoleState):
         x, theta = state.y[0], state.y[2]

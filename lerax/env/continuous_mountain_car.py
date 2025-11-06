@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import ClassVar, Literal
 
 import diffrax
-from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Bool, Float, Key
@@ -84,30 +83,14 @@ class ContinuousMountainCar(
             else diffrax.ConstantStepSize()
         )
 
-    def reset(
-        self,
-        *,
-        key: Key,
-        low: float = -0.6,
-        high: float = -0.4,
-    ) -> tuple[ContinuousMountainCarState, Float[Array, "2"], dict]:
-        position = jr.uniform(key, minval=low, maxval=high)
-        velocity = 0.0
+    def initial(self, *, key: Key) -> ContinuousMountainCarState:
+        return ContinuousMountainCarState(
+            jnp.asarray([jr.uniform(key, minval=-0.6, maxval=-0.4), 0.0])
+        )
 
-        state = ContinuousMountainCarState(jnp.asarray([position, velocity]))
-
-        return state, state.y, {}
-
-    def step(
+    def transition(
         self, state: ContinuousMountainCarState, action: Float[Array, ""], *, key: Key
-    ) -> tuple[
-        ContinuousMountainCarState,
-        Float[Array, "2"],
-        Float[Array, ""],
-        Bool[Array, ""],
-        Bool[Array, ""],
-        dict,
-    ]:
+    ) -> ContinuousMountainCarState:
 
         def rhs(t, y, args):
             x, x_d = y
@@ -131,20 +114,45 @@ class ContinuousMountainCar(
 
         v = jnp.clip(v, -self.max_speed, self.max_speed)
         x = jnp.clip(x, self.min_position, self.max_position)
-        v = lax.cond(
-            jnp.logical_and(x == self.min_position, v < 0.0), lambda: 0.0, lambda: v
-        )
+        return ContinuousMountainCarState(jnp.asarray([x, v]))
 
-        terminated = jnp.logical_and(x >= self.goal_position, v >= self.goal_velocity)
+    def observation(
+        self, state: ContinuousMountainCarState, *, key: Key
+    ) -> Float[Array, "2"]:
+        return state.y
 
-        reward = (
-            jnp.where(terminated, 100.0, 0.0)
+    def reward(
+        self,
+        state: ContinuousMountainCarState,
+        action: Float[Array, ""],
+        next_state: ContinuousMountainCarState,
+        *,
+        key: Key,
+    ) -> Float[Array, ""]:
+        return (
+            100.0 * self.terminal(state, key=key).astype(float)
             - 0.1 * jnp.clip(action, self.min_action, self.max_action) ** 2
         )
 
-        state = ContinuousMountainCarState(jnp.asarray([x, v]))
+    def terminal(
+        self, state: ContinuousMountainCarState, *, key: Key
+    ) -> Bool[Array, ""]:
+        x, v = state.y
+        return (x >= self.goal_position) & (v >= self.goal_velocity)
 
-        return state, state.y, reward, terminated, jnp.array(False), {}
+    def truncate(self, state: ContinuousMountainCarState) -> Bool[Array, ""]:
+        return jnp.array(False)
+
+    def state_info(self, state: ContinuousMountainCarState) -> dict:
+        return {}
+
+    def transition_info(
+        self,
+        state: ContinuousMountainCarState,
+        action: Float[Array, ""],
+        next_state: ContinuousMountainCarState,
+    ) -> dict:
+        return {}
 
     def render(self, state: ContinuousMountainCarState):
         x = state.y[0]

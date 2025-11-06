@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import ClassVar, Literal
 
 import diffrax
-from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Bool, Float, Int, Key
@@ -80,26 +79,14 @@ class MountainCar(AbstractEnv[MountainCarState, Int[Array, ""], Float[Array, "2"
             else diffrax.ConstantStepSize()
         )
 
-    def reset(
-        self, *, key: Key, low: float = -0.6, high: float = -0.4
-    ) -> tuple[MountainCarState, Float[Array, "2"], dict]:
-        position = jr.uniform(key, minval=low, maxval=high)
-        velocity = 0.0
+    def initial(self, *, key: Key) -> MountainCarState:
+        return MountainCarState(
+            jnp.asarray([jr.uniform(key, minval=-0.6, maxval=-0.4), 0.0])
+        )
 
-        state = MountainCarState(jnp.asarray([position, velocity]))
-
-        return state, state.y, {}
-
-    def step(
+    def transition(
         self, state: MountainCarState, action: Int[Array, ""], *, key: Key
-    ) -> tuple[
-        MountainCarState,
-        Float[Array, "2"],
-        Float[Array, ""],
-        Bool[Array, ""],
-        Bool[Array, ""],
-        dict,
-    ]:
+    ) -> MountainCarState:
         def rhs(t, y, args):
             x, x_d = y
             force = (action - 1) * self.force
@@ -122,19 +109,51 @@ class MountainCar(AbstractEnv[MountainCarState, Int[Array, ""], Float[Array, "2"
         )
         assert sol.ys is not None
         x, v = sol.ys[0]
-
         v = jnp.clip(v, -self.max_speed, self.max_speed)
         x = jnp.clip(x, self.min_position, self.max_position)
-        v = lax.cond(
-            jnp.logical_and(x == self.min_position, v < 0.0), lambda: 0.0, lambda: v
-        )
+        v *= (x != self.min_position) | (v > 0.0)
+        return MountainCarState(jnp.asarray([x, v]))
 
-        terminated = jnp.logical_and(x >= self.goal_position, v >= self.goal_velocity)
-        reward = jnp.array(-1.0)
+    def observation(self, state: MountainCarState, *, key: Key) -> Float[Array, "2"]:
+        return state.y
 
-        state = MountainCarState(jnp.asarray([x, v]))
+    def reward(
+        self,
+        state: MountainCarState,
+        action: Int[Array, ""],
+        next_state: MountainCarState,
+        *,
+        key: Key,
+    ) -> Float[Array, ""]:
+        return jnp.array(-1.0)
 
-        return state, state.y, reward, terminated, jnp.array(False), {}
+    def terminal(self, state: MountainCarState, *, key: Key) -> Bool[Array, ""]:
+        x, v = state.y
+        return (x >= self.goal_position) & (v >= self.goal_velocity)
+
+    def truncate(self, state: MountainCarState) -> Bool[Array, ""]:
+        return jnp.array(False)
+
+    def state_info(self, state: MountainCarState) -> dict:
+        return {}
+
+    def transition_info(
+        self,
+        state: MountainCarState,
+        action: Int[Array, ""],
+        next_state: MountainCarState,
+    ) -> dict:
+        return {}
+
+    def reset(
+        self, *, key: Key, low: float = -0.6, high: float = -0.4
+    ) -> tuple[MountainCarState, Float[Array, "2"], dict]:
+        position = jr.uniform(key, minval=low, maxval=high)
+        velocity = 0.0
+
+        state = MountainCarState(jnp.asarray([position, velocity]))
+
+        return state, state.y, {}
 
     def render(self, state: MountainCarState):
         x = state.y[0]
