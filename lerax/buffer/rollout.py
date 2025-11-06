@@ -23,8 +23,7 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBu
     observations: PyTree[ObsType]
     actions: PyTree[ActType]
     rewards: Float[Array, " *size"]
-    terminations: Bool[Array, " *size"]
-    truncations: Bool[Array, " *size"]
+    dones: Bool[Array, " *size"]
     log_probs: Float[Array, " *size"]
     values: Float[Array, " *size"]
     returns: Float[Array, " *size"]
@@ -36,8 +35,7 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBu
         observations: PyTree[ObsType],
         actions: PyTree[ActType],
         rewards: Float[ArrayLike, " *size"],
-        terminations: Bool[ArrayLike, " *size"],
-        truncations: Bool[ArrayLike, " *size"],
+        dones: Bool[ArrayLike, " *size"],
         log_probs: Float[ArrayLike, " *size"],
         values: Float[ArrayLike, " *size"],
         states: StateType,
@@ -50,72 +48,49 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBu
         Returns and advantages can be provided, but if not, they will be filled with
         NaNs.
         """
-        # TODO: Add type checks for observations, actions, etc
-        # TODO: Add shape checks for rewards, terminations, truncations, log_probs,
-        # values
-
         self.observations = observations
         self.actions = actions
-        self.rewards = jnp.asarray(rewards)
-        self.terminations = jnp.asarray(terminations)
-        self.truncations = jnp.asarray(truncations)
-        self.log_probs = jnp.asarray(log_probs)
-        self.values = jnp.asarray(values)
-        # Assume the state has been used already and clone to compensate
+        self.rewards = jnp.asarray(rewards, dtype=float)
+        self.dones = jnp.asarray(dones, dtype=bool)
+        self.log_probs = jnp.asarray(log_probs, dtype=float)
+        self.values = jnp.asarray(values, dtype=float)
         self.states = states
         self.returns = (
-            jnp.asarray(returns)
+            jnp.asarray(returns, dtype=float)
             if returns is not None
-            else jnp.full_like(values, jnp.nan)
+            else jnp.full_like(values, jnp.nan, dtype=float)
         )
         self.advantages = (
-            jnp.asarray(advantages)
+            jnp.asarray(advantages, dtype=float)
             if advantages is not None
-            else jnp.full_like(values, jnp.nan)
+            else jnp.full_like(values, jnp.nan, dtype=float)
         )
 
     def compute_returns_and_advantages(
         self,
         last_value: Float[ArrayLike, ""],
-        done: Bool[ArrayLike, ""],
         gae_lambda: Float[ArrayLike, ""],
         gamma: Float[ArrayLike, ""],
     ) -> RolloutBuffer[StateType, ActType, ObsType]:
-        """
-        Compute returns and advantages for the rollout buffer using Generalized
-        Advantage Estimation.
-
-        Works under JIT compilation.
-        """
         last_value = jnp.asarray(last_value)
-        done = jnp.asarray(done)
         gamma = jnp.asarray(gamma)
         gae_lambda = jnp.asarray(gae_lambda)
 
-        dones = jnp.logical_or(self.terminations, self.truncations)
-
-        next_values = jnp.concatenate(
-            [self.values[1:], jnp.array([last_value])], axis=0
-        )
-
-        next_non_terminal = jnp.concatenate(
-            [1.0 - dones[1:], jnp.array([1.0 - done])], axis=0
-        )
-
-        deltas = self.rewards + gamma * next_values * next_non_terminal - self.values
+        next_values = jnp.concatenate([self.values[1:], last_value[None]], axis=0)
+        next_non_terminals = 1.0 - self.dones.astype(float)
+        deltas = self.rewards + gamma * next_values * next_non_terminals - self.values
+        discounts = gamma * gae_lambda * next_non_terminals
 
         def scan_fn(
-            advantage_carry: Float[Array, ""],
-            x: tuple[Float[Array, ""], Float[Array, ""]],
+            carry: Float[Array, ""], x: tuple[Float[Array, ""], Float[Array, ""]]
         ) -> tuple[Float[Array, ""], Float[Array, ""]]:
-            delta, next_non_terminal = x
-            advantage = delta + gamma * gae_lambda * next_non_terminal * advantage_carry
+            delta, discount = x
+            advantage = delta + discount * carry
             return advantage, advantage
 
         _, advantages = lax.scan(
-            scan_fn, jnp.array(0.0), (jnp.flip(deltas), jnp.flip(next_non_terminal))
+            scan_fn, jnp.array(0.0), (deltas, discounts), reverse=True
         )
-        advantages = jnp.flip(advantages)
         returns = advantages + self.values
 
         return dataclasses.replace(self, advantages=advantages, returns=returns)

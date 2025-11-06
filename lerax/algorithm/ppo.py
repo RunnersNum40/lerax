@@ -18,7 +18,7 @@ from .on_policy import AbstractOnPolicyAlgorithm
 
 
 def any_nan_or_inf(tree: PyTree) -> Bool[Array, ""]:
-    return jnp.logical_not(
+    return ~(
         jax.tree.reduce_associative(
             jnp.logical_and,
             jax.tree.map(lambda leaf: jnp.all(jnp.isfinite(leaf)), tree),
@@ -41,7 +41,7 @@ class PPO(AbstractOnPolicyAlgorithm):
     gae_lambda: float = eqx.field(static=True)
     gamma: float = eqx.field(static=True)
 
-    num_envs: int | None = eqx.field(static=True)
+    num_envs: int = eqx.field(static=True)
     num_steps: int = eqx.field(static=True)
     batch_size: int = eqx.field(static=True)
     num_epochs: int = eqx.field(static=True)
@@ -57,8 +57,8 @@ class PPO(AbstractOnPolicyAlgorithm):
     def __init__(
         self,
         *,
-        num_envs: int | None = 4,
-        num_steps: int = 1024,
+        num_envs: int = 4,
+        num_steps: int = 512,
         num_epochs: int = 16,
         num_batches: int = 32,
         gae_lambda: float = 0.95,
@@ -109,19 +109,11 @@ class PPO(AbstractOnPolicyAlgorithm):
             rollout_buffer.states, rollout_buffer.observations, rollout_buffer.actions
         )
 
-        values = eqx.error_if(
-            values, jnp.any(jnp.logical_not(jnp.isfinite(values))), "Non-finite values."
-        )
+        values = eqx.error_if(values, ~jnp.isfinite(values), "Non-finite values.")
         log_probs = eqx.error_if(
-            log_probs,
-            jnp.any(jnp.logical_not(jnp.isfinite(log_probs))),
-            "Non-finite log_probs.",
+            log_probs, ~jnp.isfinite(log_probs), "Non-finite log_probs."
         )
-        entropy = eqx.error_if(
-            entropy,
-            jnp.any(jnp.logical_not(jnp.isfinite(entropy))),
-            "Non-finite entropy.",
-        )
+        entropy = eqx.error_if(entropy, ~jnp.isfinite(entropy), "Non-finite entropy.")
 
         log_ratios = log_probs - rollout_buffer.log_probs
         ratios = jnp.exp(log_ratios)

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import equinox as eqx
-import numpy as np
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Scalar, ScalarLike
 from rich import progress, text
@@ -14,22 +13,24 @@ from lerax.utils import (
 )
 
 
-class EpisodeStatisticsAccumulator(eqx.Module):
-    """
-    Accumulator for episode statistics.
-    This is used to keep track of the episode length, reward, and done status.
-    """
-
+class EpisodeStats(eqx.Module):
+    episode_return: Float[Array, ""]
     episode_length: Int[Array, ""]
-    episode_reward: Float[Array, ""]
     episode_done: Bool[Array, ""]
 
     @classmethod
-    def from_episode_stats(cls, info: dict[str, Array]) -> EpisodeStatisticsAccumulator:
+    def initial(cls) -> EpisodeStats:
         return cls(
-            episode_length=info["length"],
-            episode_reward=info["reward"],
-            episode_done=info["done"],
+            jnp.array(0.0, dtype=float),
+            jnp.array(0, dtype=int),
+            jnp.array(False, dtype=bool),
+        )
+
+    def next(self, reward: Float[Array, ""], done: Bool[Array, ""]) -> EpisodeStats:
+        return EpisodeStats(
+            self.episode_return * (1.0 - self.episode_done.astype(float)) + reward,
+            self.episode_length * (1 - self.episode_done.astype(int)) + 1,
+            done,
         )
 
 
@@ -55,7 +56,7 @@ class JITSummaryWriter:
         """
         scalar_value = eqx.error_if(
             scalar_value,
-            jnp.logical_or(jnp.isnan(scalar_value), jnp.isinf(scalar_value)),
+            jnp.isnan(scalar_value) | jnp.isinf(scalar_value),
             "Scalar value cannot be NaN or Inf.",
         )
         callback_with_numpy_wrapper(self.summary_writer.add_scalar)(
@@ -82,38 +83,48 @@ class JITSummaryWriter:
 
     def log_episode_stats(
         self,
-        episode_stats: EpisodeStatisticsAccumulator,
+        episode_stats: EpisodeStats,
         *,
-        global_step: Int[ArrayLike, ""] | None = None,
+        first_step: Int[ArrayLike, ""],
     ) -> None:
-        """
-        Log episode statistics to the summary writer.
-        """
-
-        def log_fn(rewards, lengths, dones, global_step):
-            for i, (reward, length, done) in enumerate(zip(rewards, lengths, dones)):
-                # Expand dims if needed
-                if done.ndim == 0:
-                    reward = reward[None]
-                    length = length[None]
-                    done = done[None]
-
-                step = global_step + i * len(done) if global_step is not None else None
-                if np.any(done):
-                    reward = np.sum(reward * done) / np.sum(done)
+        def log_finished(returns, lengths, dones, step_offset):
+            for i, (_return, length, done) in enumerate(zip(returns, lengths, dones)):
+                step = step_offset + i
+                if done:
                     self.summary_writer.add_scalar(
-                        "episode/reward", reward, global_step=step
+                        "episode/return", _return, global_step=step
                     )
-                    length = np.sum(length * done) / np.sum(done)
                     self.summary_writer.add_scalar(
                         "episode/length", length, global_step=step
                     )
 
-        callback_with_numpy_wrapper(log_fn)(
-            episode_stats.episode_reward,
-            episode_stats.episode_length,
-            episode_stats.episode_done,
-            global_step,
+        returns = episode_stats.episode_return
+        lengths = episode_stats.episode_length
+        dones = episode_stats.episode_done
+        if returns.ndim == 1:
+            returns = returns[None, :]
+            lengths = lengths[None, :]
+            dones = dones[None, :]
+
+        num_envs, num_steps = returns.shape
+
+        interleaved_returns = jnp.empty((num_steps * num_envs), dtype=returns.dtype)
+        interleaved_lengths = jnp.empty((num_steps * num_envs), dtype=lengths.dtype)
+        interleaved_dones = jnp.empty((num_steps * num_envs), dtype=dones.dtype)
+
+        for env_idx in range(num_envs):
+            interleaved_returns = interleaved_returns.at[env_idx::num_envs].set(
+                returns[env_idx]
+            )
+            interleaved_lengths = interleaved_lengths.at[env_idx::num_envs].set(
+                lengths[env_idx]
+            )
+            interleaved_dones = interleaved_dones.at[env_idx::num_envs].set(
+                dones[env_idx]
+            )
+
+        callback_with_numpy_wrapper(log_finished)(
+            interleaved_returns, interleaved_lengths, interleaved_dones, first_step
         )
 
 
