@@ -92,7 +92,7 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
         if x.shape != self._shape:
             return False
 
-        return jnp.logical_and(jnp.all(x >= self.low), jnp.all(x <= self.high))
+        return jnp.all(x >= self.low) & jnp.all(x <= self.high)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Box):

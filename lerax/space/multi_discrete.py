@@ -45,7 +45,7 @@ class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]]):
         if x.shape != self.shape:
             return False
 
-        if jnp.logical_not(jnp.array_equal(x, jnp.floor(x))):
+        if ~jnp.array_equal(x, jnp.floor(x)):
             return False
 
         return jnp.all((self.starts <= x) & (x < self.ns + self.starts), axis=0)

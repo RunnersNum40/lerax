@@ -146,7 +146,7 @@ def unstack_pytree[T](tree: T, *, axis: int = 0) -> tuple[T]:
     times = jnp.array(jax.tree.leaves(jax.tree.map(lambda x: x.shape[axis], tree)))
     tree = eqx.error_if(
         tree,
-        jnp.logical_not(jnp.equal(times, times[0])),
+        ~times == times[0],
         "All leaves must have the same size along the specified axis.",
     )
 

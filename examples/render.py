@@ -32,7 +32,7 @@ def step(carry: tuple, _) -> tuple[tuple, AbstractEnvLikeState]:
     )
 
     env_state = lax.cond(
-        jnp.logical_or(termination, truncation),
+        termination | truncation,
         lambda: env.reset(key=reset_key)[0],
         lambda: env_state,
     )
