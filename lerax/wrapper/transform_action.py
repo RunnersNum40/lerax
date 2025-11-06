@@ -38,17 +38,46 @@ class AbstractPureTransformActionWrapper[
     def observation_space(self) -> AbstractSpace[ObsType]:
         return self.env.observation_space
 
-    def reset(self, *, key: Key) -> tuple[StateType, ObsType, dict]:
-        return self.env.reset(key=key)
+    def initial(self, *, key: Key) -> StateType:
+        return self.env.initial(key=key)
 
-    def step(self, state: StateType, action: WrapperActType, *, key: Key):
-        return self.env.step(state, self.func(action), key=key)
+    def transition(
+        self, state: StateType, action: WrapperActType, *, key: Key
+    ) -> StateType:
+        return self.env.transition(state, self.func(action), key=key)
+
+    def observation(self, state: StateType, *, key: Key) -> ObsType:
+        return self.env.observation(state, key=key)
+
+    def reward(
+        self,
+        state: StateType,
+        action: WrapperActType,
+        next_state: StateType,
+        *,
+        key: Key,
+    ) -> Float[Array, ""]:
+        return self.env.reward(state, self.func(action), next_state, key=key)
+
+    def terminal(self, state: StateType, *, key: Key) -> jnp.ndarray:
+        return self.env.terminal(state, key=key)
+
+    def truncate(self, state: StateType) -> jnp.ndarray:
+        return self.env.truncate(state)
+
+    def state_info(self, state: StateType) -> dict:
+        return self.env.state_info(state)
+
+    def transition_info(
+        self, state: StateType, action: WrapperActType, next_state: StateType
+    ) -> dict:
+        return self.env.transition_info(state, self.func(action), next_state)
 
     def render(self, state: StateType):
-        self.env.render(state)
+        return self.env.render(state)
 
     def close(self):
-        self.env.close()
+        return self.env.close()
 
 
 class TransformAction[

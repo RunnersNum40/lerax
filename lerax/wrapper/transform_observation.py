@@ -5,7 +5,7 @@ from typing import Callable
 
 import equinox as eqx
 from jax import numpy as jnp
-from jaxtyping import Array, Float, Key
+from jaxtyping import Array, Bool, Float, Key
 
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.space import AbstractSpace, Box
@@ -29,21 +29,39 @@ class AbstractPureObservationWrapper[
     def action_space(self) -> AbstractSpace[ActType]:
         return self.env.action_space
 
-    def reset(self, *, key: Key) -> tuple[StateType, WrapperObsType, dict]:
-        state, observation, info = self.env.reset(key=key)
-        return state, self.func(observation), info
+    def initial(self, *, key: Key) -> StateType:
+        return self.env.initial(key=key)
 
-    def step(self, state: StateType, action: ActType, *, key: Key):
-        state, observation, reward, termination, truncation, info = self.env.step(
-            state, action, key=key
-        )
-        return state, self.func(observation), reward, termination, truncation, info
+    def transition(self, state: StateType, action: ActType, *, key: Key) -> StateType:
+        return self.env.transition(state, action, key=key)
+
+    def observation(self, state: StateType, *, key: Key) -> WrapperObsType:
+        return self.func(self.env.observation(state, key=key))
+
+    def reward(
+        self, state: StateType, action: ActType, next_state: StateType, *, key: Key
+    ) -> Float[Array, ""]:
+        return self.env.reward(state, action, next_state, key=key)
+
+    def terminal(self, state: StateType, *, key: Key) -> Bool[Array, ""]:
+        return self.env.terminal(state, key=key)
+
+    def truncate(self, state: StateType) -> Bool[Array, ""]:
+        return self.env.truncate(state)
+
+    def state_info(self, state: StateType) -> dict:
+        return self.env.state_info(state)
+
+    def transition_info(
+        self, state: StateType, action: ActType, next_state: StateType
+    ) -> dict:
+        return self.env.transition_info(state, action, next_state)
 
     def render(self, state: StateType):
-        self.env.render(state)
+        return self.env.render(state)
 
     def close(self):
-        self.env.close()
+        return self.env.close()
 
 
 class TransformObservation[

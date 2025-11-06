@@ -5,7 +5,7 @@ from typing import Callable
 
 import equinox as eqx
 from jax import numpy as jnp
-from jaxtyping import Array, ArrayLike, Float, Key
+from jaxtyping import Array, ArrayLike, Bool, Float, Key
 
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 
@@ -23,20 +23,39 @@ class AbstractPureTransformRewardWrapper[
     env: eqx.AbstractVar[AbstractEnvLike[StateType, ActType, ObsType]]
     func: eqx.AbstractVar[Callable[[Float[Array, ""]], Float[Array, ""]]]
 
-    def reset(self, *, key: Key) -> tuple[StateType, ObsType, dict]:
-        return self.env.reset(key=key)
+    def initial(self, *, key: Key) -> StateType:
+        return self.env.initial(key=key)
 
-    def step(self, state: StateType, action: ActType, *, key: Key):
-        state, observation, reward, termination, truncation, info = self.env.step(
-            state, action, key=key
-        )
-        return state, observation, self.func(reward), termination, truncation, info
+    def transition(self, state: StateType, action: ActType, *, key: Key) -> StateType:
+        return self.env.transition(state, action, key=key)
+
+    def observation(self, state: StateType, *, key: Key) -> ObsType:
+        return self.env.observation(state, key=key)
+
+    def reward(
+        self, state: StateType, action: ActType, next_state: StateType, *, key: Key
+    ) -> Float[Array, ""]:
+        return self.func(self.env.reward(state, action, next_state, key=key))
+
+    def terminal(self, state: StateType, *, key: Key) -> Bool[Array, ""]:
+        return self.env.terminal(state, key=key)
+
+    def truncate(self, state: StateType) -> Bool[Array, ""]:
+        return self.env.truncate(state)
+
+    def state_info(self, state: StateType) -> dict:
+        return self.env.state_info(state)
+
+    def transition_info(
+        self, state: StateType, action: ActType, next_state: StateType
+    ) -> dict:
+        return self.env.transition_info(state, action, next_state)
 
     def render(self, state: StateType):
-        self.env.render(state)
+        return self.env.render(state)
 
     def close(self):
-        self.env.close()
+        return self.env.close()
 
 
 class ClipReward[StateType: AbstractEnvLikeState, ActType, ObsType](
