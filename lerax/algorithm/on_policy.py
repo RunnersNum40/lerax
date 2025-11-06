@@ -51,7 +51,7 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
     gae_lambda: eqx.AbstractVar[float]
     gamma: eqx.AbstractVar[float]
 
-    num_envs: eqx.AbstractVar[int]
+    num_envs: eqx.AbstractVar[int | None]
     num_steps: eqx.AbstractVar[int]
     batch_size: eqx.AbstractVar[int]
 
@@ -161,18 +161,29 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
         tb_writer: JITSummaryWriter | None,
     ) -> IterationCarry:
         rollout_key, train_key = jr.split(key, 2)
-        step_carry, rollout_buffer, episode_stats = eqx.filter_vmap(
-            self.collect_rollout, in_axes=(None, None, 0, 0)
-        )(env, carry.policy, carry.step_carry, jr.split(rollout_key, self.num_envs))
+        if self.num_envs is None:
+            step_carry, rollout_buffer, episode_stats = self.collect_rollout(
+                env, carry.policy, carry.step_carry, key=rollout_key
+            )
+        else:
+            step_carry, rollout_buffer, episode_stats = eqx.filter_vmap(
+                self.collect_rollout, in_axes=(None, None, 0, 0)
+            )(env, carry.policy, carry.step_carry, jr.split(rollout_key, self.num_envs))
         policy, opt_state, log = self.train(
             carry.policy, carry.opt_state, rollout_buffer, key=train_key
         )
 
         if progress_bar is not None:
-            progress_bar.update(advance=self.num_steps * self.num_envs)
+            progress_bar.update(
+                advance=self.num_steps * (1 if self.num_envs is None else self.num_envs)
+            )
 
         if tb_writer is not None:
-            global_step = carry.iteration * self.num_steps * self.num_envs
+            global_step = (
+                carry.iteration
+                * self.num_steps
+                * (1 if self.num_envs is None else self.num_envs)
+            )
             log["learning_rate"] = optax.tree_utils.tree_get(
                 opt_state, "learning_rate", jnp.nan
             )
@@ -202,11 +213,16 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
         *,
         key: Key,
     ) -> IterationCarry:
+        if self.num_envs is None:
+            step_carry = self.init_step_carry(env, policy, key)
+        else:
+            step_carry = jax.vmap(self.init_step_carry, in_axes=(None, None, 0))(
+                env, policy, jr.split(key, self.num_envs)
+            )
+
         return IterationCarry(
             jnp.array(0),
-            jax.vmap(self.init_step_carry, in_axes=(None, None, 0))(
-                env, policy, jr.split(key, self.num_envs)
-            ),
+            step_carry,
             policy,
             self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array)),
         )
@@ -265,7 +281,9 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
             env, _policy, total_timesteps, show_progress_bar
         )
         tb_writer = self.init_tensorboard(env, _policy, tb_log)
-        num_iterations = total_timesteps // (self.num_steps * self.num_envs)
+        num_iterations = total_timesteps // (
+            self.num_steps * (1 if self.num_envs is None else self.num_envs)
+        )
 
         @eqx.filter_jit
         def learn(carry: IterationCarry) -> IterationCarry:

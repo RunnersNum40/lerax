@@ -11,7 +11,7 @@ policy_key, learn_key = jr.split(jr.key(0), 2)
 gym_env = gym.make("CartPole-v1")
 env = EpisodeStatistics(TimeLimit(GymToLeraxEnv(gym_env), max_episode_steps=512))
 policy = MLPActorCriticPolicy(env=env, key=policy_key)
-algo = PPO()
+algo = PPO(num_envs=None)  # Vectorization is not supported for Gym environments
 
 policy = algo.learn(
     env,

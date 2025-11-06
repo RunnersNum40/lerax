@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import ClassVar, Literal
 
-import equinox as eqx
 import gymnasium as gym
 import jax
 import numpy as np
@@ -13,14 +12,18 @@ from jax.experimental import io_callback
 from jaxtyping import Array, Bool, Float, Key
 
 from lerax.env import AbstractEnv, AbstractEnvState
-from lerax.space import AbstractSpace, Box, Discrete
+from lerax.space import AbstractSpace, Box, Dict, Discrete, Tuple
 
 
-def gym_space_to_lerax_space(space: gym.Space) -> Box | Discrete:
+def gym_space_to_lerax_space(space: gym.Space) -> AbstractSpace:
     if isinstance(space, gym.spaces.Discrete):
         return Discrete(n=space.n)
     elif isinstance(space, gym.spaces.Box):
         return Box(low=space.low, high=space.high, shape=space.shape)
+    elif isinstance(space, gym.spaces.Dict):
+        return Dict({k: gym_space_to_lerax_space(s) for k, s in space.spaces.items()})
+    elif isinstance(space, gym.spaces.Tuple):
+        return Tuple(tuple(gym_space_to_lerax_space(s) for s in space.spaces))
     else:
         raise NotImplementedError(f"Space type {type(space)} not supported")
 
@@ -33,6 +36,12 @@ def lerax_to_gym_space(space: AbstractSpace) -> gym.Space:
             low=np.asarray(space.low),
             high=np.asarray(space.high),
         )
+    elif isinstance(space, Dict):
+        return gym.spaces.Dict(
+            {k: lerax_to_gym_space(s) for k, s in space.spaces.items()}
+        )
+    elif isinstance(space, Tuple):
+        return gym.spaces.Tuple(tuple(lerax_to_gym_space(s) for s in space.spaces))
     else:
         raise NotImplementedError(f"Space type {type(space)} not supported")
 
@@ -56,16 +65,18 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array]):
     Wrapper of a Gymnasium environment to make it compatible with Lerax.
 
     Uses jax's io_callback to wrap the env's reset and step functions.
-    In general, this will be slower than a native JAX environment,
-    Also removes the info dict returned by Gymnasium envs.
+    In general, this will be slower than a native JAX environment and prevents
+    vmapped rollout. Also removes the info dict returned by Gymnasium envs.
     """
 
     name: ClassVar[str] = "GymnasiumEnv"
 
-    action_space: Box | Discrete
-    observation_space: Box | Discrete
+    action_space: AbstractSpace
+    observation_space: AbstractSpace
 
-    env: gym.Env = eqx.field(static=True)
+    env: gym.Env
+
+    renderer: None = None
 
     def __init__(self, env: gym.Env):
         self.env = env
@@ -76,8 +87,7 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array]):
         # TODO: Log a warning that the info dict is discarded
         kwargs["seed"] = int(kwargs["seed"])
         obs, _ = self.env.reset(*args, **kwargs)
-        obs = jnp.asarray(obs, dtype=self.observation_space.dtype)
-        return obs, {}
+        return jnp.asarray(obs), {}
 
     def reset(self, *args, key: Key, **kwargs) -> tuple[GymEnvState, Array, dict]:
         # TODO: Determine if we want to pass a seed or not
@@ -92,7 +102,6 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array]):
             self._reset,
             (self.observation_space.canonical(), {}),
             *args,
-            ordered=True,
             **kwargs,
         )
 
@@ -100,7 +109,7 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array]):
         obs, reward, terminated, truncated, _ = self.env.step(np.asarray(action))
 
         return (
-            jnp.asarray(obs, dtype=self.observation_space.dtype),
+            jnp.asarray(obs),
             jnp.asarray(reward),
             jnp.asarray(terminated),
             jnp.asarray(truncated),
@@ -122,12 +131,10 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array]):
                 {},
             ),
             action,
-            ordered=True,
         )
 
     def render(self, state: GymEnvState):
-        # TODO: Log a warning that render is bypassed
-        pass
+        raise NotImplementedError("Rendering not implemented for GymToLeraxEnv")
 
     def close(self):
         debug_callback(self.env.close, ordered=True)
@@ -175,18 +182,9 @@ class LeraxToGymEnv[StateType: AbstractEnvState](gym.Env):
         return jax_to_numpy(obs), to_numpy_tree(info)
 
     def step(self, action):
-        if isinstance(self.env.action_space, Discrete):
-            act = jnp.asarray(action, dtype=self.env.action_space.dtype)
-        elif isinstance(self.env.action_space, Box):
-            act = jnp.asarray(action, dtype=self.env.action_space.dtype)
-        else:
-            raise NotImplementedError(
-                f"Unsupported action space {type(self.env.action_space)}."
-            )
-
         self.key, step_key = jr.split(self.key)
         self.state, obs, rew, term, trunc, info = self.env.step(
-            self.state, act, key=step_key
+            self.state, jnp.asarray(action), key=step_key
         )
 
         return (

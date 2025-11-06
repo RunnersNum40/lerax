@@ -41,7 +41,7 @@ class PPO(AbstractOnPolicyAlgorithm):
     gae_lambda: float = eqx.field(static=True)
     gamma: float = eqx.field(static=True)
 
-    num_envs: int = eqx.field(static=True)
+    num_envs: int | None = eqx.field(static=True)
     num_steps: int = eqx.field(static=True)
     batch_size: int = eqx.field(static=True)
     num_epochs: int = eqx.field(static=True)
@@ -57,7 +57,7 @@ class PPO(AbstractOnPolicyAlgorithm):
     def __init__(
         self,
         *,
-        num_envs: int = 4,
+        num_envs: int | None = 4,
         num_steps: int = 1024,
         num_epochs: int = 16,
         num_batches: int = 32,

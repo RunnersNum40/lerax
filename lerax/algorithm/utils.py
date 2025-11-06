@@ -92,6 +92,12 @@ class JITSummaryWriter:
 
         def log_fn(rewards, lengths, dones, global_step):
             for i, (reward, length, done) in enumerate(zip(rewards, lengths, dones)):
+                # Expand dims if needed
+                if done.ndim == 0:
+                    reward = reward[None]
+                    length = length[None]
+                    done = done[None]
+
                 step = global_step + i * len(done) if global_step is not None else None
                 if np.any(done):
                     reward = np.sum(reward * done) / np.sum(done)
