@@ -37,6 +37,8 @@ test = [
   "ruff",
   "gymnasium",
   "stable-baselines3",
+  "gymnax",
+  "flax",
 ]
 
 [build-system]
