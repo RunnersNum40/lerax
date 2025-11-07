@@ -43,6 +43,10 @@ def lerax_to_gymnax_space(space: AbstractSpace) -> gym_spaces.Space:
 
 class GymnaxEnvState(AbstractEnvState):
     env_state: gym.EnvState
+    observation: Array
+    reward: Float[Array, ""]
+    terminal: Bool[Array, ""]
+    transition_info: dict
 
 
 class GymnaxToLeraxEnv(AbstractEnv[GymnaxEnvState, Array, Array]):
@@ -70,26 +74,56 @@ class GymnaxToLeraxEnv(AbstractEnv[GymnaxEnvState, Array, Array]):
             env.observation_space(params)
         )
 
-    def reset(self, *, key: Key) -> tuple[GymnaxEnvState, Array, dict]:
-        obs, env_state = self.env.reset(key=key, params=self.params)
-        return GymnaxEnvState(env_state=env_state), obs, {}
+    def initial(self, *, key: Key) -> GymnaxEnvState:
+        observation, env_state = self.env.reset_env(key, self.params)
+        return GymnaxEnvState(
+            env_state=env_state,
+            observation=observation,
+            reward=jnp.array(0.0, dtype=float),
+            terminal=jnp.array(False, dtype=bool),
+            transition_info={},
+        )
 
-    def step(
+    def transition(
         self, state: GymnaxEnvState, action: Array, *, key: Key
-    ) -> tuple[
-        GymnaxEnvState, Array, Float[Array, ""], Bool[Array, ""], Bool[Array, ""], dict
-    ]:
-        obs, env_state, reward, done, info = self.env.step(
+    ) -> GymnaxEnvState:
+        observation, env_state, reward, done, _ = self.env.step_env(
             key, state.env_state, action, self.params
         )
-        return (
-            GymnaxEnvState(env_state=env_state),
-            obs,
-            reward,
-            done,
-            jnp.array(False),
-            {},  # info must be ignored to keep the shape consistent with reset
+        return GymnaxEnvState(
+            env_state=env_state,
+            observation=observation,
+            reward=reward,
+            terminal=done,
+            transition_info={},
         )
+
+    def observation(self, state: GymnaxEnvState, *, key: Key) -> Array:
+        return state.observation
+
+    def reward(
+        self,
+        state: GymnaxEnvState,
+        action: Array,
+        next_state: GymnaxEnvState,
+        *,
+        key: Key,
+    ) -> Float[Array, ""]:
+        return next_state.reward
+
+    def terminal(self, state: GymnaxEnvState, *, key: Key) -> Bool[Array, ""]:
+        return state.terminal
+
+    def truncate(self, state: GymnaxEnvState) -> Bool[Array, ""]:
+        return jnp.array(False, dtype=bool)
+
+    def state_info(self, state: GymnaxEnvState) -> dict:
+        return {}
+
+    def transition_info(
+        self, state: GymnaxEnvState, action: Array, next_state: GymnaxEnvState
+    ) -> dict:
+        return next_state.transition_info
 
     def render(self, state: GymnaxEnvState) -> None:
         raise NotImplementedError("Rendering not implemented for GymnaxToLeraxEnv.")
@@ -109,8 +143,6 @@ class LeraxEnvParams(gym.EnvParams):
 @struct.dataclass
 class LeraxEnvState[StateType: AbstractEnvState](gym.EnvState):
     env_state: StateType
-    terminal: Bool[Array, ""]
-    observation: Array
     time: Int[Array, ""]
 
 
@@ -146,8 +178,6 @@ class LeraxToGymnaxEnv[StateType: AbstractEnvState](
             observation,
             LeraxEnvState(
                 env_state=env_state,
-                observation=observation,
-                terminal=done,
                 time=state.time + 1,
             ),
             reward,
@@ -158,26 +188,21 @@ class LeraxToGymnaxEnv[StateType: AbstractEnvState](
     def reset_env(
         self, key: Key, params: LeraxEnvParams
     ) -> tuple[Array, LeraxEnvState[StateType]]:
-        env_state, observation, info = self.env.reset(key=key)
-        return observation, LeraxEnvState(
-            env_state=env_state,
-            observation=observation,
-            terminal=jnp.array(False),
-            time=jnp.array(0),
-        )
+        initial_key, observation_key = jr.split(key, 2)
+        env_state = self.env.initial(key=initial_key)
+        observation = self.env.observation(env_state, key=observation_key)
 
-    def get_obs(
-        self,
-        state: LeraxEnvState[StateType],
-        params: LeraxEnvParams | None = None,
-        key: Key | None = None,
+        return observation, LeraxEnvState(env_state=env_state, time=jnp.array(0))
+
+    def get_obs(  # pyright: ignore
+        self, state: LeraxEnvState[StateType], key: Key, params: LeraxEnvParams
     ) -> Array:
-        return state.observation
+        return self.env.observation(state.env_state, key=key)
 
     def is_terminal(
         self, state: LeraxEnvState[StateType], params: LeraxEnvParams
     ) -> Bool[Array, ""]:
-        return state.terminal
+        return self.env.terminal(state.env_state, key=jr.key(-1))
 
     @property
     def name(self) -> str:

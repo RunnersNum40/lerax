@@ -57,7 +57,10 @@ def to_numpy_tree(x):
 
 
 class GymEnvState(AbstractEnvState):
-    pass
+    observation: Array
+    reward: Float[Array, ""]
+    terminal: Bool[Array, ""]
+    truncated: Bool[Array, ""]
 
 
 class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array]):
@@ -66,7 +69,8 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array]):
 
     Uses jax's io_callback to wrap the env's reset and step functions.
     In general, this will be slower than a native JAX environment and prevents
-    vmapped rollout. Also removes the info dict returned by Gymnasium envs.
+    vmapped rollout. Also removes the info dict returned by Gymnasium envs since
+    the shape cannot be known ahead of time.
     """
 
     name: ClassVar[str] = "GymnasiumEnv"
@@ -84,54 +88,79 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array]):
         self.observation_space = gym_space_to_lerax_space(env.observation_space)
 
     def _reset(self, *args, **kwargs):
-        # TODO: Log a warning that the info dict is discarded
-        kwargs["seed"] = int(kwargs["seed"])
-        obs, _ = self.env.reset(*args, **kwargs)
-        return jnp.asarray(obs), {}
+        if "seed" in kwargs:
+            kwargs["seed"] = int(kwargs["seed"])
 
-    def reset(self, *args, key: Key, **kwargs) -> tuple[GymEnvState, Array, dict]:
+        obs, _ = self.env.reset(*args, **kwargs)
+        return jnp.asarray(obs)
+
+    def initial(self, *args, key: Key, **kwargs) -> GymEnvState:
         # TODO: Determine if we want to pass a seed or not
         # I think it's a nice perk to increase reproducibility but it might
         # be unexpected for some users
-        kwargs["seed"] = kwargs.get(
-            "seed",
-            jr.randint(key, (), 0, jnp.iinfo(jnp.int32).max),
-        )
+        if "seed" not in kwargs:
+            kwargs["seed"] = jr.randint(key, (), 0, jnp.iinfo(jnp.int32).max)
 
-        return GymEnvState(), *io_callback(
-            self._reset,
-            (self.observation_space.canonical(), {}),
-            *args,
-            **kwargs,
+        observation = io_callback(self._reset, self.observation_space.canonical())
+        return GymEnvState(
+            observation=observation,
+            reward=jnp.array(0.0, dtype=float),
+            terminal=jnp.array(False, dtype=bool),
+            truncated=jnp.array(False, dtype=bool),
         )
 
     def _step(self, action: Array):
-        obs, reward, terminated, truncated, _ = self.env.step(np.asarray(action))
+        observation, reward, terminated, truncated, _ = self.env.step(
+            np.asarray(action)
+        )
 
         return (
-            jnp.asarray(obs),
+            jnp.asarray(observation),
             jnp.asarray(reward),
             jnp.asarray(terminated),
             jnp.asarray(truncated),
-            {},
         )
 
-    def step(
-        self, state: GymEnvState, action: Array, *, key: Key
-    ) -> tuple[
-        GymEnvState, Array, Float[Array, ""], Bool[Array, ""], Bool[Array, ""], dict
-    ]:
-        return state, *io_callback(
+    def transition(self, state: GymEnvState, action: Array, *, key: Key) -> GymEnvState:
+        observation, reward, terminated, truncated = io_callback(
             self._step,
             (
                 self.observation_space.canonical(),
-                jnp.array(0.0),
-                jnp.array(False),
-                jnp.array(False),
-                {},
+                jnp.array(0.0, dtype=float),
+                jnp.array(False, dtype=bool),
+                jnp.array(False, dtype=bool),
             ),
             action,
         )
+
+        return GymEnvState(
+            observation=observation,
+            reward=reward,
+            terminal=terminated,
+            truncated=truncated,
+        )
+
+    def observation(self, state: GymEnvState, *, key: Key) -> Array:
+        return state.observation
+
+    def reward(
+        self, state: GymEnvState, action: Array, next_state: GymEnvState, *, key: Key
+    ) -> Float[Array, ""]:
+        return next_state.reward
+
+    def terminal(self, state: GymEnvState, *, key: Key) -> Bool[Array, ""]:
+        return state.terminal
+
+    def truncate(self, state: GymEnvState) -> Bool[Array, ""]:
+        return state.truncated
+
+    def state_info(self, state: GymEnvState) -> dict:
+        return {}
+
+    def transition_info(
+        self, state: GymEnvState, action: Array, next_state: GymEnvState
+    ) -> dict:
+        return {}
 
     def render(self, state: GymEnvState):
         raise NotImplementedError("Rendering not implemented for GymToLeraxEnv")
