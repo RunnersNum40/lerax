@@ -60,26 +60,23 @@ Check out the [Gymnasium wrapper](lerax/compatibility/gym.py) for how to wrap Gy
 
 ## TODO
 
-- Expand support beyond Box and Discrete spaces
-- Logging
-  - Code flow logging
-  - Training logging
-  - Migrate from tensorboard to aim
+- Optimise for performance under JIT compilation
+  - Sharding support for distributed training
+- Expand policy support beyond Box and Discrete spaces
 - Documentation
   - Standardize docstring formats
   - Write documentation for all public APIs
   - Publish docs
 - Testing
-  - More thorough unit testing
+  - Unit testing
   - Integration testing
   - Runtime jaxtyping
 - Use it
   - Personal research
-- Optimise for performance under JIT compilation
-  - Sharding support for distributed training
 - Round out features
   - Expand RL variants to include more algorithms
   - Create a more comprehensive set of environments
+    - Brax based environments
 
 ## Code Style
 
