@@ -30,8 +30,8 @@ class CartPole(
     observation_space: Box
 
     gravity: Float[Array, ""]
-    masscart: Float[Array, ""]
-    masspole: Float[Array, ""]
+    cart_mass: Float[Array, ""]
+    pole_mass: Float[Array, ""]
     total_mass: Float[Array, ""]
     length: Float[Array, ""]
     polemass_length: Float[Array, ""]
@@ -59,11 +59,11 @@ class CartPole(
         stepsize_controller: diffrax.AbstractStepSizeController | None = None,
     ):
         self.gravity = jnp.array(gravity)
-        self.masscart = jnp.array(cart_mass)
-        self.masspole = jnp.array(pole_mass)
-        self.total_mass = self.masspole + self.masscart
+        self.cart_mass = jnp.array(cart_mass)
+        self.pole_mass = jnp.array(pole_mass)
+        self.total_mass = self.pole_mass + self.cart_mass
         self.length = jnp.array(half_length)
-        self.polemass_length = self.masspole * self.length
+        self.polemass_length = self.pole_mass * self.length
         self.force_mag = jnp.array(force_mag)
 
         self.dt = jnp.array(dt)
@@ -108,7 +108,7 @@ class CartPole(
         ) / self.total_mass
         theta_dd = (self.gravity * jnp.sin(theta) - jnp.cos(theta) * temp) / (
             self.length
-            * (4.0 / 3.0 - self.masspole * (jnp.cos(theta) ** 2) / self.total_mass)
+            * (4.0 / 3.0 - self.pole_mass * (jnp.cos(theta) ** 2) / self.total_mass)
         )
         x_dd = temp - self.polemass_length * theta_dd * jnp.cos(theta) / self.total_mass
 
