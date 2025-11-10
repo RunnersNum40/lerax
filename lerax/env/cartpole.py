@@ -30,22 +30,22 @@ class CartPole(AbstractEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]):
     length: float
     polemass_length: float
     force_mag: float
-    tau: float
     theta_threshold_radians: float
     x_threshold: float
 
-    renderer: AbstractRenderer | None
-
+    dt: float
     solver: diffrax.AbstractSolver
     dt0: float | None
     stepsize_controller: diffrax.AbstractStepSizeController
+
+    renderer: AbstractRenderer | None
 
     def __init__(
         self,
         *,
         renderer: AbstractRenderer | Literal["auto"] | None = None,
         solver: diffrax.AbstractSolver | None = None,
-        tau: float = 0.02,
+        dt: float = 0.02,
     ):
         self.gravity = 9.8
         self.masscart = 1.0
@@ -55,10 +55,10 @@ class CartPole(AbstractEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]):
         self.polemass_length = self.masspole * self.length
         self.force_mag = 10.0
 
-        self.tau = tau
-        self.solver = solver or diffrax.Heun()
+        self.dt = dt
+        self.solver = solver or diffrax.Tsit5()
         is_adaptive = isinstance(self.solver, diffrax.AbstractAdaptiveSolver)
-        self.dt0 = None if is_adaptive else self.tau
+        self.dt0 = None if is_adaptive else self.dt
         self.stepsize_controller = (
             diffrax.PIDController(rtol=1e-5, atol=1e-5)
             if is_adaptive
@@ -112,7 +112,7 @@ class CartPole(AbstractEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]):
             diffrax.ODETerm(rhs),
             self.solver,
             t0=0.0,
-            t1=self.tau,
+            t1=self.dt,
             dt0=self.dt0,
             stepsize_controller=self.stepsize_controller,
             y0=state.y,

@@ -34,12 +34,12 @@ class MountainCar(AbstractEnv[MountainCarState, Int[Array, ""], Float[Array, "2"
     low: Float[Array, "2"]
     high: Float[Array, "2"]
 
-    renderer: AbstractRenderer | None
-
-    tau: float
+    dt: float
     solver: diffrax.AbstractSolver
     dt0: float | None
     stepsize_controller: diffrax.AbstractStepSizeController
+
+    renderer: AbstractRenderer | None
 
     def __init__(
         self,
@@ -69,10 +69,10 @@ class MountainCar(AbstractEnv[MountainCarState, Int[Array, ""], Float[Array, "2"
         else:
             self.renderer = renderer
 
-        self.tau = float(tau)
-        self.solver = solver or diffrax.Heun()
+        self.dt = float(tau)
+        self.solver = solver or diffrax.Tsit5()
         is_adaptive = isinstance(self.solver, diffrax.AbstractAdaptiveSolver)
-        self.dt0 = None if is_adaptive else self.tau
+        self.dt0 = None if is_adaptive else self.dt
         self.stepsize_controller = (
             diffrax.PIDController(rtol=1e-5, atol=1e-5)
             if is_adaptive
@@ -101,7 +101,7 @@ class MountainCar(AbstractEnv[MountainCarState, Int[Array, ""], Float[Array, "2"
             diffrax.ODETerm(rhs),
             self.solver,
             t0=0.0,
-            t1=self.tau,
+            t1=self.dt,
             dt0=self.dt0,
             y0=state.y,
             stepsize_controller=self.stepsize_controller,
