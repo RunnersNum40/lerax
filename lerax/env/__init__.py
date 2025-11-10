@@ -4,7 +4,13 @@ from .base_env import (
     AbstractEnvLikeState,
     AbstractEnvState,
 )
-from .classic_control import Acrobot, CartPole, ContinuousMountainCar, MountainCar
+from .classic_control import (
+    Acrobot,
+    CartPole,
+    ContinuousMountainCar,
+    MountainCar,
+    Pendulum,
+)
 
 __all__ = [
     "AbstractEnvLike",
@@ -15,4 +21,5 @@ __all__ = [
     "CartPole",
     "MountainCar",
     "ContinuousMountainCar",
+    "Pendulum",
 ]
