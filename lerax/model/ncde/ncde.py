@@ -28,8 +28,7 @@ class NCDEState(AbstractModelState):
 
 
 class AbstractNeuralCDE[
-    LatentType: Callable[[Float[Array, " out_size"]], Float[Array, " latent_size"]],
-    OutputType: Callable[[Float[Array, " latent_size"]], Float[Array, " out_size"]],
+    LatentType: Callable[[Float[Array, " out_size"]], Float[Array, " latent_size"]]
 ](
     AbstractStatefulModel[
         NCDEState,
@@ -58,10 +57,8 @@ class AbstractNeuralCDE[
 
     in_size: eqx.AbstractVar[int]
     latent_size: eqx.AbstractVar[int]
-    out_size: eqx.AbstractVar[int]
 
     initial: eqx.AbstractVar[LatentType]
-    output: eqx.AbstractVar[OutputType]
     time_in_input: eqx.AbstractVar[bool]
 
     history_length: eqx.AbstractVar[int]
@@ -145,7 +142,7 @@ class AbstractNeuralCDE[
         """Compute the next state and output given the current state and input."""
         ts, xs = self.next_state(state, ti, xi)
         zi = self.solve(ts, xs)
-        return NCDEState(ts, xs), self.output(zi)
+        return NCDEState(ts, xs), zi
 
     def reset(self) -> NCDEState:
         """Reset the state to an empty state."""
@@ -159,24 +156,20 @@ class MLPNeuralCDE(AbstractNeuralCDE):
     solver: diffrax.AbstractSolver
 
     initial: eqx.nn.MLP
-    output: eqx.nn.MLP
     time_in_input: bool
 
     in_size: int
     latent_size: int
-    out_size: int
 
     history_length: int
 
     def __init__(
         self,
         in_size: int,
-        out_size: int,
         latent_size: int,
         *,
         term: MLPNCDETerm | None = None,
         initial: eqx.nn.MLP | None = None,
-        output: eqx.nn.MLP | None = None,
         field_width: int = 64,
         field_depth: int = 2,
         field_activation: Callable[
@@ -193,20 +186,12 @@ class MLPNeuralCDE(AbstractNeuralCDE):
         initial_state_final_activation: Callable[
             [Float[Array, " width"]], Float[Array, " width"]
         ] = lambda x: x,
-        output_width: int = 64,
-        output_depth: int = 1,
-        output_activation: Callable[
-            [Float[Array, " width"]], Float[Array, " width"]
-        ] = jnn.relu,
-        output_final_activation: Callable[
-            [Float[Array, " width"]], Float[Array, " width"]
-        ] = lambda x: x,
         solver: diffrax.AbstractSolver | None = None,
         time_in_input: bool = False,
         history_length: int = 16,
         key: Key,
     ):
-        term_key, initial_key, output_key = jr.split(key, 3)
+        term_key, initial_key = jr.split(key, 2)
 
         self.solver = solver or diffrax.Tsit5()
         self.time_in_input = time_in_input
@@ -214,7 +199,6 @@ class MLPNeuralCDE(AbstractNeuralCDE):
 
         self.in_size = in_size
         self.latent_size = latent_size
-        self.out_size = out_size
 
         self.term = (
             term
@@ -242,19 +226,5 @@ class MLPNeuralCDE(AbstractNeuralCDE):
                 key=initial_key,
                 activation=initial_state_activation,
                 final_activation=initial_state_final_activation,
-            )
-        )
-
-        self.output = (
-            output
-            if output is not None
-            else eqx.nn.MLP(
-                in_size=latent_size,
-                out_size=out_size,
-                width_size=output_width,
-                depth=output_depth,
-                key=output_key,
-                activation=output_activation,
-                final_activation=output_final_activation,
             )
         )

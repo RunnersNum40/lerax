@@ -36,13 +36,11 @@ class SimpleNeuralCDE(AbstractNeuralCDE):
 
     in_size: int = 2
     latent_size: int = 2
-    out_size: int = 2
     history_length: int = 16
 
     time_in_input: bool = False
 
     initial: Scale = Scale(scale=5.0)
-    output: Scale = Scale(scale=7.0)
 
     solver: diffrax.AbstractSolver = diffrax.Tsit5()
 
@@ -74,7 +72,7 @@ class TestNeuralCDE:
 
         @eqx.filter_value_and_grad
         def expected_grad(model, t0, x0):
-            return jnp.sum(model.output(model.initial(x0)))
+            return jnp.sum(model.initial(x0))
 
         state = model.reset()
         t0 = jnp.array(0.0)
@@ -114,7 +112,6 @@ class TestNeuralCDE:
 
             assert solution.ys is not None
             zi = solution.ys[0]
-            yi = model.output(zi)
 
             li = jnp.nanargmax(state.ts)
             # Only correct for up to `model.history_length` steps
@@ -123,7 +120,7 @@ class TestNeuralCDE:
                 xs=state.xs.at[li].set(xi),
             )
 
-            return jnp.sum(yi), state
+            return jnp.sum(zi), state
 
         state = model.reset()
 

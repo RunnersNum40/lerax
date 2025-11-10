@@ -63,8 +63,6 @@ class NCDEActorCriticPolicy[
         field_depth: int = 1,
         initial_width: int = 16,
         initial_depth: int = 1,
-        output_width: int = 16,
-        output_depth: int = 1,
         value_width: int = 16,
         value_depth: int = 1,
         action_width: int = 16,
@@ -103,29 +101,26 @@ class NCDEActorCriticPolicy[
 
         self.encoder = MLPNeuralCDE(
             in_size=obs_flat,
-            out_size=feature_size,
             latent_size=latent_size,
             solver=solver,
             field_width=field_width,
             field_depth=field_depth,
             initial_width=initial_width,
             initial_depth=initial_depth,
-            output_width=output_width,
-            output_depth=output_depth,
             time_in_input=False,
             history_length=history_length,
             key=enc_key,
         )
 
         self.value_model = MLP(
-            in_size=feature_size,
+            in_size=latent_size,
             out_size="scalar",
             width_size=value_width,
             depth=value_depth,
             key=val_key,
         )
         self.action_head = MLP(
-            in_size=feature_size,
+            in_size=latent_size,
             out_size=act_size,
             width_size=action_width,
             depth=action_depth,
