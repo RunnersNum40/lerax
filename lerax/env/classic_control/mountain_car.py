@@ -5,148 +5,127 @@ from typing import ClassVar
 import diffrax
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Bool, Float, Key
+from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
 from lerax.render import AbstractRenderer, Color, PygameRenderer, Transform
-from lerax.space import Box
+from lerax.space import Box, Discrete
 
-from .base_env import AbstractEnv, AbstractEnvState
+from .base_classic_control import (
+    AbstractClassicControlEnv,
+    AbstractClassicControlEnvState,
+)
 
 
-class ContinuousMountainCarState(AbstractEnvState):
+class MountainCarState(AbstractClassicControlEnvState):
     y: Float[Array, "2"]
+    t: Float[Array, ""]
 
 
-class ContinuousMountainCar(
-    AbstractEnv[ContinuousMountainCarState, Float[Array, ""], Float[Array, "2"]]
+class MountainCar(
+    AbstractClassicControlEnv[MountainCarState, Int[Array, ""], Float[Array, "2"]]
 ):
-    name: ClassVar[str] = "ContinuousMountainCar"
+    name: ClassVar[str] = "MountainCar"
 
-    action_space: Box
+    action_space: Discrete
     observation_space: Box
 
-    min_action: float
-    max_action: float
-    min_position: float
-    max_position: float
-    max_speed: float
-    goal_position: float
-    goal_velocity: float
+    min_position: Float[Array, ""]
+    max_position: Float[Array, ""]
+    max_speed: Float[Array, ""]
+    goal_position: Float[Array, ""]
+    goal_velocity: Float[Array, ""]
 
-    power: float
-
+    force: Float[Array, ""]
+    gravity: Float[Array, ""]
     low: Float[Array, "2"]
     high: Float[Array, "2"]
 
-    dt: float
+    dt: Float[Array, ""]
     solver: diffrax.AbstractSolver
-    dt0: float | None
+    dt0: Float[Array, ""] | None
     stepsize_controller: diffrax.AbstractStepSizeController
 
     def __init__(
         self,
-        goal_velocity: float = 0,
         *,
+        min_position: Float[ArrayLike, ""] = -1.2,
+        max_position: Float[ArrayLike, ""] = 0.6,
+        max_speed: Float[ArrayLike, ""] = 0.07,
+        goal_position: Float[ArrayLike, ""] = 0.5,
+        goal_velocity: Float[ArrayLike, ""] = 0.0,
+        force: Float[ArrayLike, ""] = 0.001,
+        gravity: Float[ArrayLike, ""] = 0.0025,
+        dt: Float[ArrayLike, ""] = 1.0,
         solver: diffrax.AbstractSolver | None = None,
-        tau: float = 1.0,
+        stepsize_controller: diffrax.AbstractStepSizeController | None = None,
     ):
-        self.min_action = -1.0
-        self.max_action = 1.0
-        self.min_position = -1.2
-        self.max_position = 0.6
-        self.max_speed = 0.07
-        self.goal_position = 0.5
-        self.goal_velocity = goal_velocity
-        self.power = 0.0015
+        self.min_position = jnp.array(min_position)
+        self.max_position = jnp.array(max_position)
+        self.max_speed = jnp.array(max_speed)
+        self.goal_position = jnp.array(goal_position)
+        self.goal_velocity = jnp.array(goal_velocity)
+
+        self.force = jnp.array(force)
+        self.gravity = jnp.array(gravity)
 
         self.low = jnp.array([self.min_position, -self.max_speed])
         self.high = jnp.array([self.max_position, self.max_speed])
 
-        self.action_space = Box(self.min_action, self.max_action)
+        self.action_space = Discrete(3)
         self.observation_space = Box(self.low, self.high)
 
-        self.dt = float(tau)
+        self.dt = jnp.array(dt)
         self.solver = solver or diffrax.Tsit5()
         is_adaptive = isinstance(self.solver, diffrax.AbstractAdaptiveSolver)
         self.dt0 = None if is_adaptive else self.dt
-        self.stepsize_controller = (
-            diffrax.PIDController(rtol=1e-5, atol=1e-5)
-            if is_adaptive
-            else diffrax.ConstantStepSize()
+        if stepsize_controller is None:
+            self.stepsize_controller = (
+                diffrax.PIDController(rtol=1e-5, atol=1e-5)
+                if is_adaptive
+                else diffrax.ConstantStepSize()
+            )
+        else:
+            self.stepsize_controller = stepsize_controller
+
+    def initial(self, *, key: Key) -> MountainCarState:
+        return MountainCarState(
+            y=jnp.asarray([jr.uniform(key, minval=-0.6, maxval=-0.4), 0.0]),
+            t=jnp.array(0.0),
         )
 
-    def initial(self, *, key: Key) -> ContinuousMountainCarState:
-        return ContinuousMountainCarState(
-            jnp.asarray([jr.uniform(key, minval=-0.6, maxval=-0.4), 0.0])
-        )
+    def dynamics(
+        self, t: Float[Array, ""], y: Float[Array, "2"], action: Int[Array, ""]
+    ) -> Float[Array, "2"]:
+        x, x_d = y
+        u = (action - 1) * self.force
+        x_dd = u - self.gravity * jnp.cos(3.0 * x)
+        return jnp.array([x_d, x_dd])
 
-    def transition(
-        self, state: ContinuousMountainCarState, action: Float[Array, ""], *, key: Key
-    ) -> ContinuousMountainCarState:
-
-        def rhs(t, y, args):
-            x, x_d = y
-            force = jnp.clip(action, self.min_action, self.max_action)
-
-            x_dd = self.power * force - 0.0025 * jnp.cos(3.0 * x)
-            return jnp.array([x_d, x_dd])
-
-        sol = diffrax.diffeqsolve(
-            diffrax.ODETerm(rhs),
-            self.solver,
-            t0=0.0,
-            t1=self.dt,
-            dt0=self.dt0,
-            y0=state.y,
-            stepsize_controller=self.stepsize_controller,
-            saveat=diffrax.SaveAt(t1=True),
-        )
-        assert sol.ys is not None
-        x, v = sol.ys[0]
-
+    def clip(self, y: Float[Array, "2"]) -> Float[Array, "2"]:
+        x, v = y
         v = jnp.clip(v, -self.max_speed, self.max_speed)
         x = jnp.clip(x, self.min_position, self.max_position)
-        return ContinuousMountainCarState(jnp.asarray([x, v]))
+        v = v * ((x != self.min_position) | (v > 0.0))
+        return jnp.array([x, v])
 
-    def observation(
-        self, state: ContinuousMountainCarState, *, key: Key
-    ) -> Float[Array, "2"]:
+    def observation(self, state: MountainCarState, *, key: Key) -> Float[Array, "2"]:
         return state.y
 
     def reward(
         self,
-        state: ContinuousMountainCarState,
-        action: Float[Array, ""],
-        next_state: ContinuousMountainCarState,
+        state: MountainCarState,
+        action: Int[Array, ""],
+        next_state: MountainCarState,
         *,
         key: Key,
     ) -> Float[Array, ""]:
-        return (
-            100.0 * self.terminal(state, key=key).astype(float)
-            - 0.1 * jnp.clip(action, self.min_action, self.max_action) ** 2
-        )
+        return jnp.array(-1.0)
 
-    def terminal(
-        self, state: ContinuousMountainCarState, *, key: Key
-    ) -> Bool[Array, ""]:
+    def terminal(self, state: MountainCarState, *, key: Key) -> Bool[Array, ""]:
         x, v = state.y
         return (x >= self.goal_position) & (v >= self.goal_velocity)
 
-    def truncate(self, state: ContinuousMountainCarState) -> Bool[Array, ""]:
-        return jnp.array(False)
-
-    def state_info(self, state: ContinuousMountainCarState) -> dict:
-        return {}
-
-    def transition_info(
-        self,
-        state: ContinuousMountainCarState,
-        action: Float[Array, ""],
-        next_state: ContinuousMountainCarState,
-    ) -> dict:
-        return {}
-
-    def render(self, state: ContinuousMountainCarState, renderer: AbstractRenderer):
+    def render(self, state: MountainCarState, renderer: AbstractRenderer):
         x = state.y[0]
 
         renderer.clear()
@@ -232,6 +211,3 @@ class ContinuousMountainCar(
             background_color=Color(1.0, 1.0, 1.0),
             transform=transform,
         )
-
-    def close(self):
-        pass
