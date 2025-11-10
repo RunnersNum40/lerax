@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import ClassVar, Literal
+from typing import ClassVar
 
 import diffrax
 from jax import numpy as jnp
@@ -41,12 +41,9 @@ class Acrobot(AbstractEnv[AcrobotState, Int[Array, ""], Float[Array, "4"]]):
     dt0: float | None
     stepsize_controller: diffrax.AbstractStepSizeController
 
-    renderer: AbstractRenderer | None
-
     def __init__(
         self,
         *,
-        renderer: AbstractRenderer | Literal["auto"] | None = None,
         solver: diffrax.AbstractSolver | None = None,
         dt: float = 0.2,
     ):
@@ -77,11 +74,6 @@ class Acrobot(AbstractEnv[AcrobotState, Int[Array, ""], Float[Array, "4"]]):
         state_high = jnp.array([1.0, 1.0, 1.0, 1.0, self.max_vel_1, self.max_vel_2])
         low = -state_high
         self.observation_space = Box(low=low, high=state_high)
-
-        if renderer == "auto":
-            self.renderer = self.default_renderer()
-        else:
-            self.renderer = renderer
 
     def initial(self, *, key: Key) -> AcrobotState:
         return AcrobotState(y=jr.uniform(key, shape=(4,), minval=-0.1, maxval=0.1))
@@ -230,7 +222,7 @@ class Acrobot(AbstractEnv[AcrobotState, Int[Array, ""], Float[Array, "4"]]):
     ) -> dict:
         return {}
 
-    def render(self, state: AcrobotState) -> None:
+    def render(self, state: AcrobotState, renderer: AbstractRenderer):
         raise NotImplementedError("Render method is not implemented for Acrobot.")
 
     def default_renderer(self) -> AbstractRenderer:

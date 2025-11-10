@@ -63,7 +63,7 @@ class PygameRenderer(AbstractRenderer):
         pygame.display.quit()
         pygame.quit()
 
-    def render(self):
+    def draw(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.close()

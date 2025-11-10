@@ -9,8 +9,7 @@ from lerax.wrapper import TimeLimit
 key = jr.key(0)
 key, policy_key, learn_key = jr.split(key, 3)
 
-env = TimeLimit(CartPole(renderer="auto"), max_episode_steps=512)
-assert env.unwrapped.renderer is not None
+env = TimeLimit(CartPole(), max_episode_steps=512)
 policy = MLPActorCriticPolicy(env=env, key=policy_key)
 algo = PPO()
 policy = algo.learn(env, policy, total_timesteps=2**14, key=learn_key)
@@ -44,8 +43,4 @@ _, env_states = lax.scan(
     jr.split(key, 512),
 )
 
-renderer = env.unwrapped.renderer
-assert renderer is not None
-renderer.open()
-env.render_stacked(env_states, dt=1 / 60)  # pyright: ignore
-renderer.close()
+env.render_stacked(env_states, dt=1 / 60)

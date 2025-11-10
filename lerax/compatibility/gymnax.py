@@ -8,6 +8,7 @@ from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
 from lerax.env import AbstractEnv, AbstractEnvState
+from lerax.render import AbstractRenderer
 from lerax.space import AbstractSpace, Box, Dict, Discrete, Tuple
 
 
@@ -125,8 +126,13 @@ class GymnaxToLeraxEnv(AbstractEnv[GymnaxEnvState, Array, Array]):
     ) -> dict:
         return next_state.transition_info
 
-    def render(self, state: GymnaxEnvState) -> None:
+    def render(self, state: GymnaxEnvState, renderer: AbstractRenderer):
         raise NotImplementedError("Rendering not implemented for GymnaxToLeraxEnv.")
+
+    def default_renderer(self) -> AbstractRenderer:
+        raise NotImplementedError(
+            "Default renderer not implemented for GymnaxToLeraxEnv."
+        )
 
     def close(self): ...
 

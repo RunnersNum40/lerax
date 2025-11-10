@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import ClassVar, Literal
+from typing import ClassVar
 
 import diffrax
 from jax import numpy as jnp
@@ -38,12 +38,9 @@ class CartPole(AbstractEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]):
     dt0: float | None
     stepsize_controller: diffrax.AbstractStepSizeController
 
-    renderer: AbstractRenderer | None
-
     def __init__(
         self,
         *,
-        renderer: AbstractRenderer | Literal["auto"] | None = None,
         solver: diffrax.AbstractSolver | None = None,
         dt: float = 0.02,
     ):
@@ -78,11 +75,6 @@ class CartPole(AbstractEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]):
             ],
         )
         self.observation_space = Box(-high, high)
-
-        if renderer == "auto":
-            self.renderer = self.default_renderer()
-        else:
-            self.renderer = renderer
 
     def initial(self, *, key: Key) -> CartPoleState:
         return CartPoleState(jr.uniform(key, (4,), minval=-0.05, maxval=0.05))
@@ -154,14 +146,13 @@ class CartPole(AbstractEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]):
     ) -> dict:
         return {}
 
-    def render(self, state: CartPoleState):
+    def render(self, state: CartPoleState, renderer: AbstractRenderer):
         x, theta = state.y[0], state.y[2]
 
-        assert self.renderer is not None, "Renderer is not set."
-        self.renderer.clear()
+        renderer.clear()
 
         # Ground
-        self.renderer.draw_line(
+        renderer.draw_line(
             start=jnp.array((-10.0, 0.0)),
             end=jnp.array((10.0, 0.0)),
             color=Color(0.0, 0.0, 0.0),
@@ -170,20 +161,20 @@ class CartPole(AbstractEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]):
         # Cart
         cart_w, cart_h = 0.3, 0.15
         cart_col = Color(0.0, 0.0, 0.0)
-        self.renderer.draw_rect(jnp.array((x, 0.0)), w=cart_w, h=cart_h, color=cart_col)
+        renderer.draw_rect(jnp.array((x, 0.0)), w=cart_w, h=cart_h, color=cart_col)
         # Pole
         pole_start = jnp.asarray((x, cart_h / 4))
         pole_end = pole_start + self.length * jnp.asarray(
             [jnp.sin(theta), jnp.cos(theta)]
         )
         pole_col = Color(0.8, 0.6, 0.4)
-        self.renderer.draw_line(pole_start, pole_end, color=pole_col, width=0.05)
+        renderer.draw_line(pole_start, pole_end, color=pole_col, width=0.05)
         # Pole Hinge
         hinge_r = 0.025
         hinge_col = Color(0.5, 0.5, 0.5)
-        self.renderer.draw_circle(pole_start, radius=hinge_r, color=hinge_col)
+        renderer.draw_circle(pole_start, radius=hinge_r, color=hinge_col)
 
-        self.renderer.render()
+        renderer.draw()
 
     def default_renderer(self) -> AbstractRenderer:
         width, height = 800, 450

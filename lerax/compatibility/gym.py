@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import ClassVar, Literal
 
-import equinox as eqx
 import gymnasium as gym
 import jax
 import numpy as np
@@ -13,6 +12,7 @@ from jax.experimental import io_callback
 from jaxtyping import Array, Bool, Float, Key
 
 from lerax.env import AbstractEnv, AbstractEnvState
+from lerax.render import AbstractRenderer
 from lerax.space import AbstractSpace, Box, Dict, Discrete, Tuple
 
 
@@ -163,8 +163,11 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array]):
     ) -> dict:
         return {}
 
-    def render(self, state: GymEnvState):
+    def render(self, state: GymEnvState, renderer: AbstractRenderer):
         raise NotImplementedError("Rendering not implemented for GymToLeraxEnv")
+
+    def default_renderer(self) -> AbstractRenderer:
+        raise NotImplementedError("Default renderer not implemented for GymToLeraxEnv.")
 
     def close(self):
         debug_callback(self.env.close, ordered=True)
@@ -196,9 +199,6 @@ class LeraxToGymEnv[StateType: AbstractEnvState](gym.Env):
         self.key = jr.key(0)
 
         self.env = env
-        # Cannot update the env directly and we want to avoid recompilation
-        self.env_reset = eqx.filter_jit(self.env.reset)
-        self.env_step = eqx.filter_jit(self.env.step)
 
         self.action_space = lerax_to_gym_space(env.action_space)
         self.observation_space = lerax_to_gym_space(env.observation_space)
@@ -211,12 +211,12 @@ class LeraxToGymEnv[StateType: AbstractEnvState](gym.Env):
             self.key = jr.key(int(seed))
 
         self.key, reset_key = jr.split(self.key)
-        self.state, obs, info = self.env_reset(key=reset_key)
+        self.state, obs, info = self.env.reset(key=reset_key)
         return jax_to_numpy(obs), to_numpy_tree(info)
 
     def step(self, action):
         self.key, step_key = jr.split(self.key)
-        self.state, obs, rew, term, trunc, info = self.env_step(
+        self.state, obs, rew, term, trunc, info = self.env.step(
             self.state, jnp.asarray(action), key=step_key
         )
 
@@ -229,7 +229,7 @@ class LeraxToGymEnv[StateType: AbstractEnvState](gym.Env):
         )
 
     def render(self):
-        self.env.render(self.state)
+        raise NotImplementedError("Rendering not implemented for LeraxToGymEnv")
 
     def close(self):
         self.env.close()

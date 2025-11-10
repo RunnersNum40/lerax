@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from abc import abstractmethod
+from typing import Literal, Sequence
 
 import equinox as eqx
 from jax import lax
@@ -66,16 +67,34 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType](eqx.Mod
         """Generate additional info from the environment state transition"""
 
     @abstractmethod
-    def render(self, state: StateType):
+    def default_renderer(self) -> AbstractRenderer:
+        """Return the default renderer for the environment"""
+
+    @abstractmethod
+    def render(self, state: StateType, renderer: AbstractRenderer):
         """Render a frame from a state"""
 
-    def render_stacked(self, states: StateType, dt: float = 0.0):
-        """Render multiple frames from stacked states"""
-        inner_state = states.unwrapped
-        unstacked_states = unstack_pytree(inner_state)
-        for state in unstacked_states:
-            self.unwrapped.render(state)
+    def render_states(
+        self,
+        states: Sequence[StateType],
+        renderer: AbstractRenderer | Literal["auto"] = "auto",
+        dt: float = 0.0,
+    ):
+        renderer = self.default_renderer() if renderer == "auto" else renderer
+        renderer.open()
+        for state in states:
+            self.render(state, renderer)
             time.sleep(dt)
+        renderer.close()
+
+    def render_stacked(
+        self,
+        states: StateType,
+        renderer: AbstractRenderer | Literal["auto"] = "auto",
+        dt: float = 0.0,
+    ):
+        """Render multiple frames from stacked states"""
+        self.render_states(unstack_pytree(states), renderer, dt)
 
     @abstractmethod
     def close(self):
@@ -86,6 +105,7 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType](eqx.Mod
     def unwrapped(self) -> AbstractEnv:
         """Return the unwrapped environment"""
 
+    @eqx.filter_jit
     def reset(self, *, key: Key) -> tuple[StateType, ObsType, dict]:
         """Wrap the functional logic into a Gym-like reset method"""
         initial_key, observation_key = jr.split(key, 2)
@@ -94,6 +114,7 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType](eqx.Mod
         info = self.state_info(state)
         return state, observation, info
 
+    @eqx.filter_jit
     def step(
         self, state: StateType, action: ActType, *, key: Key
     ) -> tuple[
@@ -132,8 +153,6 @@ class AbstractEnv[StateType: AbstractEnvState, ActType, ObsType](
 
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
-
-    renderer: eqx.AbstractVar[AbstractRenderer | None]
 
     @property
     def unwrapped(self) -> AbstractEnv[StateType, ActType, ObsType]:

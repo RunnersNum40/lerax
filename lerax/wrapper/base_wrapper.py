@@ -8,6 +8,7 @@ from lerax.env import (
     AbstractEnvLikeState,
     AbstractEnvState,
 )
+from lerax.render import AbstractRenderer
 from lerax.space import AbstractSpace
 
 
@@ -43,3 +44,11 @@ class AbstractWrapper[
     def name(self) -> str:
         """Return the name of the environment"""
         return self.env.name
+
+    def default_renderer(self) -> AbstractRenderer:
+        """Return the default renderer for the environment"""
+        return self.unwrapped.default_renderer()
+
+    def render(self, state: WrapperStateType, renderer: AbstractRenderer):
+        """Render a frame from a state"""
+        self.unwrapped.render(state.unwrapped, renderer)

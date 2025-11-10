@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import ClassVar, Literal
+from typing import ClassVar
 
 import diffrax
 from jax import numpy as jnp
@@ -43,13 +43,10 @@ class ContinuousMountainCar(
     dt0: float | None
     stepsize_controller: diffrax.AbstractStepSizeController
 
-    renderer: AbstractRenderer | None
-
     def __init__(
         self,
         goal_velocity: float = 0,
         *,
-        renderer: AbstractRenderer | Literal["auto"] | None = None,
         solver: diffrax.AbstractSolver | None = None,
         tau: float = 1.0,
     ):
@@ -67,11 +64,6 @@ class ContinuousMountainCar(
 
         self.action_space = Box(self.min_action, self.max_action)
         self.observation_space = Box(self.low, self.high)
-
-        if renderer == "auto":
-            self.renderer = self.default_renderer()
-        else:
-            self.renderer = renderer
 
         self.dt = float(tau)
         self.solver = solver or diffrax.Tsit5()
@@ -154,18 +146,17 @@ class ContinuousMountainCar(
     ) -> dict:
         return {}
 
-    def render(self, state: ContinuousMountainCarState):
+    def render(self, state: ContinuousMountainCarState, renderer: AbstractRenderer):
         x = state.y[0]
 
-        assert self.renderer is not None, "Renderer is not initialized."
-        self.renderer.clear()
+        renderer.clear()
 
         # Track
         xs = jnp.linspace(self.min_position - 0.5, self.max_position + 0.1, 64)
         ys = jnp.sin(3 * xs) * 0.45
         track_points = jnp.stack([xs, ys], axis=1)
         track_color = Color(0.0, 0.0, 0.0)
-        self.renderer.draw_polyline(track_points, color=track_color)
+        renderer.draw_polyline(track_points, color=track_color)
 
         # Flag
         flag_h = 0.2
@@ -176,9 +167,7 @@ class ContinuousMountainCar(
 
         flag_pole_color = Color(0.0, 0.0, 0.0)
         flag_color = Color(0.86, 0.24, 0.24)
-        self.renderer.draw_line(
-            flag_start, flag_end, color=flag_pole_color, width=0.005
-        )
+        renderer.draw_line(flag_start, flag_end, color=flag_pole_color, width=0.005)
         flag_points = jnp.array(
             [
                 flag_end,
@@ -186,7 +175,7 @@ class ContinuousMountainCar(
                 flag_end + jnp.array([0.0, -0.06]),
             ]
         )
-        self.renderer.draw_polygon(flag_points, color=flag_color)
+        renderer.draw_polygon(flag_points, color=flag_color)
 
         # Car
         car_h, car_w, wheel_r, clearance = 0.04, 0.1, 0.02, 0.025
@@ -208,7 +197,7 @@ class ContinuousMountainCar(
             ]
         )
         car_corners = (rot @ car_corners.T).T + car_center
-        self.renderer.draw_polygon(car_corners, color=car_col)
+        renderer.draw_polygon(car_corners, color=car_col)
         ## Wheels
         wheel_col = Color(0.3, 0.3, 0.3)
         wheel_clearance = rot @ jnp.array([0.0, wheel_r])
@@ -223,10 +212,10 @@ class ContinuousMountainCar(
             + jnp.array([x, jnp.sin(3 * x) * 0.45])
             + wheel_clearance
         )
-        self.renderer.draw_circle(wheel_centers[0], radius=wheel_r, color=wheel_col)
-        self.renderer.draw_circle(wheel_centers[1], radius=wheel_r, color=wheel_col)
+        renderer.draw_circle(wheel_centers[0], radius=wheel_r, color=wheel_col)
+        renderer.draw_circle(wheel_centers[1], radius=wheel_r, color=wheel_col)
 
-        self.renderer.render()
+        renderer.draw()
 
     def default_renderer(self) -> AbstractRenderer:
         width, height = 800, 450

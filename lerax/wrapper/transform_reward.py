@@ -51,9 +51,6 @@ class AbstractPureTransformRewardWrapper[
     ) -> dict:
         return self.env.transition_info(state, action, next_state)
 
-    def render(self, state: StateType):
-        return self.env.render(state)
-
     def close(self):
         return self.env.close()
 
