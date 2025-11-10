@@ -3,11 +3,10 @@ from jax import random as jr
 from lerax.algorithm import PPO
 from lerax.env import CartPole
 from lerax.policy import MLPActorCriticPolicy
-from lerax.wrapper import TimeLimit
 
 policy_key, learn_key = jr.split(jr.key(0), 2)
 
-env = TimeLimit(CartPole(), max_episode_steps=512)
+env = CartPole()
 policy = MLPActorCriticPolicy(env=env, key=policy_key)
 algo = PPO()
 

@@ -4,12 +4,11 @@ from jax import random as jr
 from lerax.algorithm import PPO
 from lerax.compatibility.gymnax import GymnaxToLeraxEnv
 from lerax.policy import MLPActorCriticPolicy
-from lerax.wrapper import TimeLimit
 
 policy_key, learn_key = jr.split(jr.key(0), 2)
 
 gymnax_env, params = gym.make("CartPole-v1")
-env = TimeLimit(GymnaxToLeraxEnv(gymnax_env, params), max_episode_steps=512)
+env = GymnaxToLeraxEnv(gymnax_env, params)
 
 policy = MLPActorCriticPolicy(env=env, key=policy_key)
 algo = PPO()

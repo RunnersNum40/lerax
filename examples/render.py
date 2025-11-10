@@ -4,15 +4,16 @@ from jax import random as jr
 from lerax.algorithm import PPO
 from lerax.env import CartPole
 from lerax.policy import MLPActorCriticPolicy
-from lerax.wrapper import TimeLimit
 
 key = jr.key(0)
 key, policy_key, learn_key = jr.split(key, 3)
 
-env = TimeLimit(CartPole(), max_episode_steps=512)
+env = CartPole()
 policy = MLPActorCriticPolicy(env=env, key=policy_key)
 algo = PPO()
-policy = algo.learn(env, policy, total_timesteps=2**14, key=learn_key)
+policy = algo.learn(
+    env, policy, total_timesteps=2**16, key=learn_key, show_progress_bar=True
+)
 
 
 def step(env_state, key):
@@ -37,10 +38,6 @@ def step(env_state, key):
 key, reset_key = jr.split(key)
 env_state = env.initial(key=reset_key)
 
-_, env_states = lax.scan(
-    step,
-    env_state,
-    jr.split(key, 512),
-)
+_, env_states = lax.scan(step, env_state, jr.split(key, 1024))
 
 env.render_stacked(env_states, dt=1 / 60)
