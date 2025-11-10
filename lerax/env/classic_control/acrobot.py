@@ -166,7 +166,7 @@ class Acrobot(
             - phi2
         ) / (self.link_mass_2 * self.link_com_pos_2**2 + self.link_moi - d2**2 / d1)
         theta1_dd = -(d2 * theta2_dd + phi1) / d1
-        return jnp.array([theta1_d, theta2_d, theta1_dd, theta2_dd, 0.0])
+        return jnp.array([theta1_d, theta2_d, theta1_dd, theta2_dd])
 
     def clip(self, y: Float[Array, "4"]) -> Float[Array, "4"]:
         joint_angle_1, joint_angle_2, joint_vel_1, joint_vel_2 = y
@@ -212,15 +212,50 @@ class Acrobot(
         return done_angle
 
     def render(self, state: AcrobotState, renderer: AbstractRenderer):
-        raise NotImplementedError("Render method is not implemented for Acrobot.")
+        th1, th2 = state.y[0], state.y[1]
+
+        base = jnp.array([0.0, 0.0])
+        p1 = base + jnp.array(
+            [self.link_length_1 * jnp.sin(th1), -self.link_length_1 * jnp.cos(th1)]
+        )
+        p2 = p1 + jnp.array(
+            [
+                self.link_length_2 * jnp.sin(th1 + th2),
+                -self.link_length_2 * jnp.cos(th1 + th2),
+            ]
+        )
+
+        link_w = 0.2
+        joint_r = link_w / 2
+        link_color = Color(0.0, 0.8, 0.8)
+        joint_color = Color(0.8, 0.8, 0.0)
+        goal_color = Color(0.0, 0.0, 0.0)
+
+        renderer.clear()
+
+        y_goal = jnp.array(1.0)
+        renderer.draw_line(
+            start=jnp.array([-3.0, y_goal]),
+            end=jnp.array([3.0, y_goal]),
+            color=goal_color,
+            width=0.01,
+        )
+
+        renderer.draw_line(base, p1, color=link_color, width=link_w)
+        renderer.draw_line(p1, p2, color=link_color, width=link_w)
+
+        renderer.draw_circle(base, radius=joint_r, color=joint_color)
+        renderer.draw_circle(p1, radius=joint_r, color=joint_color)
+
+        renderer.draw()
 
     def default_renderer(self) -> AbstractRenderer:
-        width, height = 800, 450
+        width, height = 800, 600
         transform = Transform(
             width=width,
             height=height,
-            scale=100.0,
-            offset=jnp.array([width / 2, height / 2 + 100]),
+            scale=140.0,
+            offset=jnp.array([width / 2, height / 2]),
             y_up=True,
         )
         return PygameRenderer(
