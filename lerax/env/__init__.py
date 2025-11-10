@@ -1,3 +1,4 @@
+from .acrobot import Acrobot
 from .base_env import (
     AbstractEnv,
     AbstractEnvLike,
@@ -13,6 +14,7 @@ __all__ = [
     "AbstractEnv",
     "AbstractEnvLikeState",
     "AbstractEnvState",
+    "Acrobot",
     "CartPole",
     "MountainCar",
     "ContinuousMountainCar",
