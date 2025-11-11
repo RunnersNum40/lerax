@@ -4,10 +4,14 @@ from distreqx import bijectors, distributions
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Bool, Float, Integer
 
-from .base_distribution import AbstractDistribution, AbstractTransformedDistribution
+from .base_distribution import (
+    AbstractDistribution,
+    AbstractMaskableDistribution,
+    AbstractTransformedDistribution,
+)
 
 
-class Bernoulli(AbstractDistribution[Bool[Array, " dims"]]):
+class Bernoulli(AbstractMaskableDistribution[Bool[Array, " dims"]]):
 
     distribution: distributions.Bernoulli
 
@@ -28,8 +32,12 @@ class Bernoulli(AbstractDistribution[Bool[Array, " dims"]]):
     def probs(self) -> Float[Array, " dims"]:
         return self.distribution.probs
 
+    def mask(self, mask: Bool[Array, " dims"]) -> Bernoulli:
+        masked_logits = jnp.where(mask, self.logits, -jnp.inf)
+        return Bernoulli(logits=masked_logits)
 
-class Categorical(AbstractDistribution[Integer[Array, ""]]):
+
+class Categorical(AbstractMaskableDistribution[Integer[Array, ""]]):
 
     distribution: distributions.Categorical
 
@@ -50,6 +58,10 @@ class Categorical(AbstractDistribution[Integer[Array, ""]]):
     @property
     def probs(self) -> Float[Array, " dims"]:
         return self.distribution.probs
+
+    def mask(self, mask: Bool[Array, " dims"]) -> Categorical:
+        masked_logits = jnp.where(mask, self.logits, -jnp.inf)
+        return Categorical(logits=masked_logits)
 
 
 class Normal(AbstractDistribution[Float[Array, " dims"]]):

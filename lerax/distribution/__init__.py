@@ -5,7 +5,11 @@ Wrapper around distreqx.distributions to allow for easier imports, extended typi
 future expansion.
 """
 
-from .base_distribution import AbstractDistribution, AbstractTransformedDistribution
+from .base_distribution import (
+    AbstractDistribution,
+    AbstractMaskableDistribution,
+    AbstractTransformedDistribution,
+)
 from .distributions import (
     Bernoulli,
     Categorical,
@@ -17,6 +21,7 @@ from .distributions import (
 
 __all__ = [
     "AbstractDistribution",
+    "AbstractMaskableDistribution",
     "AbstractTransformedDistribution",
     "Bernoulli",
     "Categorical",

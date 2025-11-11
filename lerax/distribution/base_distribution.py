@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from abc import abstractmethod
+
 import equinox as eqx
 from distreqx import bijectors, distributions
-from jaxtyping import Array, Float, Key
+from jaxtyping import Array, Bool, Float, Key
 
 
 class AbstractDistribution[SampleType](eqx.Module):
@@ -37,6 +39,15 @@ class AbstractDistribution[SampleType](eqx.Module):
     def sample_and_log_prob(self, key: Key) -> tuple[SampleType, Float[Array, ""]]:
         """Return a sample and its log probability."""
         return self.distribution.sample_and_log_prob(key)
+
+
+class AbstractMaskableDistribution[SampleType](AbstractDistribution[SampleType]):
+
+    distribution: eqx.AbstractVar[distributions.AbstractDistribution]
+
+    @abstractmethod
+    def mask[SelfType](self: SelfType, mask: Bool[Array, "..."]) -> SelfType:
+        """Return a masked version of the distribution."""
 
 
 class AbstractTransformedDistribution[SampleType](AbstractDistribution[SampleType]):
