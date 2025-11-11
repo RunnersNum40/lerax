@@ -40,19 +40,19 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
     def sample(self, key: Key) -> Int[Array, ""]:
         return jr.randint(key, shape=(), minval=self.start, maxval=self._n + self.start)
 
-    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
+    def contains(self, x: Any) -> Bool[Array, ""]:
         x = try_cast(x)
         if x is None:
-            return False
+            return jnp.array(False)
 
         if x.ndim != 0:
-            return False
+            return jnp.array(False)
         x = x.squeeze()
 
         if ~jnp.array_equal(x, jnp.floor(x)):
-            return False
+            return jnp.array(False)
 
-        return bool(self.start <= x < self._n + self.start)
+        return self.start <= x < self._n + self.start
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Discrete):
@@ -69,7 +69,7 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
         return jnp.asarray(sample, dtype=float)
 
     @property
-    def flat_size(self) -> Int[ArrayLike, ""]:
+    def flat_size(self) -> Int[Array, ""]:
         return jnp.array(1, dtype=int)
 
     @property

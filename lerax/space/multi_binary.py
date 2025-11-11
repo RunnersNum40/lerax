@@ -29,13 +29,13 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
     def sample(self, key: Key) -> Bool[Array, " n"]:
         return jr.bernoulli(key, shape=self.shape)
 
-    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
+    def contains(self, x: Any) -> Bool[Array, ""]:
         x = try_cast(x)
         if x is None:
-            return False
+            return jnp.array(False)
 
         if x.shape != self.shape:
-            return False
+            return jnp.array(False)
 
         return jnp.all((x == 0) | (x == 1), axis=0)
 
@@ -55,5 +55,5 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
         return jnp.asarray(sample, dtype=float).ravel()
 
     @property
-    def flat_size(self) -> Int[ArrayLike, ""]:
+    def flat_size(self) -> Int[Array, ""]:
         return jnp.array(self.n, dtype=int)

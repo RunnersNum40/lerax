@@ -84,13 +84,13 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
 
         return sample
 
-    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
+    def contains(self, x: Any) -> Bool[Array, ""]:
         x = try_cast(x)
         if x is None:
-            return False
+            return jnp.array(False)
 
         if x.shape != self._shape:
-            return False
+            return jnp.array(False)
 
         return jnp.all(x >= self.low) & jnp.all(x <= self.high)
 
@@ -112,7 +112,7 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
         return jnp.asarray(sample, dtype=float).ravel()
 
     @property
-    def flat_size(self) -> Int[ArrayLike, ""]:
+    def flat_size(self) -> Int[Array, ""]:
         return jnp.prod(jnp.asarray(self._shape)).astype(int)
 
     @property

@@ -4,7 +4,7 @@ from typing import Any
 
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
+from jaxtyping import Array, Bool, Float, Int, Key
 
 from .base_space import AbstractSpace
 
@@ -38,12 +38,12 @@ class Dict(AbstractSpace[dict[str, Any]]):
             )
         }
 
-    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
+    def contains(self, x: Any) -> Bool[Array, ""]:
         if not isinstance(x, dict):
-            return False
+            return jnp.array(False)
 
         if len(x) != len(self.spaces):
-            return False
+            return jnp.array(False)
 
         return jnp.array(
             key in self.spaces and self.spaces[key].contains(x[key]) for key in x.keys()
@@ -72,12 +72,8 @@ class Dict(AbstractSpace[dict[str, Any]]):
         return jnp.concatenate(parts)
 
     @property
-    def flat_size(self) -> Int[ArrayLike, ""]:
-        return (
-            jnp.array(space.flat_size for space in self.spaces.values())
-            .sum()
-            .astype(int)
-        )
+    def flat_size(self) -> Int[Array, ""]:
+        return jnp.array(space.flat_size for space in self.spaces.values()).sum()
 
     def __getitem__(self, index: str) -> AbstractSpace:
         return self.spaces[index]

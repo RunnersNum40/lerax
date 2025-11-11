@@ -10,7 +10,7 @@ from .base_space import AbstractSpace
 from .utils import try_cast
 
 
-class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]]):
+class MultiDiscrete(AbstractSpace[Int[Array, " n"]]):
     """Cartesian product of discrete spaces."""
 
     ns: Int[Array, " n"]
@@ -37,16 +37,16 @@ class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]]):
             key, shape=self.shape, minval=self.starts, maxval=self.ns + self.starts
         )
 
-    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
+    def contains(self, x: Any) -> Bool[Array, ""]:
         x = try_cast(x)
         if x is None:
-            return False
+            return jnp.array(False)
 
         if x.shape != self.shape:
-            return False
+            return jnp.array(False)
 
         if ~jnp.array_equal(x, jnp.floor(x)):
-            return False
+            return jnp.array(False)
 
         return jnp.all((self.starts <= x) & (x < self.ns + self.starts), axis=0)
 
@@ -68,5 +68,5 @@ class MultiDiscrete(AbstractSpace[Int[ArrayLike, " n"]]):
         return jnp.asarray(sample, dtype=float).ravel()
 
     @property
-    def flat_size(self) -> Int[ArrayLike, ""]:
-        return jnp.array(len(self.ns), dtype=int)
+    def flat_size(self) -> Int[Array, ""]:
+        return jnp.array(len(self.ns))

@@ -4,7 +4,7 @@ from abc import abstractmethod
 from typing import Any
 
 import equinox as eqx
-from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
+from jaxtyping import Array, Bool, Float, Int, Key
 
 
 class AbstractSpace[SampleType](eqx.Module):
@@ -28,7 +28,7 @@ class AbstractSpace[SampleType](eqx.Module):
         """Returns a random sample from the space."""
 
     @abstractmethod
-    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
+    def contains(self, x: Any) -> Bool[Array, ""]:
         """Returns True if the input is in the space, False otherwise."""
 
     def __contains__(self, x: Any) -> bool:
@@ -52,5 +52,5 @@ class AbstractSpace[SampleType](eqx.Module):
 
     @property
     @abstractmethod
-    def flat_size(self) -> Int[ArrayLike, ""]:
+    def flat_size(self) -> Int[Array, ""]:
         """Returns the dimension of the flattened sample."""

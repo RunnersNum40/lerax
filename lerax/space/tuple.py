@@ -4,7 +4,7 @@ from typing import Any
 
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
+from jaxtyping import Array, Bool, Float, Int, Key
 
 from .base_space import AbstractSpace
 
@@ -36,12 +36,12 @@ class Tuple(AbstractSpace[tuple[Any, ...]]):
             for space, key in zip(self.spaces, jr.split(key, len(self.spaces)))
         )
 
-    def contains(self, x: Any) -> Bool[ArrayLike, ""]:
+    def contains(self, x: Any) -> Bool[Array, ""]:
         if not isinstance(x, tuple):
-            return False
+            return jnp.array(False)
 
         if len(x) != len(self.spaces):
-            return False
+            return jnp.array(False)
 
         return jnp.array(
             space.contains(x_i) for space, x_i in zip(self.spaces, x)
@@ -70,8 +70,8 @@ class Tuple(AbstractSpace[tuple[Any, ...]]):
         return jnp.concatenate(parts)
 
     @property
-    def flat_size(self) -> Int[ArrayLike, ""]:
-        return jnp.array(space.flat_size for space in self.spaces).sum().astype(int)
+    def flat_size(self) -> Int[Array, ""]:
+        return jnp.array(space.flat_size for space in self.spaces).sum()
 
     def __getitem__(self, index: int) -> AbstractSpace:
         return self.spaces[index]
