@@ -108,7 +108,7 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
     def __hash__(self) -> int:
         return hash((self.low.tobytes(), self.high.tobytes()))
 
-    def flatten_sample(self, sample: Float[Array, " ..."]) -> Float[Array, " size"]:
+    def flatten_sample(self, sample: Float[Array, " ..."]) -> Float[Array, " n"]:
         return jnp.asarray(sample, dtype=float).ravel()
 
     @property

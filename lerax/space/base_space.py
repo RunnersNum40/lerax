@@ -47,7 +47,7 @@ class AbstractSpace[SampleType](eqx.Module):
         """Returns a hash of the space."""
 
     @abstractmethod
-    def flatten_sample(self, sample: SampleType) -> Float[Array, "..."]:
+    def flatten_sample(self, sample: SampleType) -> Float[Array, " n"]:
         """Flattens a sample from the space into a 1-D array."""
 
     @property

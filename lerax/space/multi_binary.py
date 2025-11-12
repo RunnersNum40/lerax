@@ -51,7 +51,7 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
     def __hash__(self) -> int:
         return hash(self.n)
 
-    def flatten_sample(self, sample: Bool[ArrayLike, " n"]) -> Float[Array, " size"]:
+    def flatten_sample(self, sample: Bool[ArrayLike, " n"]) -> Float[Array, " n"]:
         return jnp.asarray(sample, dtype=float).ravel()
 
     @property

@@ -56,7 +56,7 @@ class MultiDiscrete(AbstractSpace[Int[Array, " n"]]):
     def __hash__(self) -> int:
         return hash(self.ns.tobytes())
 
-    def flatten_sample(self, sample: Int[ArrayLike, " n"]) -> Float[Array, " size"]:
+    def flatten_sample(self, sample: Int[ArrayLike, " n"]) -> Float[Array, " n"]:
         return jnp.asarray(sample, dtype=float).ravel()
 
     @property

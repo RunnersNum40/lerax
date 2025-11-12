@@ -65,8 +65,8 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
     def __hash__(self) -> int:
         return hash((int(self._n), int(self.start)))
 
-    def flatten_sample(self, sample: Int[Array, ""]) -> Float[Array, ""]:
-        return jnp.asarray(sample, dtype=float)
+    def flatten_sample(self, sample: Int[Array, ""]) -> Float[Array, " 1"]:
+        return jnp.asarray(sample, dtype=float).ravel()
 
     @property
     def flat_size(self) -> Int[Array, ""]:
