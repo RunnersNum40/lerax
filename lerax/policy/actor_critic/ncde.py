@@ -8,19 +8,15 @@ from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
 
-from lerax.distribution import (
-    AbstractDistribution,
-    Categorical,
-    SquashedMultivariateNormalDiag,
-    SquashedNormal,
-)
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.model import MLP, MLPNeuralCDE, NCDEState
-from lerax.policy.actor_critic.base_actor_critic import (
+from lerax.space import AbstractSpace
+
+from .base_actor_critic import (
     AbstractPolicyState,
     AbstractStatefulActorCriticPolicy,
 )
-from lerax.space import Box, Discrete
+from .utils import ActionHead
 
 
 class NCDEPolicyState(AbstractPolicyState):
@@ -42,13 +38,12 @@ class NCDEActorCriticPolicy[
 
     name: ClassVar[str] = "NCDEActorCriticPolicy"
 
-    action_space: Box | Discrete
-    observation_space: Box | Discrete
+    action_space: AbstractSpace[ActType]
+    observation_space: AbstractSpace[ObsType]
 
     encoder: MLPNeuralCDE
-    value_model: MLP
-    action_head: MLP
-    log_std: Float[Array, " action_size"]
+    value_head: MLP
+    action_head: ActionHead
 
     dt: float = eqx.field(static=True)
 
@@ -72,35 +67,14 @@ class NCDEActorCriticPolicy[
         log_std_init: float = 0.0,
         key: Key,
     ):
-        if not isinstance(env.observation_space, (Box, Discrete)):
-            raise NotImplementedError(
-                f"Observation space {type(env.observation_space)} not supported."
-            )
-        if not isinstance(env.action_space, (Box, Discrete)):
-            raise NotImplementedError(
-                f"Action space {type(env.action_space)} not supported."
-            )
-
         self.action_space = env.action_space
         self.observation_space = env.observation_space
         self.dt = float(dt)
 
-        obs_flat = int(jnp.asarray(env.observation_space.flat_size))
-        if isinstance(env.action_space, Discrete):
-            act_size: int | str = int(env.action_space.n)
-            self.log_std = jnp.array([], dtype=float)
-        else:
-            if env.action_space.shape:
-                act_size = int(jnp.prod(jnp.asarray(env.action_space.shape)))
-                self.log_std = jnp.full((act_size,), log_std_init, dtype=float)
-            else:
-                act_size = "scalar"
-                self.log_std = jnp.array(log_std_init, dtype=float)
-
         enc_key, val_key, act_key = jr.split(key, 3)
 
         self.encoder = MLPNeuralCDE(
-            in_size=obs_flat,
+            in_size=int(jnp.array(self.observation_space.flat_size)),
             latent_size=latent_size,
             solver=solver,
             field_width=field_width,
@@ -112,53 +86,30 @@ class NCDEActorCriticPolicy[
             key=enc_key,
         )
 
-        self.value_model = MLP(
+        self.value_head = MLP(
             in_size=latent_size,
             out_size="scalar",
             width_size=value_width,
             depth=value_depth,
             key=val_key,
         )
-        self.action_head = MLP(
-            in_size=latent_size,
-            out_size=act_size,
-            width_size=action_width,
-            depth=action_depth,
+
+        self.action_head = ActionHead(
+            self.action_space,
+            feature_size,
+            action_width,
+            action_depth,
             key=act_key,
+            log_std_init=log_std_init,
         )
-
-    def action_dist_from_features(
-        self, features: Float[Array, " feature_size"]
-    ) -> AbstractDistribution[ActType]:
-        """Return an action distribution from features."""
-        action_mean = self.action_head(features)
-
-        if isinstance(self.action_space, Discrete):
-            action_dist = Categorical(logits=action_mean)
-        elif isinstance(self.action_space, Box):
-            if self.action_space.shape == ():
-                base_dist = SquashedNormal(
-                    loc=action_mean,
-                    scale=jnp.exp(self.log_std),
-                )
-            else:
-                base_dist = SquashedMultivariateNormalDiag(
-                    loc=action_mean,
-                    scale_diag=jnp.exp(self.log_std),
-                )
-            action_dist = base_dist
-        else:
-            raise NotImplementedError(
-                f"Action space {type(self.action_space)} not supported."
-            )
-
-        return action_dist
 
     def _step_encoder(
         self, state: NCDEPolicyState, obs: ObsType
     ) -> tuple[NCDEPolicyState, Float[Array, " feat"]]:
         t_next = state.t + self.dt
-        cde_state, y = self.encoder(state.cde, t_next, jnp.ravel(obs))
+        cde_state, y = self.encoder(
+            state.cde, t_next, self.observation_space.flatten_sample(obs)
+        )
         return NCDEPolicyState(t=t_next, cde=cde_state), y
 
     def reset(self) -> NCDEPolicyState:
@@ -168,7 +119,7 @@ class NCDEActorCriticPolicy[
         self, state: NCDEPolicyState, observation: ObsType, *, key: Key | None = None
     ) -> tuple[NCDEPolicyState, ActType]:
         state, features = self._step_encoder(state, observation)
-        action_dist = self.action_dist_from_features(features)
+        action_dist = self.action_head(features)
 
         if key is None:
             action = action_dist.mode()
@@ -181,8 +132,8 @@ class NCDEActorCriticPolicy[
         self, state: NCDEPolicyState, observation: ObsType, *, key: Key | None = None
     ) -> tuple[NCDEPolicyState, ActType, Float[Array, ""], Float[Array, ""]]:
         state, features = self._step_encoder(state, observation)
-        dist = self.action_dist_from_features(features)
-        value = self.value_model(features)
+        dist = self.action_head(features)
+        value = self.value_head(features)
 
         if key is None:
             action = dist.mode()
@@ -195,18 +146,20 @@ class NCDEActorCriticPolicy[
     def evaluate_action(
         self, state: NCDEPolicyState, observation: ObsType, action: ActType
     ) -> tuple[NCDEPolicyState, Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
-        features = self.encoder(state.cde, state.t + self.dt, jnp.ravel(observation))[1]
-        dist = self.action_dist_from_features(features)
-        value = self.value_model(features)
+        state, features = self._step_encoder(state, observation)
+        dist = self.action_head(features)
+        value = self.value_head(features)
         log_prob = dist.log_prob(action)
+
         try:
             entropy = dist.entropy().squeeze()
         except NotImplementedError:
             entropy = -log_prob.mean().squeeze()
+
         return state, value, log_prob.sum().squeeze(), entropy
 
     def value(
         self, state: NCDEPolicyState, observation: ObsType
     ) -> tuple[NCDEPolicyState, Float[Array, ""]]:
         state, feats = self._step_encoder(state, observation)
-        return state, self.value_model(feats)
+        return state, self.value_head(feats)
