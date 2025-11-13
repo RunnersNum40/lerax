@@ -110,7 +110,7 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
                 dones=done,
                 log_probs=log_prob,
                 values=value,
-                states=next_policy_state,
+                states=carry.policy_state,
             ),
         )
 
