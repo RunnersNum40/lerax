@@ -10,13 +10,12 @@ import optax
 from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Int, Key, Scalar
+from jaxtyping import Key, Scalar
 
 from lerax.buffer import RolloutBuffer
-from lerax.env import AbstractEnvLike, AbstractEnvLikeState
+from lerax.env import AbstractEnvLike
 from lerax.policy import (
     AbstractActorCriticPolicy,
-    AbstractPolicyState,
     AbstractStatefulActorCriticPolicy,
     AbstractStatelessActorCriticPolicy,
     StatefulWrapper,
@@ -24,28 +23,13 @@ from lerax.policy import (
 from lerax.utils import filter_scan
 
 from .base_algorithm import AbstractAlgorithm
-from .utils import EpisodeStats, JITProgressBar, JITSummaryWriter
-
-
-class StepCarry(eqx.Module):
-    env_state: AbstractEnvLikeState
-    policy_state: AbstractPolicyState
-    episode_stats: EpisodeStats
-
-    @classmethod
-    def initial(
-        cls, env: AbstractEnvLike, policy: AbstractStatefulActorCriticPolicy, key: Key
-    ) -> StepCarry:
-        env_state = env.initial(key=key)
-        policy_state = policy.reset()
-        return cls(env_state, policy_state, EpisodeStats.initial())
-
-
-class IterationCarry(eqx.Module):
-    iteration_count: Int[Array, ""]
-    step_carry: StepCarry
-    policy: AbstractStatefulActorCriticPolicy
-    opt_state: optax.OptState
+from .utils import (
+    EpisodeStats,
+    IterationCarry,
+    JITProgressBar,
+    JITSummaryWriter,
+    StepCarry,
+)
 
 
 class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
@@ -109,9 +93,7 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
 
         # Reset environment if done
         next_env_state = lax.cond(
-            done,
-            lambda: env.initial(key=reset_key),
-            lambda: next_env_state,
+            done, lambda: env.initial(key=reset_key), lambda: next_env_state
         )
 
         # Reset policy state if done
@@ -188,6 +170,7 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
             step_carry, rollout_buffer, episode_stats = eqx.filter_vmap(
                 self.collect_rollout, in_axes=(None, None, 0, 0)
             )(env, carry.policy, carry.step_carry, jr.split(rollout_key, self.num_envs))
+
         policy, opt_state, log = self.train(
             carry.policy, carry.opt_state, rollout_buffer, key=train_key
         )
@@ -205,56 +188,6 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
             tb_writer.log_episode_stats(episode_stats, first_step=first_step)
 
         return IterationCarry(carry.iteration_count + 1, step_carry, policy, opt_state)
-
-    def init_iteration_carry(
-        self,
-        env: AbstractEnvLike,
-        policy: AbstractStatefulActorCriticPolicy,
-        *,
-        key: Key,
-    ) -> IterationCarry:
-        if self.num_envs == 1:
-            step_carry = StepCarry.initial(env, policy, key)
-        else:
-            step_carry = jax.vmap(StepCarry.initial, in_axes=(None, None, 0))(
-                env, policy, jr.split(key, self.num_envs)
-            )
-
-        return IterationCarry(
-            jnp.array(0, dtype=int),
-            step_carry,
-            policy,
-            self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array)),
-        )
-
-    def init_tensorboard(
-        self,
-        env: AbstractEnvLike,
-        policy: AbstractActorCriticPolicy,
-        tb_log: str | bool,
-    ) -> JITSummaryWriter | None:
-        if tb_log is False:
-            return None
-
-        if tb_log is True:
-            tb_log = f"logs/{policy.name}_{env.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-
-        return JITSummaryWriter(tb_log)
-
-    def init_progress_bar(
-        self,
-        env: AbstractEnvLike,
-        policy: AbstractActorCriticPolicy,
-        total_timesteps: int,
-        show_progress_bar: bool,
-    ) -> JITProgressBar | None:
-        if show_progress_bar:
-            name = f"Training {policy.name} on {env.name}"
-            progress_bar = JITProgressBar(name, total=total_timesteps)
-            progress_bar.start()
-            return progress_bar
-        else:
-            return None
 
     def learn[PolicyType: AbstractActorCriticPolicy](
         self,

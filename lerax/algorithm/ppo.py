@@ -5,24 +5,13 @@ import jax
 import optax
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Bool, Float, Key, PyTree, Scalar
+from jaxtyping import Array, Float, Key, Scalar
 
 from lerax.buffer import RolloutBuffer
-from lerax.policy import (
-    AbstractStatefulActorCriticPolicy,
-)
+from lerax.policy import AbstractStatefulActorCriticPolicy
 from lerax.utils import filter_scan
 
 from .on_policy import AbstractOnPolicyAlgorithm
-
-
-def any_nan_or_inf(tree: PyTree) -> Bool[Array, ""]:
-    return ~(
-        jax.tree.reduce_associative(
-            jnp.logical_and,
-            jax.tree.map(lambda leaf: jnp.all(jnp.isfinite(leaf)), tree),
-        )
-    )
 
 
 class PPOStats(eqx.Module):
@@ -36,20 +25,20 @@ class PPOStats(eqx.Module):
 class PPO(AbstractOnPolicyAlgorithm):
     optimizer: optax.GradientTransformation
 
-    gae_lambda: float = eqx.field(static=True)
-    gamma: float = eqx.field(static=True)
+    gae_lambda: float
+    gamma: float
 
-    num_envs: int = eqx.field(static=True)
-    num_steps: int = eqx.field(static=True)
-    batch_size: int = eqx.field(static=True)
-    num_epochs: int = eqx.field(static=True)
+    num_envs: int
+    num_steps: int
+    batch_size: int
+    num_epochs: int
 
-    normalize_advantages: bool = eqx.field(static=True)
-    clip_coefficient: float = eqx.field(static=True)
-    clip_value_loss: bool = eqx.field(static=True)
-    entropy_loss_coefficient: float = eqx.field(static=True)
-    value_loss_coefficient: float = eqx.field(static=True)
-    max_grad_norm: float = eqx.field(static=True)
+    normalize_advantages: bool
+    clip_coefficient: float
+    clip_value_loss: bool
+    entropy_loss_coefficient: float
+    value_loss_coefficient: float
+    max_grad_norm: float
 
     def __init__(
         self,
