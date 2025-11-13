@@ -70,13 +70,15 @@ Check out the [Gymnasium wrapper](lerax/compatibility/gym.py) for how to wrap Gy
 - Testing
   - Unit testing
   - Integration testing
-  - Runtime jaxtyping
+  - Full Jaxtyping
+    - Ensure all functions and classes have proper type annotations
 - Use it
   - Personal research
 - Round out features
   - Expand RL variants to include more algorithms
   - Create a more comprehensive set of environments
     - Brax based environments
+  - Save and load models
 
 ## Code Style
 
