@@ -4,18 +4,22 @@ from .actor_critic import (
     AbstractStatelessActorCriticPolicy,
     MLPActorCriticPolicy,
     NCDEActorCriticPolicy,
-    StatefulWrapper,
 )
-from .base_policy import AbstractPolicy, AbstractPolicyState, AbstractStatefulPolicy
+from .base_policy import (
+    AbstractPolicy,
+    AbstractPolicyState,
+    AbstractStatefulPolicy,
+    AbstractStatelessPolicy,
+)
 
 __all__ = [
     "AbstractPolicy",
     "AbstractStatefulPolicy",
+    "AbstractStatelessPolicy",
     "AbstractPolicyState",
     "AbstractActorCriticPolicy",
     "AbstractStatelessActorCriticPolicy",
     "AbstractStatefulActorCriticPolicy",
     "MLPActorCriticPolicy",
     "NCDEActorCriticPolicy",
-    "StatefulWrapper",
 ]

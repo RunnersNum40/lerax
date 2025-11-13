@@ -9,9 +9,9 @@ from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Key, Scalar
 
-from lerax.buffer import RolloutBuffer
+from lerax.buffer import ReplayBuffer
 from lerax.env import AbstractEnvLike
-from lerax.policy import AbstractActorCriticPolicy, AbstractStatefulActorCriticPolicy
+from lerax.policy import AbstractPolicy, AbstractStatefulPolicy
 from lerax.utils import filter_scan
 
 from .base_algorithm import AbstractAlgorithm
@@ -24,19 +24,12 @@ from .utils import (
 )
 
 
-class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
+class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
     AbstractAlgorithm[PolicyType]
 ):
-    """
-    Base class for on-policy algorithms.
-
-    Generates rollouts using the current policy and estimates advantages and
-    returns using GAE. Trains the policy using the collected rollouts.
-    """
-
+    buffer_size: eqx.AbstractVar[int]
     optimizer: eqx.AbstractVar[optax.GradientTransformation]
 
-    gae_lambda: eqx.AbstractVar[float]
     gamma: eqx.AbstractVar[float]
 
     num_envs: eqx.AbstractVar[int]
@@ -46,131 +39,117 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
     def step(
         self,
         env: AbstractEnvLike,
-        policy: AbstractStatefulActorCriticPolicy,
+        policy: AbstractStatefulPolicy,
         carry: StepCarry,
-        *,
         key: Key,
-    ) -> tuple[StepCarry, RolloutBuffer]:
+    ) -> tuple[StepCarry, ReplayBuffer]:
         (
             action_key,
             transition_key,
             observation_key,
             reward_key,
             terminal_key,
-            bootstrap_key,
+            next_observation_key,
             reset_key,
         ) = jr.split(key, 7)
 
         observation = env.observation(carry.env_state, key=observation_key)
-        next_policy_state, action, value, log_prob = policy.action_and_value(
+        next_policy_state, action = policy(
             carry.policy_state, observation, key=action_key
         )
 
         next_env_state = env.transition(carry.env_state, action, key=transition_key)
 
         reward = env.reward(carry.env_state, action, next_env_state, key=reward_key)
-        termination = env.terminal(next_env_state, key=terminal_key)
-        truncation = env.truncate(next_env_state)
+        termination = env.terminal(carry.env_state, key=terminal_key)
+        truncation = env.truncate(carry.env_state)
         done = termination | truncation
+        timeout = truncation & ~termination
+
         next_episode_stats = carry.episode_stats.next(reward, done)
 
-        # Bootstrap reward if truncated
-        reward = lax.cond(
-            truncation,
-            lambda: reward
-            + self.gamma
-            * policy.value(
-                next_policy_state, env.observation(next_env_state, key=bootstrap_key)
-            )[1],
-            lambda: reward,
-        )
+        next_observation = env.observation(next_env_state, key=next_observation_key)
 
-        # Reset environment if done
         next_env_state = lax.cond(
             done, lambda: env.initial(key=reset_key), lambda: next_env_state
         )
 
-        # Reset policy state if done
         next_policy_state = lax.cond(
             done, lambda: policy.reset(), lambda: next_policy_state
         )
 
-        return (
-            StepCarry(next_env_state, next_policy_state, next_episode_stats),
-            RolloutBuffer(
-                observations=observation,
-                actions=action,
-                rewards=reward,
-                dones=done,
-                log_probs=log_prob,
-                values=value,
-                states=carry.policy_state,
-            ),
+        return StepCarry(
+            next_env_state, next_policy_state, next_episode_stats
+        ), ReplayBuffer(
+            observations=observation,
+            next_observations=next_observation,
+            actions=action,
+            rewards=reward,
+            dones=done,
+            timeouts=timeout,
+            states=carry.policy_state,
         )
 
     def collect_rollout(
         self,
         env: AbstractEnvLike,
-        policy: AbstractStatefulActorCriticPolicy,
+        policy: AbstractStatefulPolicy,
         carry: StepCarry,
         key: Key,
-    ) -> tuple[StepCarry, RolloutBuffer, EpisodeStats]:
-        key, observation_key = jr.split(key, 2)
-
+    ) -> tuple[StepCarry, ReplayBuffer, EpisodeStats]:
         def scan_step(
             carry: StepCarry, key: Key
-        ) -> tuple[StepCarry, tuple[RolloutBuffer, EpisodeStats]]:
-            carry, rollout = self.step(env, policy, carry, key=key)
-            return carry, (rollout, carry.episode_stats)
+        ) -> tuple[StepCarry, tuple[ReplayBuffer, EpisodeStats]]:
+            carry, buffer = self.step(env, policy, carry, key)
+            return carry, (buffer, carry.episode_stats)
 
-        carry, (rollout_buffer, episode_stats) = filter_scan(
+        carry, (replay_buffer, episode_stats) = filter_scan(
             scan_step, carry, jr.split(key, self.num_steps)
         )
 
-        _, next_value = policy.value(
-            carry.policy_state, env.observation(carry.env_state, key=observation_key)
-        )
-        rollout_buffer = rollout_buffer.compute_returns_and_advantages(
-            next_value, self.gae_lambda, self.gamma
-        )
-        return carry, rollout_buffer, episode_stats
+        return carry, replay_buffer, episode_stats
 
     @abstractmethod
-    def train(
+    def train[WrapperPolicyType: AbstractStatefulPolicy](
         self,
-        policy: AbstractStatefulActorCriticPolicy,
+        policy: WrapperPolicyType,
         opt_state: optax.OptState,
-        rollout_buffer: RolloutBuffer,
+        buffer: ReplayBuffer,
         *,
         key: Key,
-    ) -> tuple[AbstractStatefulActorCriticPolicy, optax.OptState, dict[str, Scalar]]:
-        """Train the policy using the rollout buffer."""
+    ) -> tuple[WrapperPolicyType, optax.OptState, dict[str, Scalar]]:
+        """Trains the policy using data from the replay buffer."""
 
-    def iteration(
+    def iteration[WrapperPolicyType: AbstractStatefulPolicy](
         self,
         env: AbstractEnvLike,
-        carry: IterationCarry,
+        carry: IterationCarry[WrapperPolicyType],
         *,
         key: Key,
         progress_bar: JITProgressBar | None,
         tb_writer: JITSummaryWriter | None,
-    ) -> IterationCarry:
+    ) -> IterationCarry[WrapperPolicyType]:
         rollout_key, train_key = jr.split(key, 2)
-        if self.num_envs == 1:
-            step_carry, rollout_buffer, episode_stats = self.collect_rollout(
+        if self.num_steps == 1:
+            step_carry, replay_buffer, episode_stats = self.collect_rollout(
                 env, carry.policy, carry.step_carry, key=rollout_key
             )
         else:
-            step_carry, rollout_buffer, episode_stats = eqx.filter_vmap(
+            step_carry, replay_buffer, episode_stats = eqx.filter_vmap(
                 self.collect_rollout, in_axes=(None, None, 0, 0)
-            )(env, carry.policy, carry.step_carry, jr.split(rollout_key, self.num_envs))
+            )(
+                env,
+                carry.policy,
+                carry.step_carry,
+                jr.split(rollout_key, self.num_envs),
+            )
 
         policy, opt_state, log = self.train(
-            carry.policy, carry.opt_state, rollout_buffer, key=train_key
+            carry.policy, carry.opt_state, replay_buffer, key=train_key
         )
 
         if progress_bar is not None:
-            progress_bar.update(advance=self.num_steps * self.num_envs)
+            progress_bar.update(self.num_envs * self.num_steps)
 
         if tb_writer is not None:
             first_step = carry.iteration_count * self.num_steps * self.num_envs
@@ -182,3 +161,15 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
             tb_writer.log_episode_stats(episode_stats, first_step=first_step)
 
         return IterationCarry(carry.iteration_count + 1, step_carry, policy, opt_state)
+
+    def learn(
+        self,
+        env: AbstractEnvLike,
+        policy: PolicyType,
+        total_timesteps: int,
+        *,
+        key: Key,
+        show_progress_bar: bool = False,
+        tb_log: str | bool = False,
+    ) -> PolicyType:
+        raise NotImplementedError

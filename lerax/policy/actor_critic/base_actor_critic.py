@@ -7,11 +7,14 @@ from jaxtyping import Array, Float, Key
 
 from lerax.space import AbstractSpace
 
-from ..base_policy import AbstractPolicy, AbstractPolicyState, AbstractStatefulPolicy
-
-
-class NullStatefulActorCriticPolicyState(AbstractPolicyState):
-    """Marker class for stateless actor-critic policies."""
+from ..base_policy import (
+    AbstractPolicy,
+    AbstractPolicyState,
+    AbstractStatefulPolicy,
+    AbstractStatefulWrapper,
+    AbstractStatelessPolicy,
+    NullStatefulPolicyState,
+)
 
 
 class AbstractActorCriticPolicy[ActType, ObsType](AbstractPolicy[ActType, ObsType]):
@@ -27,12 +30,13 @@ class AbstractStatelessActorCriticPolicy[
     ObsType,
 ](
     AbstractActorCriticPolicy[ActType, ObsType],
+    AbstractStatelessPolicy[ActType, ObsType],
 ):
     """
     Base class for stateless actor-critic policies.
 
     This class is intended for policies that do not maintain an internal state.
-    Internally stateless policies can be converted to stateful ones using into_stateful().
+    Stateless policies can be converted to stateful ones using into_stateful().
     """
 
     name: eqx.AbstractClassVar[str]
@@ -69,13 +73,10 @@ class AbstractStatelessActorCriticPolicy[
     def value(self, observation: ObsType) -> Float[Array, ""]:
         """Get the value of an observation."""
 
-    def into_stateful(
-        self,
-    ) -> StatefulWrapper[
-        AbstractStatelessActorCriticPolicy[ActType, ObsType], ActType, ObsType
-    ]:
-        """Convert this stateless policy into a stateful one."""
-        return StatefulWrapper(self)
+    def into_stateful[SelfType: AbstractStatelessActorCriticPolicy](
+        self: SelfType,
+    ) -> ActorCriticStatefulWrapper[SelfType, ActType, ObsType]:
+        return ActorCriticStatefulWrapper(self)
 
 
 class AbstractStatefulActorCriticPolicy[
@@ -129,78 +130,45 @@ class AbstractStatefulActorCriticPolicy[
         """Get the value of an observation."""
 
 
-class StatefulWrapper[PolicyType: AbstractStatelessActorCriticPolicy, ActType, ObsType](
-    AbstractStatefulActorCriticPolicy[
-        NullStatefulActorCriticPolicyState, ActType, ObsType
-    ]
+class ActorCriticStatefulWrapper[
+    PolicyType: AbstractStatelessActorCriticPolicy,
+    ActType,
+    ObsType,
+](
+    AbstractStatefulActorCriticPolicy[NullStatefulPolicyState, ActType, ObsType],
+    AbstractStatefulWrapper[PolicyType, ActType, ObsType],
 ):
     policy: PolicyType
 
     def __init__(self, policy: PolicyType):
         self.policy = policy
 
-    @property
-    def name(self) -> str:
-        return self.policy.name
-
-    @property
-    def action_space(self) -> AbstractSpace[ActType]:
-        return self.policy.action_space
-
-    @property
-    def observation_space(self) -> AbstractSpace[ObsType]:
-        return self.policy.observation_space
-
     def __call__(
         self,
-        state: NullStatefulActorCriticPolicyState,
+        state: NullStatefulPolicyState,
         observation: ObsType,
         *,
         key: Key | None = None,
-    ) -> tuple[NullStatefulActorCriticPolicyState, ActType]:
+    ) -> tuple[NullStatefulPolicyState, ActType]:
         return state, self.policy(observation, key=key)
 
     def action_and_value(
         self,
-        state: NullStatefulActorCriticPolicyState,
+        state: NullStatefulPolicyState,
         observation: ObsType,
         *,
         key: Key | None = None,
-    ) -> tuple[
-        NullStatefulActorCriticPolicyState, ActType, Float[Array, ""], Float[Array, ""]
-    ]:
-        """
-        Get an action and value from an observation.
-
-        If `key` is provided, it will be used for sampling actions, if no key is
-        provided the policy will return the most likely action.
-        """
+    ) -> tuple[NullStatefulPolicyState, ActType, Float[Array, ""], Float[Array, ""]]:
         return state, *self.policy.action_and_value(observation, key=key)
 
     def evaluate_action(
-        self,
-        state: NullStatefulActorCriticPolicyState,
-        observation: ObsType,
-        action: ActType,
+        self, state: NullStatefulPolicyState, observation: ObsType, action: ActType
     ) -> tuple[
-        NullStatefulActorCriticPolicyState,
-        Float[Array, ""],
-        Float[Array, ""],
-        Float[Array, ""],
+        NullStatefulPolicyState, Float[Array, ""], Float[Array, ""], Float[Array, ""]
     ]:
-        """Evaluate an action given an observation."""
         return state, *self.policy.evaluate_action(observation, action)
 
     def value(
-        self, state: NullStatefulActorCriticPolicyState, observation: ObsType
-    ) -> tuple[NullStatefulActorCriticPolicyState, Float[Array, ""]]:
-        """Get the value of an observation."""
+        self, state: NullStatefulPolicyState, observation: ObsType
+    ) -> tuple[NullStatefulPolicyState, Float[Array, ""]]:
         return state, self.policy.value(observation)
-
-    def reset(self) -> NullStatefulActorCriticPolicyState:
-        """Reset the policy state."""
-        return NullStatefulActorCriticPolicyState()
-
-    def into_stateless(self) -> PolicyType:
-        """Convert this stateful policy into a stateless one."""
-        return self.policy
