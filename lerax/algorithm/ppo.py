@@ -32,7 +32,6 @@ class PPOStats(eqx.Module):
     policy_loss: Float[Array, ""]
     value_loss: Float[Array, ""]
     entropy_loss: Float[Array, ""]
-    state_magnitude_loss: Float[Array, ""]
 
 
 class PPO(AbstractOnPolicyAlgorithm):
@@ -51,7 +50,6 @@ class PPO(AbstractOnPolicyAlgorithm):
     clip_value_loss: bool = eqx.field(static=True)
     entropy_loss_coefficient: float = eqx.field(static=True)
     value_loss_coefficient: float = eqx.field(static=True)
-    state_magnitude_coefficient: float = eqx.field(static=True)
     max_grad_norm: float = eqx.field(static=True)
 
     def __init__(
@@ -67,7 +65,6 @@ class PPO(AbstractOnPolicyAlgorithm):
         clip_value_loss: bool = False,
         entropy_loss_coefficient: float = 0.0,
         value_loss_coefficient: float = 0.5,
-        state_magnitude_coefficient: float = 0.0,
         max_grad_norm: float = 0.5,
         normalize_advantages: bool = True,
         learning_rate: float = 3e-4,
@@ -84,7 +81,6 @@ class PPO(AbstractOnPolicyAlgorithm):
         self.clip_value_loss = clip_value_loss
         self.entropy_loss_coefficient = entropy_loss_coefficient
         self.value_loss_coefficient = value_loss_coefficient
-        self.state_magnitude_coefficient = state_magnitude_coefficient
         self.max_grad_norm = max_grad_norm
         self.normalize_advantages = normalize_advantages
 
@@ -102,7 +98,6 @@ class PPO(AbstractOnPolicyAlgorithm):
         clip_coefficient: float,
         clip_value_loss: bool,
         value_loss_coefficient: float,
-        state_magnitude_coefficient: float,
         entropy_loss_coefficient: float,
     ) -> tuple[Float[Array, ""], PPOStats]:
         _, values, log_probs, entropy = jax.vmap(policy.evaluate_action)(
@@ -150,12 +145,10 @@ class PPO(AbstractOnPolicyAlgorithm):
             value_loss = jnp.mean(jnp.square(values - rollout_buffer.returns)) / 2
 
         entropy_loss = -jnp.mean(entropy)
-        state_magnitude_loss = jnp.array(0.0)
 
         loss = (
             policy_loss
             + value_loss * value_loss_coefficient
-            + state_magnitude_loss * state_magnitude_coefficient
             + entropy_loss * entropy_loss_coefficient
         )
 
@@ -165,7 +158,6 @@ class PPO(AbstractOnPolicyAlgorithm):
             policy_loss,
             value_loss,
             entropy_loss,
-            state_magnitude_loss,
         )
 
     ppo_loss_grad = staticmethod(eqx.filter_value_and_grad(ppo_loss, has_aux=True))
@@ -183,7 +175,6 @@ class PPO(AbstractOnPolicyAlgorithm):
             self.clip_coefficient,
             self.clip_value_loss,
             self.value_loss_coefficient,
-            self.state_magnitude_coefficient,
             self.entropy_loss_coefficient,
         )
 
@@ -266,7 +257,6 @@ class PPO(AbstractOnPolicyAlgorithm):
             "policy_loss": stats.policy_loss,
             "value_loss": stats.value_loss,
             "entropy_loss": stats.entropy_loss,
-            "state_magnitude_loss": stats.state_magnitude_loss,
             "explained_variance": explained_variance,
         }
         return policy, opt_state, log
