@@ -10,7 +10,6 @@ from jaxtyping import Array, Bool, Float, Key, PyTree, Scalar
 from lerax.buffer import RolloutBuffer
 from lerax.policy import (
     AbstractStatefulActorCriticPolicy,
-    NCDEActorCriticPolicy,
 )
 from lerax.utils import filter_scan
 
@@ -178,15 +177,9 @@ class PPO(AbstractOnPolicyAlgorithm):
             self.entropy_loss_coefficient,
         )
 
-        if isinstance(grads, NCDEActorCriticPolicy):
-            grads = eqx.error_if(
-                grads, any_nan_or_inf(grads.encoder), "Non-finite encoder grads."
-            )
-
         updates, new_opt_state = self.optimizer.update(
             grads, opt_state, eqx.filter(policy, eqx.is_inexact_array)
         )
-        updates = eqx.error_if(updates, any_nan_or_inf(updates), "Non-finite update.")
         policy = eqx.apply_updates(policy, updates)
 
         return policy, new_opt_state, stats
