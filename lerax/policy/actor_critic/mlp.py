@@ -87,7 +87,7 @@ class MLPActorCriticPolicy[
         return action
 
     def action_and_value(
-        self, observation: ObsType, *, key: Key | None = None
+        self, observation: ObsType, *, key: Key
     ) -> tuple[ActType, Float[Array, ""], Float[Array, ""]]:
         """
         Get an action and value from an observation.
@@ -96,14 +96,10 @@ class MLPActorCriticPolicy[
         provided the policy will return the most likely action.
         """
         features = self.encoder(self.observation_space.flatten_sample(observation))
-        action_dist = self.action_head(features)
         value = self.value_head(features)
 
-        if key is None:
-            action = action_dist.mode()
-            log_prob = action_dist.log_prob(action)
-        else:
-            action, log_prob = action_dist.sample_and_log_prob(key)
+        action_dist = self.action_head(features)
+        action, log_prob = action_dist.sample_and_log_prob(key)
 
         return action, value, log_prob.sum().squeeze()
 

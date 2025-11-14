@@ -129,17 +129,14 @@ class NCDEActorCriticPolicy[
         return state, action
 
     def action_and_value(
-        self, state: NCDEPolicyState, observation: ObsType, *, key: Key | None = None
+        self, state: NCDEPolicyState, observation: ObsType, *, key: Key
     ) -> tuple[NCDEPolicyState, ActType, Float[Array, ""], Float[Array, ""]]:
         state, features = self._step_encoder(state, observation)
-        dist = self.action_head(features)
+
         value = self.value_head(features)
 
-        if key is None:
-            action = dist.mode()
-            log_prob = dist.log_prob(action)
-        else:
-            action, log_prob = dist.sample_and_log_prob(key)
+        dist = self.action_head(features)
+        action, log_prob = dist.sample_and_log_prob(key)
 
         return state, action, value, log_prob.sum().squeeze()
 

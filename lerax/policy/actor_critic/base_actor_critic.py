@@ -54,7 +54,7 @@ class AbstractStatelessActorCriticPolicy[
 
     @abstractmethod
     def action_and_value(
-        self, observation: ObsType, *, key: Key | None = None
+        self, observation: ObsType, *, key: Key
     ) -> tuple[ActType, Float[Array, ""], Float[Array, ""]]:
         """
         Get an action and value from an observation.
@@ -108,7 +108,7 @@ class AbstractStatefulActorCriticPolicy[
 
     @abstractmethod
     def action_and_value(
-        self, state: StateType, observation: ObsType, *, key: Key | None = None
+        self, state: StateType, observation: ObsType, *, key: Key
     ) -> tuple[StateType, ActType, Float[Array, ""], Float[Array, ""]]:
         """
         Get an action and value from an observation.
@@ -153,11 +153,7 @@ class ActorCriticStatefulWrapper[
         return state, self.policy(observation, key=key)
 
     def action_and_value(
-        self,
-        state: NullStatefulPolicyState,
-        observation: ObsType,
-        *,
-        key: Key | None = None,
+        self, state: NullStatefulPolicyState, observation: ObsType, *, key: Key
     ) -> tuple[NullStatefulPolicyState, ActType, Float[Array, ""], Float[Array, ""]]:
         return state, *self.policy.action_and_value(observation, key=key)
 
