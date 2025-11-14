@@ -134,8 +134,6 @@ class GymnaxToLeraxEnv(AbstractEnv[GymnaxEnvState, Array, Array]):
             "Default renderer not implemented for GymnaxToLeraxEnv."
         )
 
-    def close(self): ...
-
     @property
     def name(self) -> str:
         return f"GymnaxToLeraxEnv({self.env.name})"

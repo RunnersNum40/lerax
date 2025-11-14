@@ -75,6 +75,3 @@ class AbstractClassicControlEnv[
         next_state: StateType,
     ) -> dict:
         return {}
-
-    def close(self) -> None:
-        pass

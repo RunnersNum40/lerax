@@ -96,10 +96,6 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType](eqx.Mod
         """Render multiple frames from stacked states"""
         self.render_states(unstack_pytree(states), renderer, dt)
 
-    @abstractmethod
-    def close(self):
-        """Close the environment"""
-
     @property
     @abstractmethod
     def unwrapped(self) -> AbstractEnv:

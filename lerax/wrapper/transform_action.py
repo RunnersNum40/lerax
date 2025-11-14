@@ -73,9 +73,6 @@ class AbstractPureTransformActionWrapper[
     ) -> dict:
         return self.env.transition_info(state, self.func(action), next_state)
 
-    def close(self):
-        return self.env.close()
-
 
 class TransformAction[
     WrapperActType, StateType: AbstractEnvLikeState, ActType, ObsType

@@ -57,9 +57,6 @@ class AbstractPureObservationWrapper[
     ) -> dict:
         return self.env.transition_info(state, action, next_state)
 
-    def close(self):
-        return self.env.close()
-
 
 class TransformObservation[
     WrapperObsType, StateType: AbstractEnvLikeState, ActType, ObsType

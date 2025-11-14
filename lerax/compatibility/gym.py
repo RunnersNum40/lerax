@@ -231,5 +231,4 @@ class LeraxToGymEnv[StateType: AbstractEnvState](gym.Env):
     def render(self):
         raise NotImplementedError("Rendering not implemented for LeraxToGymEnv")
 
-    def close(self):
-        self.env.close()
+    def close(self): ...

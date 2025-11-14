@@ -51,9 +51,6 @@ class AbstractPureTransformRewardWrapper[
     ) -> dict:
         return self.env.transition_info(state, action, next_state)
 
-    def close(self):
-        return self.env.close()
-
 
 class ClipReward[StateType: AbstractEnvLikeState, ActType, ObsType](
     AbstractPureTransformRewardWrapper[StateType, ActType, ObsType]

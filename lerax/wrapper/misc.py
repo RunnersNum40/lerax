@@ -58,9 +58,6 @@ class Identity[StateType: AbstractEnvLikeState, ActType, ObsType](
     ) -> dict:
         return self.env.transition_info(state, action, next_state)
 
-    def close(self):
-        return self.env.close()
-
 
 class TimeLimitState[StateType: AbstractEnvLikeState](AbstractWrapperState):
     env_state: StateType
@@ -136,6 +133,3 @@ class TimeLimit[StateType: AbstractEnvLikeState, ActType, ObsType](
         next_state: TimeLimitState[StateType],
     ) -> dict:
         return self.env.transition_info(state.env_state, action, next_state.env_state)
-
-    def close(self):
-        self.env.close()
