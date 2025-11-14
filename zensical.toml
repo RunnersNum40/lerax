@@ -6,6 +6,10 @@ repo_name = "RunnersNum40/lerax"
 site_description = "Lerax Library Documentation"
 site_author = "Theodore Pinkerton"
 copyright = "&copy; 2025 Theodore Pinkerton"
+extra_css = ["stylesheets/extra.css"]
+
+[project.extra.status]
+draft = "Draft"
 
 [project.theme]
 # favicon =
@@ -15,18 +19,17 @@ features = [
   "content.code.annotate",
   "content.code.copy",
   "content.code.select",
+  "content.code.annotate",
   "content.footnote.tooltips",
   "content.tabs.link",
   "content.tooltips",
   "header.autohide",
-  "navigation.footer",
   "navigation.indexes",
   "navigation.instant",
   "navigation.instant.prefetch",
   "navigation.path",
   "navigation.prune",
   "navigation.sections",
-  "navigation.tabs",
   "navigation.tracking",
   "search.highlight",
   "toc.follow",
@@ -48,3 +51,16 @@ toggle.name = "Switch to light mode"
 [project.theme.icon]
 logo = "lucide/book-x"
 repo = "fontawesome/brands/github"
+
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+
+[project.markdown_extensions.pymdownx.inlinehilite]
+
+[project.markdown_extensions.pymdownx.snippets]
+
+[project.markdown_extensions.pymdownx.superfences]
+
+[project.markdown_extensions.footnotes]
