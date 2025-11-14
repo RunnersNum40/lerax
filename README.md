@@ -66,7 +66,7 @@ Check out the [Gymnasium wrapper](lerax/compatibility/gym.py) for how to wrap Gy
 - Documentation
   - Standardize docstring formats
   - Write documentation for all public APIs
-  - Publish docs
+  - Add API to docs when Zensical supports it
 - Testing
   - Unit testing
   - Integration testing
