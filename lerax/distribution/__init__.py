@@ -10,14 +10,12 @@ from .base_distribution import (
     AbstractMaskableDistribution,
     AbstractTransformedDistribution,
 )
-from .distributions import (
-    Bernoulli,
-    Categorical,
-    MultivariateNormalDiag,
-    Normal,
-    SquashedMultivariateNormalDiag,
-    SquashedNormal,
-)
+from .bernoulli import Bernoulli
+from .categorical import Categorical
+from .multivariate_normal import MultivariateNormalDiag
+from .normal import Normal
+from .squashed_multivariate_normal import SquashedMultivariateNormalDiag
+from .squashed_normal import SquashedNormal
 
 __all__ = [
     "AbstractDistribution",
