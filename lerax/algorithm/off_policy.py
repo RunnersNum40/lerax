@@ -50,8 +50,9 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
             reward_key,
             terminal_key,
             next_observation_key,
-            reset_key,
-        ) = jr.split(key, 7)
+            env_reset_key,
+            policy_reset_key,
+        ) = jr.split(key, 8)
 
         observation = env.observation(carry.env_state, key=observation_key)
         next_policy_state, action = policy(
@@ -71,11 +72,11 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
         next_observation = env.observation(next_env_state, key=next_observation_key)
 
         next_env_state = lax.cond(
-            done, lambda: env.initial(key=reset_key), lambda: next_env_state
+            done, lambda: env.initial(key=env_reset_key), lambda: next_env_state
         )
 
         next_policy_state = lax.cond(
-            done, lambda: policy.reset(), lambda: next_policy_state
+            done, lambda: policy.reset(key=policy_reset_key), lambda: next_policy_state
         )
 
         return StepCarry(

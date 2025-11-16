@@ -3,6 +3,7 @@ from __future__ import annotations
 import equinox as eqx
 import optax
 from jax import numpy as jnp
+from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key, Scalar, ScalarLike
 from rich import progress, text
 from tensorboardX import SummaryWriter
@@ -44,8 +45,9 @@ class StepCarry[PolicyType: AbstractStatefulPolicy](eqx.Module):
 
     @classmethod
     def initial(cls, env: AbstractEnvLike, policy: PolicyType, key: Key) -> StepCarry:
-        env_state = env.initial(key=key)
-        policy_state = policy.reset()
+        env_key, policy_key = jr.split(key, 2)
+        env_state = env.initial(key=env_key)
+        policy_state = policy.reset(key=policy_key)
         return cls(env_state, policy_state, EpisodeStats.initial())
 
 

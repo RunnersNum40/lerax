@@ -112,7 +112,7 @@ class NCDEActorCriticPolicy[
         )
         return NCDEPolicyState(t=t_next, cde=cde_state), y
 
-    def reset(self) -> NCDEPolicyState:
+    def reset(self, *, key: Key) -> NCDEPolicyState:
         return NCDEPolicyState(t=jnp.array(0.0), cde=self.encoder.reset())
 
     def __call__(

@@ -52,7 +52,7 @@ class AbstractStatefulPolicy[StateType: AbstractPolicyState, ActType, ObsType](
         pass
 
     @abstractmethod
-    def reset(self) -> StateType:
+    def reset(self, *, key: Key) -> StateType:
         pass
 
     def into_stateful[SelfType: AbstractStatefulPolicy](self: SelfType) -> SelfType:
@@ -90,5 +90,5 @@ class AbstractStatefulWrapper[PolicyType: AbstractStatelessPolicy, ActType, ObsT
         action = self.policy(observation, key=key)
         return NullStatefulPolicyState(), action
 
-    def reset(self) -> NullStatefulPolicyState:
+    def reset(self, *, key: Key) -> NullStatefulPolicyState:
         return NullStatefulPolicyState()

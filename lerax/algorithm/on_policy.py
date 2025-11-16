@@ -58,8 +58,9 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
             reward_key,
             terminal_key,
             bootstrap_key,
-            reset_key,
-        ) = jr.split(key, 7)
+            env_reset_key,
+            policy_reset_key,
+        ) = jr.split(key, 8)
 
         observation = env.observation(carry.env_state, key=observation_key)
         next_policy_state, action, value, log_prob = policy.action_and_value(
@@ -87,12 +88,12 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
 
         # Reset environment if done
         next_env_state = lax.cond(
-            done, lambda: env.initial(key=reset_key), lambda: next_env_state
+            done, lambda: env.initial(key=env_reset_key), lambda: next_env_state
         )
 
         # Reset policy state if done
         next_policy_state = lax.cond(
-            done, lambda: policy.reset(), lambda: next_policy_state
+            done, lambda: policy.reset(key=policy_reset_key), lambda: next_policy_state
         )
 
         return (
