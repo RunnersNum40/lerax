@@ -3,6 +3,8 @@
 Lerax is a reinforcement learning library built on top of Jax, designed to facilitate the creation, training, and evaluation of RL agents in a fully JITable manner.
 It provides modular components for building custom environments, policies, and training algorithms.
 
+Built on top of [Jax](https://docs.jax.dev/en/latest/index.html), [Equinox](https://docs.kidger.site/equinox/), and [Diffrax](https://docs.kidger.site/diffrax/).
+
 ## Installation
 
 ```bash
