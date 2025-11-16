@@ -27,7 +27,6 @@ from .utils import (
 class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
     AbstractAlgorithm[PolicyType]
 ):
-    buffer_size: eqx.AbstractVar[int]
     optimizer: eqx.AbstractVar[optax.GradientTransformation]
 
     gamma: eqx.AbstractVar[float]
@@ -62,8 +61,8 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
         next_env_state = env.transition(carry.env_state, action, key=transition_key)
 
         reward = env.reward(carry.env_state, action, next_env_state, key=reward_key)
-        termination = env.terminal(carry.env_state, key=terminal_key)
-        truncation = env.truncate(carry.env_state)
+        termination = env.terminal(next_env_state, key=terminal_key)
+        truncation = env.truncate(next_env_state)
         done = termination | truncation
         timeout = truncation & ~termination
 
@@ -150,7 +149,7 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
         )
 
         if progress_bar is not None:
-            progress_bar.update(self.num_envs * self.num_steps)
+            progress_bar.update(advance=self.num_envs * self.num_steps)
 
         if tb_writer is not None:
             first_step = carry.iteration_count * self.num_steps * self.num_envs
@@ -162,15 +161,3 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
             tb_writer.log_episode_stats(episode_stats, first_step=first_step)
 
         return IterationCarry(carry.iteration_count + 1, step_carry, policy, opt_state)
-
-    def learn(
-        self,
-        env: AbstractEnvLike,
-        policy: PolicyType,
-        total_timesteps: int,
-        *,
-        key: Key,
-        show_progress_bar: bool = False,
-        tb_log: str | bool = False,
-    ) -> PolicyType:
-        raise NotImplementedError
