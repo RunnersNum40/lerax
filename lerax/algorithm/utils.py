@@ -1,15 +1,11 @@
 from __future__ import annotations
 
 import equinox as eqx
-import optax
 from jax import numpy as jnp
-from jax import random as jr
-from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key, Scalar, ScalarLike
+from jaxtyping import Array, ArrayLike, Bool, Float, Int, Scalar, ScalarLike
 from rich import progress, text
 from tensorboardX import SummaryWriter
 
-from lerax.env import AbstractEnvLike, AbstractEnvLikeState
-from lerax.policy import AbstractPolicyState, AbstractStatefulPolicy
 from lerax.utils import (
     callback_with_list_wrapper,
     callback_with_numpy_wrapper,
@@ -36,26 +32,6 @@ class EpisodeStats(eqx.Module):
             self.episode_length * (1 - self.episode_done.astype(int)) + 1,
             done,
         )
-
-
-class StepCarry[PolicyType: AbstractStatefulPolicy](eqx.Module):
-    env_state: AbstractEnvLikeState
-    policy_state: AbstractPolicyState
-    episode_stats: EpisodeStats
-
-    @classmethod
-    def initial(cls, env: AbstractEnvLike, policy: PolicyType, key: Key) -> StepCarry:
-        env_key, policy_key = jr.split(key, 2)
-        env_state = env.initial(key=env_key)
-        policy_state = policy.reset(key=policy_key)
-        return cls(env_state, policy_state, EpisodeStats.initial())
-
-
-class IterationCarry[PolicyType: AbstractStatefulPolicy](eqx.Module):
-    iteration_count: Int[Array, ""]
-    step_carry: StepCarry[PolicyType]
-    policy: PolicyType
-    opt_state: optax.OptState
 
 
 class JITSummaryWriter:

@@ -3,28 +3,47 @@ from __future__ import annotations
 from abc import abstractmethod
 
 import equinox as eqx
+import jax
 import optax
 from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Key, Scalar
+from jaxtyping import Array, Int, Key, Scalar
 
 from lerax.buffer import RolloutBuffer
-from lerax.env import AbstractEnvLike
-from lerax.policy import AbstractActorCriticPolicy, AbstractStatefulActorCriticPolicy
+from lerax.env import AbstractEnvLike, AbstractEnvLikeState
+from lerax.policy import (
+    AbstractPolicyState,
+    AbstractStatefulActorCriticPolicy,
+    AbstractStatefulPolicy,
+)
 from lerax.utils import filter_scan
 
-from .base_algorithm import AbstractAlgorithm
-from .utils import (
-    EpisodeStats,
-    IterationCarry,
-    JITProgressBar,
-    JITSummaryWriter,
-    StepCarry,
-)
+from .base_algorithm import AbstractAlgorithm, AbstractIterationCarry, AbstractStepCarry
+from .utils import EpisodeStats, JITProgressBar, JITSummaryWriter
 
 
-class AbstractOnPolicyAlgorithm(AbstractAlgorithm[AbstractActorCriticPolicy]):
+class StepCarry[PolicyType: AbstractStatefulPolicy](AbstractStepCarry):
+    env_state: AbstractEnvLikeState
+    policy_state: AbstractPolicyState
+    episode_stats: EpisodeStats
+
+    @classmethod
+    def initial(cls, env: AbstractEnvLike, policy: PolicyType, key: Key) -> StepCarry:
+        env_key, policy_key = jr.split(key, 2)
+        env_state = env.initial(key=env_key)
+        policy_state = policy.reset(key=policy_key)
+        return cls(env_state, policy_state, EpisodeStats.initial())
+
+
+class IterationCarry[PolicyType: AbstractStatefulPolicy](AbstractIterationCarry):
+    iteration_count: Int[Array, ""]
+    step_carry: StepCarry[PolicyType]
+    policy: PolicyType
+    opt_state: optax.OptState
+
+
+class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
     """
     Base class for on-policy algorithms.
 
@@ -144,6 +163,27 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm[AbstractActorCriticPolicy]):
         key: Key,
     ) -> tuple[AbstractStatefulActorCriticPolicy, optax.OptState, dict[str, Scalar]]:
         """Train the policy using the rollout buffer."""
+
+    def init_iteration_carry[A: AbstractStatefulPolicy](
+        self,
+        env: AbstractEnvLike,
+        policy: A,
+        *,
+        key: Key,
+    ) -> IterationCarry[A]:
+        if self.num_envs == 1:
+            step_carry = StepCarry.initial(env, policy, key)
+        else:
+            step_carry = jax.vmap(StepCarry.initial, in_axes=(None, None, 0))(
+                env, policy, jr.split(key, self.num_envs)
+            )
+
+        return IterationCarry(
+            jnp.array(0, dtype=int),
+            step_carry,
+            policy,
+            self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array)),
+        )
 
     def iteration(
         self,

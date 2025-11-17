@@ -3,30 +3,52 @@ from __future__ import annotations
 from abc import abstractmethod
 
 import equinox as eqx
+import jax
 import optax
 from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Key, Scalar
+from jaxtyping import Array, Int, Key, Scalar
 
 from lerax.buffer import ReplayBuffer
-from lerax.env import AbstractEnvLike
-from lerax.policy import AbstractPolicy, AbstractStatefulPolicy
+from lerax.env import AbstractEnvLike, AbstractEnvLikeState
+from lerax.policy import AbstractPolicyState, AbstractStatefulPolicy
 from lerax.utils import filter_scan
 
-from .base_algorithm import AbstractAlgorithm
-from .utils import (
-    EpisodeStats,
-    IterationCarry,
-    JITProgressBar,
-    JITSummaryWriter,
-    StepCarry,
-)
+from .base_algorithm import AbstractAlgorithm, AbstractIterationCarry, AbstractStepCarry
+from .utils import EpisodeStats, JITProgressBar, JITSummaryWriter
 
 
-class AbstractOffPolicyAlgorithm(AbstractAlgorithm[AbstractPolicy]):
+class StepCarry[PolicyType: AbstractStatefulPolicy](AbstractStepCarry):
+    env_state: AbstractEnvLikeState
+    policy_state: AbstractPolicyState
+    episode_stats: EpisodeStats
+    buffer: ReplayBuffer
+
+    @classmethod
+    def initial(
+        cls, size: int, env: AbstractEnvLike, policy: PolicyType, key: Key
+    ) -> StepCarry:
+        env_key, policy_key = jr.split(key, 2)
+        env_state = env.initial(key=env_key)
+        policy_state = policy.reset(key=policy_key)
+        buffer = ReplayBuffer(
+            size, env.observation_space, env.action_space, policy_state
+        )
+        return cls(env_state, policy_state, EpisodeStats.initial(), buffer)
+
+
+class IterationCarry[PolicyType: AbstractStatefulPolicy](AbstractIterationCarry):
+    iteration_count: Int[Array, ""]
+    step_carry: StepCarry[PolicyType]
+    policy: PolicyType
+    opt_state: optax.OptState
+
+
+class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
     optimizer: eqx.AbstractVar[optax.GradientTransformation]
 
+    buffer_size: eqx.AbstractVar[int]
     gamma: eqx.AbstractVar[float]
 
     num_envs: eqx.AbstractVar[int]
@@ -39,7 +61,7 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm[AbstractPolicy]):
         policy: AbstractStatefulPolicy,
         carry: StepCarry,
         key: Key,
-    ) -> tuple[StepCarry, ReplayBuffer]:
+    ) -> StepCarry:
         (
             action_key,
             transition_key,
@@ -63,10 +85,9 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm[AbstractPolicy]):
         truncation = env.truncate(next_env_state)
         done = termination | truncation
         timeout = truncation & ~termination
+        next_observation = env.observation(next_env_state, key=next_observation_key)
 
         next_episode_stats = carry.episode_stats.next(reward, done)
-
-        next_observation = env.observation(next_env_state, key=next_observation_key)
 
         next_env_state = lax.cond(
             done, lambda: env.initial(key=env_reset_key), lambda: next_env_state
@@ -76,16 +97,18 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm[AbstractPolicy]):
             done, lambda: policy.reset(key=policy_reset_key), lambda: next_policy_state
         )
 
+        replay_buffer = carry.buffer.add(
+            observation,
+            next_observation,
+            action,
+            reward,
+            done,
+            timeout,
+            carry.policy_state,
+        )
+
         return StepCarry(
-            next_env_state, next_policy_state, next_episode_stats
-        ), ReplayBuffer(
-            observations=observation,
-            next_observations=next_observation,
-            actions=action,
-            rewards=reward,
-            dones=done,
-            timeouts=timeout,
-            states=carry.policy_state,
+            next_env_state, next_policy_state, next_episode_stats, replay_buffer
         )
 
     def collect_rollout(
@@ -94,18 +117,16 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm[AbstractPolicy]):
         policy: AbstractStatefulPolicy,
         carry: StepCarry,
         key: Key,
-    ) -> tuple[StepCarry, ReplayBuffer, EpisodeStats]:
-        def scan_step(
-            carry: StepCarry, key: Key
-        ) -> tuple[StepCarry, tuple[ReplayBuffer, EpisodeStats]]:
-            carry, buffer = self.step(env, policy, carry, key)
-            return carry, (buffer, carry.episode_stats)
+    ) -> tuple[StepCarry, EpisodeStats]:
+        def scan_step(carry: StepCarry, key: Key) -> tuple[StepCarry, EpisodeStats]:
+            carry = self.step(env, policy, carry, key)
+            return carry, carry.episode_stats
 
-        carry, (replay_buffer, episode_stats) = filter_scan(
+        carry, episode_stats = filter_scan(
             scan_step, carry, jr.split(key, self.num_steps)
         )
 
-        return carry, replay_buffer, episode_stats
+        return carry, episode_stats
 
     @abstractmethod
     def train[WrapperPolicyType: AbstractStatefulPolicy](
@@ -118,6 +139,27 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm[AbstractPolicy]):
     ) -> tuple[WrapperPolicyType, optax.OptState, dict[str, Scalar]]:
         """Trains the policy using data from the replay buffer."""
 
+    def init_iteration_carry[A: AbstractStatefulPolicy](
+        self,
+        env: AbstractEnvLike,
+        policy: A,
+        *,
+        key: Key,
+    ) -> IterationCarry[A]:
+        if self.num_envs == 1:
+            step_carry = StepCarry.initial(self.buffer_size, env, policy, key)
+        else:
+            step_carry = jax.vmap(StepCarry.initial, in_axes=(None, None, None, 0))(
+                self.buffer_size, env, policy, jr.split(key, self.num_envs)
+            )
+
+        return IterationCarry(
+            jnp.array(0, dtype=int),
+            step_carry,
+            policy,
+            self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array)),
+        )
+
     def iteration[WrapperPolicyType: AbstractStatefulPolicy](
         self,
         env: AbstractEnvLike,
@@ -129,11 +171,11 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm[AbstractPolicy]):
     ) -> IterationCarry[WrapperPolicyType]:
         rollout_key, train_key = jr.split(key, 2)
         if self.num_steps == 1:
-            step_carry, replay_buffer, episode_stats = self.collect_rollout(
+            step_carry, episode_stats = self.collect_rollout(
                 env, carry.policy, carry.step_carry, key=rollout_key
             )
         else:
-            step_carry, replay_buffer, episode_stats = eqx.filter_vmap(
+            step_carry, episode_stats = eqx.filter_vmap(
                 self.collect_rollout, in_axes=(None, None, 0, 0)
             )(
                 env,
@@ -143,7 +185,7 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm[AbstractPolicy]):
             )
 
         policy, opt_state, log = self.train(
-            carry.policy, carry.opt_state, replay_buffer, key=train_key
+            carry.policy, carry.opt_state, carry.step_carry.buffer, key=train_key
         )
 
         if progress_bar is not None:

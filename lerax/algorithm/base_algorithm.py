@@ -4,20 +4,31 @@ from abc import abstractmethod
 from datetime import datetime
 
 import equinox as eqx
-import jax
 import optax
-from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Key
+from jaxtyping import Array, Int, Key
 
-from lerax.env import AbstractEnvLike
-from lerax.policy import AbstractPolicy, AbstractStatefulPolicy
+from lerax.env import AbstractEnvLike, AbstractEnvLikeState
+from lerax.policy import AbstractPolicy, AbstractPolicyState, AbstractStatefulPolicy
 from lerax.utils import filter_scan
 
-from .utils import IterationCarry, JITProgressBar, JITSummaryWriter, StepCarry
+from .utils import EpisodeStats, JITProgressBar, JITSummaryWriter
 
 
-class AbstractAlgorithm[PolicyType: AbstractPolicy](eqx.Module):
+class AbstractStepCarry(eqx.Module):
+    env_state: AbstractEnvLikeState
+    policy_state: AbstractPolicyState
+    episode_stats: EpisodeStats
+
+
+class AbstractIterationCarry[PolicyType: AbstractStatefulPolicy](eqx.Module):
+    iteration_count: Int[Array, ""]
+    step_carry: AbstractStepCarry
+    policy: PolicyType
+    opt_state: optax.OptState
+
+
+class AbstractAlgorithm(eqx.Module):
     """Base class for RL algorithms."""
 
     optimizer: eqx.AbstractVar[optax.GradientTransformation]
@@ -25,26 +36,15 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy](eqx.Module):
     num_envs: eqx.AbstractVar[int]
     num_steps: eqx.AbstractVar[int]
 
+    @abstractmethod
     def init_iteration_carry[A: AbstractStatefulPolicy](
         self,
         env: AbstractEnvLike,
         policy: A,
         *,
         key: Key,
-    ) -> IterationCarry[A]:
-        if self.num_envs == 1:
-            step_carry = StepCarry.initial(env, policy, key)
-        else:
-            step_carry = jax.vmap(StepCarry.initial, in_axes=(None, None, 0))(
-                env, policy, jr.split(key, self.num_envs)
-            )
-
-        return IterationCarry(
-            jnp.array(0, dtype=int),
-            step_carry,
-            policy,
-            self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array)),
-        )
+    ) -> AbstractIterationCarry[A]:
+        """Return the initial carry for the training iteration."""
 
     def init_tensorboard(
         self,
@@ -76,15 +76,15 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy](eqx.Module):
             return None
 
     @abstractmethod
-    def iteration[A: AbstractStatefulPolicy](
+    def iteration(
         self,
         env: AbstractEnvLike,
-        carry: IterationCarry[A],
+        carry,  # Generic typing, eugh :(
         *,
         key: Key,
         progress_bar: JITProgressBar | None,
         tb_writer: JITSummaryWriter | None,
-    ) -> IterationCarry[A]:
+    ) -> AbstractIterationCarry:
         """Perform a single iteration of training."""
 
     @eqx.filter_jit
@@ -102,7 +102,7 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy](eqx.Module):
         carry = self.init_iteration_carry(env, policy, key=init_key)
         num_iterations = total_timesteps // (self.num_steps * self.num_envs)
 
-        def scan_iteration(carry: tuple[IterationCarry, Key], _):
+        def scan_iteration(carry: tuple[AbstractIterationCarry, Key], _):
             it_carry, key = carry
             iter_key, next_key = jr.split(key, 2)
             it_carry = self.iteration(
@@ -121,16 +121,16 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy](eqx.Module):
         return carry.policy
 
     # TODO: Add support for callbacks
-    def learn(
+    def learn[A: AbstractPolicy](
         self,
         env: AbstractEnvLike,
-        policy: PolicyType,
+        policy: A,
         total_timesteps: int,
         *,
         key: Key,
         show_progress_bar: bool = False,
         tb_log: str | bool = False,
-    ) -> PolicyType:
+    ) -> A:
         progress_bar = self.init_progress_bar(
             env, policy, total_timesteps, show_progress_bar
         )

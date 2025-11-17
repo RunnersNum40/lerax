@@ -21,7 +21,8 @@ def step(env_state, key):
         key, 5
     )
 
-    action = policy(env.observation(env_state, key=observation_key), key=action_key)
+    observation = env.observation(env_state, key=observation_key)
+    action = policy(observation, key=action_key)
     env_state = env.transition(env_state, action, key=transition_key)
     termination = env.terminal(env_state, key=terminal_key)
     truncation = env.truncate(env_state)
