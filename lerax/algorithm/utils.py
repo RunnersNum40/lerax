@@ -245,3 +245,6 @@ class JITProgressBar:
             visible=visible,
             refresh=refresh,
         )
+
+    def __del__(self):
+        self.progress_bar.stop()
