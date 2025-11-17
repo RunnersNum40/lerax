@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from functools import partial
 
 import equinox as eqx
 import jax
@@ -51,10 +52,7 @@ class AbstractBuffer(eqx.Module):
 
         indices = indices.reshape(-1, batch_size)
 
-        return jax.tree.map(
-            lambda x: jnp.take(x, indices, axis=0) if isinstance(x, jnp.ndarray) else x,
-            flat_self,
-        )
+        return jax.tree.map(partial(jnp.take, indices=indices, axis=0), flat_self)
 
     @property
     @abstractmethod
