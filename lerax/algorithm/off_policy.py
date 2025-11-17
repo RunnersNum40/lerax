@@ -24,9 +24,7 @@ from .utils import (
 )
 
 
-class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
-    AbstractAlgorithm[PolicyType]
-):
+class AbstractOffPolicyAlgorithm(AbstractAlgorithm[AbstractPolicy]):
     optimizer: eqx.AbstractVar[optax.GradientTransformation]
 
     gamma: eqx.AbstractVar[float]

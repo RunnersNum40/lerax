@@ -11,11 +11,7 @@ from jax import random as jr
 from jaxtyping import Key
 
 from lerax.env import AbstractEnvLike
-from lerax.policy import (
-    AbstractPolicy,
-    AbstractStatefulPolicy,
-    AbstractStatelessPolicy,
-)
+from lerax.policy import AbstractPolicy, AbstractStatefulPolicy
 from lerax.utils import filter_scan
 
 from .utils import IterationCarry, JITProgressBar, JITSummaryWriter, StepCarry
@@ -29,13 +25,13 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy](eqx.Module):
     num_envs: eqx.AbstractVar[int]
     num_steps: eqx.AbstractVar[int]
 
-    def init_iteration_carry[WrappedPolicyType: AbstractStatefulPolicy](
+    def init_iteration_carry[A: AbstractStatefulPolicy](
         self,
         env: AbstractEnvLike,
-        policy: WrappedPolicyType,
+        policy: A,
         *,
         key: Key,
-    ) -> IterationCarry[WrappedPolicyType]:
+    ) -> IterationCarry[A]:
         if self.num_envs == 1:
             step_carry = StepCarry.initial(env, policy, key)
         else:
@@ -80,16 +76,49 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy](eqx.Module):
             return None
 
     @abstractmethod
-    def iteration[WrappedPolicyType: AbstractStatefulPolicy](
+    def iteration[A: AbstractStatefulPolicy](
         self,
         env: AbstractEnvLike,
-        carry: IterationCarry[WrappedPolicyType],
+        carry: IterationCarry[A],
         *,
         key: Key,
         progress_bar: JITProgressBar | None,
         tb_writer: JITSummaryWriter | None,
-    ) -> IterationCarry[WrappedPolicyType]:
+    ) -> IterationCarry[A]:
         """Perform a single iteration of training."""
+
+    @eqx.filter_jit
+    def _learn[A: AbstractStatefulPolicy](
+        self,
+        env: AbstractEnvLike,
+        policy: A,
+        total_timesteps: int,
+        *,
+        key: Key,
+        progress_bar: JITProgressBar | None,
+        tb_writer: JITSummaryWriter | None,
+    ) -> A:
+        init_key, learn_key = jr.split(key, 2)
+        carry = self.init_iteration_carry(env, policy, key=init_key)
+        num_iterations = total_timesteps // (self.num_steps * self.num_envs)
+
+        def scan_iteration(carry: tuple[IterationCarry, Key], _):
+            it_carry, key = carry
+            iter_key, next_key = jr.split(key, 2)
+            it_carry = self.iteration(
+                env,
+                it_carry,
+                key=iter_key,
+                progress_bar=progress_bar,
+                tb_writer=tb_writer,
+            )
+            return (it_carry, next_key), None
+
+        (carry, _), _ = filter_scan(
+            scan_iteration, (carry, learn_key), length=num_iterations
+        )
+
+        return carry.policy
 
     # TODO: Add support for callbacks
     def learn(
@@ -102,47 +131,26 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy](eqx.Module):
         show_progress_bar: bool = False,
         tb_log: str | bool = False,
     ) -> PolicyType:
-        if not isinstance(policy, AbstractStatefulPolicy):
-            wrapped_policy = policy.into_stateful()
-        else:
-            wrapped_policy = policy
-
-        init_key, learn_key = jr.split(key, 2)
-
-        carry = self.init_iteration_carry(env, wrapped_policy, key=init_key)
-
         progress_bar = self.init_progress_bar(
-            env, wrapped_policy, total_timesteps, show_progress_bar
+            env, policy, total_timesteps, show_progress_bar
         )
-        tb_writer = self.init_tensorboard(env, wrapped_policy, tb_log)
-        num_iterations = total_timesteps // (self.num_steps * self.num_envs)
+        tb_writer = self.init_tensorboard(env, policy, tb_log)
 
-        @eqx.filter_jit
-        def learn(carry: IterationCarry) -> IterationCarry:
-            def scan_iteration(carry: tuple[IterationCarry, Key], _):
-                it_carry, key = carry
-                iter_key, next_key = jr.split(key, 2)
-                it_carry = self.iteration(
-                    env,
-                    it_carry,
-                    key=iter_key,
-                    progress_bar=progress_bar,
-                    tb_writer=tb_writer,
-                )
-                return (it_carry, next_key), None
-
-            (carry, _), _ = filter_scan(
-                scan_iteration, (carry, learn_key), length=num_iterations
+        if isinstance(policy, AbstractStatefulPolicy):
+            return self._learn(
+                env,
+                policy,
+                total_timesteps,
+                key=key,
+                progress_bar=progress_bar,
+                tb_writer=tb_writer,
             )
-
-            return carry
-
-        carry = learn(carry)
-
-        if progress_bar is not None:
-            progress_bar.stop()
-
-        if isinstance(policy, AbstractStatelessPolicy):
-            return carry.policy.policy
         else:
-            return carry.policy
+            return self._learn(
+                env,
+                policy.into_stateful(),
+                total_timesteps,
+                key=key,
+                progress_bar=progress_bar,
+                tb_writer=tb_writer,
+            ).into_stateless()

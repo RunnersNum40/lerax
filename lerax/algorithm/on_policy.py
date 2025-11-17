@@ -24,9 +24,7 @@ from .utils import (
 )
 
 
-class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
-    AbstractAlgorithm[PolicyType]
-):
+class AbstractOnPolicyAlgorithm(AbstractAlgorithm[AbstractActorCriticPolicy]):
     """
     Base class for on-policy algorithms.
 
