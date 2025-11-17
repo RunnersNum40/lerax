@@ -12,17 +12,7 @@ class AbstractPolicyState(eqx.Module):
     pass
 
 
-class AbstractPolicy[ActType, ObsType](eqx.Module):
-    name: eqx.AbstractClassVar[str]
-    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
-    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
-
-    @abstractmethod
-    def into_stateful(self) -> AbstractStatefulPolicy:
-        pass
-
-
-class AbstractStatelessPolicy[ActType, ObsType](AbstractPolicy[ActType, ObsType]):
+class AbstractStatelessPolicy[ActType, ObsType](eqx.Module):
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
@@ -39,7 +29,7 @@ class AbstractStatelessPolicy[ActType, ObsType](AbstractPolicy[ActType, ObsType]
 
 
 class AbstractStatefulPolicy[StateType: AbstractPolicyState, ActType, ObsType](
-    AbstractPolicy[ActType, ObsType]
+    eqx.Module
 ):
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
@@ -92,3 +82,9 @@ class AbstractStatefulWrapper[PolicyType: AbstractStatelessPolicy, ActType, ObsT
 
     def reset(self, *, key: Key) -> NullStatefulPolicyState:
         return NullStatefulPolicyState()
+
+    def into_stateless(self) -> PolicyType:
+        return self.policy
+
+
+type AbstractPolicy = AbstractStatelessPolicy | AbstractStatefulPolicy

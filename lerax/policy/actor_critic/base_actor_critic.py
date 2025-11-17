@@ -8,7 +8,6 @@ from jaxtyping import Array, Float, Key
 from lerax.space import AbstractSpace
 
 from ..base_policy import (
-    AbstractPolicy,
     AbstractPolicyState,
     AbstractStatefulPolicy,
     AbstractStatefulWrapper,
@@ -17,18 +16,8 @@ from ..base_policy import (
 )
 
 
-class AbstractActorCriticPolicy[ActType, ObsType](AbstractPolicy[ActType, ObsType]):
-    name: eqx.AbstractClassVar[str]
-    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
-    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
-
-
-class AbstractStatelessActorCriticPolicy[
-    ActType,
-    ObsType,
-](
-    AbstractActorCriticPolicy[ActType, ObsType],
-    AbstractStatelessPolicy[ActType, ObsType],
+class AbstractStatelessActorCriticPolicy[ActType, ObsType](
+    AbstractStatelessPolicy[ActType, ObsType]
 ):
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
@@ -58,10 +47,7 @@ class AbstractStatelessActorCriticPolicy[
 
 class AbstractStatefulActorCriticPolicy[
     StateType: AbstractPolicyState, ActType, ObsType
-](
-    AbstractActorCriticPolicy[ActType, ObsType],
-    AbstractStatefulPolicy[StateType, ActType, ObsType],
-):
+](AbstractStatefulPolicy[StateType, ActType, ObsType]):
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
@@ -114,3 +100,6 @@ class ActorCriticStatefulWrapper[
         self, state: NullStatefulPolicyState, observation: ObsType
     ) -> tuple[NullStatefulPolicyState, Float[Array, ""]]:
         return state, self.policy.value(observation)
+
+
+type AbstractActorCriticPolicy = AbstractStatefulActorCriticPolicy | AbstractStatelessActorCriticPolicy
