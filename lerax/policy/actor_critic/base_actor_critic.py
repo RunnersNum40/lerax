@@ -18,8 +18,6 @@ from ..base_policy import (
 
 
 class AbstractActorCriticPolicy[ActType, ObsType](AbstractPolicy[ActType, ObsType]):
-    """Base class for actor-critic policies."""
-
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
@@ -32,36 +30,15 @@ class AbstractStatelessActorCriticPolicy[
     AbstractActorCriticPolicy[ActType, ObsType],
     AbstractStatelessPolicy[ActType, ObsType],
 ):
-    """
-    Base class for stateless actor-critic policies.
-
-    This class is intended for policies that do not maintain an internal state.
-    Stateless policies can be converted to stateful ones using into_stateful().
-    """
-
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
     @abstractmethod
-    def __call__(self, observation: ObsType, *, key: Key | None = None) -> ActType:
-        """
-        Get an action from an observation.
-
-        If `key` is provided, it will be used for sampling actions, if no key is
-        provided the policy will return the most likely action.
-        """
-
-    @abstractmethod
     def action_and_value(
         self, observation: ObsType, *, key: Key
     ) -> tuple[ActType, Float[Array, ""], Float[Array, ""]]:
-        """
-        Get an action and value from an observation.
-
-        If `key` is provided, it will be used for sampling actions, if no key is
-        provided the policy will return the most likely action.
-        """
+        """Get an action and value from an observation."""
 
     @abstractmethod
     def evaluate_action(
@@ -85,37 +62,15 @@ class AbstractStatefulActorCriticPolicy[
     AbstractActorCriticPolicy[ActType, ObsType],
     AbstractStatefulPolicy[StateType, ActType, ObsType],
 ):
-    """
-    Base class for stateful actor-critic policies.
-
-    This class is intended for policies that maintain an internal state, such as RNNs.
-    """
-
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
 
     @abstractmethod
-    def __call__(
-        self, state: StateType, observation: ObsType, *, key: Key | None = None
-    ) -> tuple[StateType, ActType]:
-        """
-        Get an action from an observation.
-
-        If `key` is provided, it will be used for sampling actions, if no key is
-        provided the policy will return the most likely action.
-        """
-
-    @abstractmethod
     def action_and_value(
         self, state: StateType, observation: ObsType, *, key: Key
     ) -> tuple[StateType, ActType, Float[Array, ""], Float[Array, ""]]:
-        """
-        Get an action and value from an observation.
-
-        If `key` is provided, it will be used for sampling actions, if no key is
-        provided the policy will return the most likely action.
-        """
+        """Get an action and value from an observation."""
 
     @abstractmethod
     def evaluate_action(
@@ -142,15 +97,6 @@ class ActorCriticStatefulWrapper[
 
     def __init__(self, policy: PolicyType):
         self.policy = policy
-
-    def __call__(
-        self,
-        state: NullStatefulPolicyState,
-        observation: ObsType,
-        *,
-        key: Key | None = None,
-    ) -> tuple[NullStatefulPolicyState, ActType]:
-        return state, self.policy(observation, key=key)
 
     def action_and_value(
         self, state: NullStatefulPolicyState, observation: ObsType, *, key: Key

@@ -12,11 +12,7 @@ from .base_buffer import AbstractBuffer
 
 
 class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuffer):
-    """
-    RolloutBuffer used by on-policy algorithms.
-
-    Designed for scans and JIT compilation.
-    """
+    """RolloutBuffer used by on-policy algorithms."""
 
     observations: PyTree[ObsType]
     actions: PyTree[ActType]

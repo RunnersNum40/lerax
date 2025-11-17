@@ -11,18 +11,6 @@ from jax import numpy as jnp
 
 
 # TODO: Consider moving this to a standalone Equinox utilities library
-def clone_state(state: eqx.nn.State) -> eqx.nn.State:
-    """
-    Clone an Equinox state.
-
-    Equinox does not allow reuse of states. Cloning in this way bypasses this restriction.
-    """
-    leaves, treedef = jax.tree.flatten(state)
-    state_clone = jax.tree.unflatten(treedef, leaves)
-    return state_clone
-
-
-# TODO: Consider moving this to a standalone Equinox utilities library
 class _FilterScan(eqx.Module):
 
     @property
@@ -69,12 +57,7 @@ filter_scan = eqx.module_update_wrapper(_FilterScan())
 def callback_wrapper[**InType](
     func: Callable[InType, Any], ordered: bool = False
 ) -> Callable[InType, None]:
-    """
-    Return a JIT‑safe version of *func*.
-
-    :param func: The function to wrap.
-    :param ordered: If True, the callback will be executed in the order of the arguments
-    """
+    """Return a JIT‑safe version of *func*."""
 
     def _callback(*args: InType.args, **kwargs: InType.kwargs) -> None:
         func(*args, **kwargs)
@@ -139,9 +122,7 @@ print_callback = callback_with_list_wrapper(print, ordered=True)
 
 
 def unstack_pytree[T](tree: T, *, axis: int = 0) -> tuple[T]:
-    """
-    Split a stacked pytree along `axis` into a Python list of pytrees.
-    """
+    """Split a stacked pytree along `axis` into a tuple of pytrees with the same structure."""
 
     times = jnp.array(jax.tree.leaves(jax.tree.map(lambda x: x.shape[axis], tree)))
     tree = eqx.error_if(

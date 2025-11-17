@@ -88,7 +88,7 @@ class AbstractStatefulWrapper[PolicyType: AbstractStatelessPolicy, ActType, ObsT
         key: Key | None = None,
     ) -> tuple[NullStatefulPolicyState, ActType]:
         action = self.policy(observation, key=key)
-        return NullStatefulPolicyState(), action
+        return state, action
 
     def reset(self, *, key: Key) -> NullStatefulPolicyState:
         return NullStatefulPolicyState()
