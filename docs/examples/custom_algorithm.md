@@ -6,4 +6,4 @@ status: draft
 
 ## On Policy Algorithm
 
-## Off
+## Off Policy Algorithm
