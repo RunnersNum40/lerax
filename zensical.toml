@@ -27,6 +27,7 @@ features = [
   "navigation.indexes",
   "navigation.instant",
   "navigation.instant.prefetch",
+  "navigation.instant.progress",
   "navigation.path",
   "navigation.prune",
   "navigation.sections",
@@ -51,6 +52,8 @@ toggle.name = "Switch to light mode"
 [project.theme.icon]
 logo = "lucide/book-x"
 repo = "fontawesome/brands/github"
+
+[project.markdown_extensions.attr_list]
 
 [project.markdown_extensions.pymdownx.highlight]
 anchor_linenums = true

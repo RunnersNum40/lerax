@@ -48,7 +48,7 @@ They expose the following methods[^1]:
 ### Custom Policies
 
 Although Lerax provides some out of the box policies, users are encouraged to implement their own policies.
-See [the custom policy guide](./examples/custom_policy) for more information.
+See [the custom policy guide](examples/custom_policy.md){ data-preview } for more information.
 
 ## Acknowledgements
 
