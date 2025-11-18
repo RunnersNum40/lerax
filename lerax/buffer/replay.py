@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import replace
-from functools import partial
-
 import equinox as eqx
 import jax
 from jax import numpy as jnp
@@ -16,7 +13,7 @@ from .base_buffer import AbstractBuffer
 
 
 class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuffer):
-    size: Integer[Array, ""]
+    size: int
     position: Integer[Array, ""]
 
     observations: PyTree[ObsType]
@@ -26,29 +23,32 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuf
     dones: Bool[Array, " capacity"]
     timeouts: Bool[Array, " capacity"]
     states: StateType
+    next_states: StateType
 
     def __init__(
         self,
-        size: Integer[ArrayLike, ""],
+        size: int,
         observation_space: AbstractSpace[ObsType],
         action_space: AbstractSpace[ActType],
         state: StateType,
     ):
-        size_arr = jnp.asarray(size, dtype=int)
-        if size_arr.ndim != 0:
-            raise ValueError("ReplayBuffer size must be a scalar.")
-
-        self.size = size_arr
+        self.size = size
         self.position = jnp.array(0, dtype=int)
 
-        tile = partial(jnp.tile, reps=(self.size,))
-        self.observations = jax.tree.map(tile, observation_space.canonical())
-        self.next_observations = jax.tree.map(tile, observation_space.canonical())
-        self.actions = jax.tree.map(tile, action_space.canonical())
+        def init_leaf(example):
+            arr = jnp.asarray(example)
+            return jnp.broadcast_to(arr, (self.size,) + arr.shape)
+
+        self.observations = jax.tree.map(init_leaf, observation_space.canonical())
+        self.next_observations = jax.tree.map(init_leaf, observation_space.canonical())
+        self.actions = jax.tree.map(init_leaf, action_space.canonical())
+
         self.rewards = jnp.zeros((self.size,), dtype=float)
         self.dones = jnp.zeros((self.size,), dtype=bool)
         self.timeouts = jnp.zeros((self.size,), dtype=bool)
-        self.states = jax.tree.map(tile, state)
+
+        self.states = jax.tree.map(init_leaf, state)
+        self.next_states = jax.tree.map(init_leaf, state)
 
     @property
     def shape(self) -> tuple[int, ...]:
@@ -67,6 +67,7 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuf
         done: Bool[ArrayLike, ""],
         timeout: Bool[ArrayLike, ""],
         state: StateType,
+        next_state: StateType,
     ) -> ReplayBuffer[StateType, ActType, ObsType]:
         reward = jnp.asarray(reward, dtype=float)
         done = jnp.asarray(done, dtype=bool)
@@ -82,29 +83,80 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuf
             set_at_idx, self.next_observations, next_observation
         )
         actions = jax.tree.map(set_at_idx, self.actions, action)
-        states = jax.tree.map(set_at_idx, self.states, state)
-
         rewards = self.rewards.at[idx].set(reward)
         dones = self.dones.at[idx].set(done)
         timeouts = self.timeouts.at[idx].set(timeout)
+        states = jax.tree.map(set_at_idx, self.states, state)
+        next_states = jax.tree.map(set_at_idx, self.next_states, next_state)
 
         new_position = self.position + 1
 
-        return replace(
+        return eqx.tree_at(
+            lambda rb: (
+                rb.position,
+                rb.observations,
+                rb.next_observations,
+                rb.actions,
+                rb.rewards,
+                rb.dones,
+                rb.timeouts,
+                rb.states,
+                rb.next_states,
+            ),
             self,
-            position=new_position,
-            observations=observations,
-            next_observations=next_observations,
-            actions=actions,
-            rewards=rewards,
-            dones=dones,
-            timeouts=timeouts,
-            states=states,
+            (
+                new_position,
+                observations,
+                next_observations,
+                actions,
+                rewards,
+                dones,
+                timeouts,
+                states,
+                next_states,
+            ),
         )
 
-    def sample(
-        self, batch_size: int, *, key: Key
+    def batches(
+        self,
+        batch_size: int,
+        *,
+        key: Key | None = None,
+        batch_axes: tuple[int, ...] | int | None = None,
     ) -> ReplayBuffer[StateType, ActType, ObsType]:
+        _ = eqx.error_if(
+            self.current_size,
+            self.current_size < self.size,
+            "ReplayBuffer.batches assumes the buffer is full.",
+        )
+
+        flat_self = self.flatten_axes(batch_axes)
+
+        total = flat_self.rewards.shape[0]
+        indices = jnp.arange(total) if key is None else jr.permutation(key, total)
+
+        if total % batch_size != 0:
+            total_trim = total - (total % batch_size)
+            indices = indices[:total_trim]
+
+        indices = indices.reshape(-1, batch_size)
+
+        def take_batch(x):
+            if not isinstance(x, jnp.ndarray) or x.ndim == 0:
+                return x
+            return jnp.take(x, indices, axis=0)
+
+        return jax.tree.map(take_batch, flat_self)
+
+    def sample(
+        self,
+        batch_size: int,
+        *,
+        key: Key,
+        batch_axes: tuple[int, ...] | int | None = None,
+    ) -> ReplayBuffer[StateType, ActType, ObsType]:
+        flat_self = self.flatten_axes(batch_axes)
+
         current_size = self.current_size
         current_size = eqx.error_if(
             current_size,
@@ -112,31 +164,17 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuf
             "Cannot sample more elements than are currently stored in the buffer.",
         )
 
-        batch_indices = jr.choice(key, current_size, shape=(batch_size,), replace=False)
+        batch_indices = jr.randint(
+            key, shape=(batch_size,), minval=0, maxval=current_size
+        )
 
-        def take_at_indices(leaf):
-            return jnp.take(leaf, batch_indices, axis=0)
+        def take_sample(x):
+            if not isinstance(x, jnp.ndarray) or x.ndim == 0:
+                return x
+            return jnp.take(x, batch_indices, axis=0)
 
-        observations = jax.tree.map(take_at_indices, self.observations)
-        next_observations = jax.tree.map(take_at_indices, self.next_observations)
-        actions = jax.tree.map(take_at_indices, self.actions)
-        states = jax.tree.map(take_at_indices, self.states)
+        batch = jax.tree.map(take_sample, flat_self)
 
-        rewards = take_at_indices(self.rewards)
-        dones = take_at_indices(self.dones)
-        timeouts = take_at_indices(self.timeouts)
-
-        batch_size_arr = jnp.array(batch_size, dtype=int)
-
-        return replace(
-            self,
-            size=batch_size_arr,
-            position=batch_size_arr,
-            observations=observations,
-            next_observations=next_observations,
-            actions=actions,
-            rewards=rewards,
-            dones=dones,
-            timeouts=timeouts,
-            states=states,
+        return eqx.tree_at(
+            lambda rb: (rb.size, rb.position), batch, (batch_size, batch_size)
         )

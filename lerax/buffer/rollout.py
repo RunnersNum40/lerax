@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import dataclasses
-from functools import partial
 
 import jax
 from jax import lax
@@ -15,8 +14,6 @@ from .base_buffer import AbstractBuffer
 
 
 class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuffer):
-    """RolloutBuffer used by on-policy algorithms."""
-
     observations: PyTree[ObsType]
     actions: PyTree[ActType]
     rewards: Float[Array, " *size"]
@@ -39,12 +36,6 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBu
         returns: Float[ArrayLike, " *size"] | None = None,
         advantages: Float[ArrayLike, " *size"] | None = None,
     ):
-        """
-        Initialize the RolloutBuffer with the given parameters.
-
-        Returns and advantages can be provided, but if not, they will be filled with
-        NaNs.
-        """
         self.observations = observations
         self.actions = actions
         self.rewards = jnp.asarray(rewards, dtype=float)
@@ -92,35 +83,14 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBu
 
         return dataclasses.replace(self, advantages=advantages, returns=returns)
 
-    def batches[SelfType: AbstractBuffer](
-        self: SelfType,
+    def batches(
+        self,
         batch_size: int,
         *,
         key: Key | None = None,
         batch_axes: tuple[int, ...] | int | None = None,
-    ) -> SelfType:
-        ndim = len(self.shape)
-
-        if batch_axes is None:
-            axes = tuple(range(ndim))
-        elif isinstance(batch_axes, int):
-            axes = (batch_axes,)
-        else:
-            axes = tuple(batch_axes)
-
-        axes = tuple(a + ndim if a < 0 else a for a in axes)
-        if len(set(axes)) != len(axes) or any(a < 0 or a >= ndim for a in axes):
-            raise ValueError(f"Invalid batch_axes {batch_axes} for array ndim={ndim}.")
-
-        def flatten_selected(x):
-            moved = jnp.moveaxis(x, axes, tuple(range(len(axes))))
-            lead = 1
-            for i in range(len(axes)):
-                lead *= moved.shape[i]
-
-            return moved.reshape((lead,) + moved.shape[len(axes) :])
-
-        flat_self = jax.tree.map(flatten_selected, self)
+    ) -> RolloutBuffer[StateType, ActType, ObsType]:
+        flat_self = self.flatten_axes(batch_axes)
 
         total = flat_self.rewards.shape[0]
         indices = jnp.arange(total) if key is None else jr.permutation(key, total)
@@ -131,7 +101,26 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBu
 
         indices = indices.reshape(-1, batch_size)
 
-        return jax.tree.map(partial(jnp.take, indices=indices, axis=0), flat_self)
+        return jax.tree.map(lambda x: jnp.take(x, indices, axis=0), flat_self)
+
+    def sample(
+        self,
+        batch_size: int,
+        *,
+        key: Key,
+        batch_axes: tuple[int, ...] | int | None = None,
+    ) -> RolloutBuffer[StateType, ActType, ObsType]:
+        flat_self = self.flatten_axes(batch_axes)
+
+        total = flat_self.rewards.shape[0]
+        if batch_size > total:
+            raise ValueError(
+                f"Cannot sample batch_size={batch_size} from total={total} elements."
+            )
+
+        indices = jr.choice(key, total, shape=(batch_size,), replace=False)
+
+        return jax.tree.map(lambda x: jnp.take(x, indices, axis=0), flat_self)
 
     @property
     def shape(self) -> tuple[int, ...]:
