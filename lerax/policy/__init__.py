@@ -11,6 +11,12 @@ from .base_policy import (
     AbstractStatefulPolicy,
     AbstractStatelessPolicy,
 )
+from .dqn import (
+    AbstractStatefulDQNPolicy,
+    AbstractStatelessDQNPolicy,
+    DQNStatefulWrapper,
+    MLPDQNPolicy,
+)
 from .q import (
     AbstractStatefulQPolicy,
     AbstractStatelessQPolicy,
@@ -32,4 +38,8 @@ __all__ = [
     "AbstractStatefulQPolicy",
     "MLPQPolicy",
     "QStatefulWrapper",
+    "AbstractStatelessDQNPolicy",
+    "AbstractStatefulDQNPolicy",
+    "DQNStatefulWrapper",
+    "MLPDQNPolicy",
 ]
