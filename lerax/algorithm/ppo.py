@@ -63,7 +63,7 @@ class PPO(AbstractOnPolicyAlgorithm):
         self.num_envs = num_envs
         self.num_steps = num_steps
         self.num_epochs = num_epochs
-        self.batch_size = self.num_steps // num_batches
+        self.batch_size = (self.num_steps * self.num_envs) // num_batches
 
         self.clip_coefficient = clip_coefficient
         self.clip_value_loss = clip_value_loss

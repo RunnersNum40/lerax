@@ -170,7 +170,7 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
         tb_writer: JITSummaryWriter | None,
     ) -> IterationCarry[WrapperPolicyType]:
         rollout_key, train_key = jr.split(key, 2)
-        if self.num_steps == 1:
+        if self.num_envs == 1:
             step_carry, episode_stats = self.collect_rollout(
                 env, carry.policy, carry.step_carry, key=rollout_key
             )
@@ -185,7 +185,7 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
             )
 
         policy, opt_state, log = self.train(
-            carry.policy, carry.opt_state, carry.step_carry.buffer, key=train_key
+            carry.policy, carry.opt_state, step_carry.buffer, key=train_key
         )
 
         if progress_bar is not None:

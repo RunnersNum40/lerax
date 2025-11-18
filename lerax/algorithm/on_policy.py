@@ -93,6 +93,7 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
         next_episode_stats = carry.episode_stats.next(reward, done)
 
         # Bootstrap reward if truncated
+        # TODO: Check if a non-branched approach is faster
         reward = lax.cond(
             truncation,
             lambda: reward
