@@ -28,7 +28,7 @@ class StepCarry[PolicyType: AbstractStatefulPolicy](AbstractStepCarry):
     @classmethod
     def initial(
         cls, size: int, env: AbstractEnvLike, policy: PolicyType, key: Key
-    ) -> StepCarry:
+    ) -> StepCarry[PolicyType]:
         env_key, policy_key = jr.split(key, 2)
         env_state = env.initial(key=env_key)
         policy_state = policy.reset(key=policy_key)
@@ -129,14 +129,14 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
         return carry, episode_stats
 
     @abstractmethod
-    def train[WrapperPolicyType: AbstractStatefulPolicy](
+    def train(
         self,
-        policy: WrapperPolicyType,
+        policy: AbstractStatefulPolicy,
         opt_state: optax.OptState,
         buffer: ReplayBuffer,
         *,
         key: Key,
-    ) -> tuple[WrapperPolicyType, optax.OptState, dict[str, Scalar]]:
+    ) -> tuple[AbstractStatefulPolicy, optax.OptState, dict[str, Scalar]]:
         """Trains the policy using data from the replay buffer."""
 
     def init_iteration_carry[A: AbstractStatefulPolicy](
@@ -160,15 +160,15 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
             self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array)),
         )
 
-    def iteration[WrapperPolicyType: AbstractStatefulPolicy](
+    def iteration(
         self,
         env: AbstractEnvLike,
-        carry: IterationCarry[WrapperPolicyType],
+        carry: IterationCarry,
         *,
         key: Key,
         progress_bar: JITProgressBar | None,
         tb_writer: JITSummaryWriter | None,
-    ) -> IterationCarry[WrapperPolicyType]:
+    ) -> IterationCarry:
         rollout_key, train_key = jr.split(key, 2)
         if self.num_envs == 1:
             step_carry, episode_stats = self.collect_rollout(

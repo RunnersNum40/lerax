@@ -29,7 +29,9 @@ class StepCarry[PolicyType: AbstractStatefulPolicy](AbstractStepCarry):
     episode_stats: EpisodeStats
 
     @classmethod
-    def initial(cls, env: AbstractEnvLike, policy: PolicyType, key: Key) -> StepCarry:
+    def initial(
+        cls, env: AbstractEnvLike, policy: PolicyType, key: Key
+    ) -> StepCarry[PolicyType]:
         env_key, policy_key = jr.split(key, 2)
         env_state = env.initial(key=env_key)
         policy_state = policy.reset(key=policy_key)
