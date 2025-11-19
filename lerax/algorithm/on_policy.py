@@ -62,6 +62,10 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
     num_steps: eqx.AbstractVar[int]
     batch_size: eqx.AbstractVar[int]
 
+    @abstractmethod
+    def per_step(self, step_carry: StepCarry) -> StepCarry:
+        """Process the step carry after each step."""
+
     def step(
         self,
         env: AbstractEnvLike,
@@ -142,7 +146,7 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
             carry: StepCarry, key: Key
         ) -> tuple[StepCarry, tuple[RolloutBuffer, EpisodeStats]]:
             carry, rollout = self.step(env, policy, carry, key=key)
-            return carry, (rollout, carry.episode_stats)
+            return self.per_step(carry), (rollout, carry.episode_stats)
 
         carry, (rollout_buffer, episode_stats) = filter_scan(
             scan_step, carry, jr.split(key, self.num_steps)
@@ -188,6 +192,10 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
             self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array)),
         )
 
+    @abstractmethod
+    def per_iteration(self, iteration_carry: IterationCarry) -> IterationCarry:
+        """Process the iteration carry after each iteration."""
+
     def iteration(
         self,
         env: AbstractEnvLike,
@@ -223,4 +231,6 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
             tb_writer.add_dict(log, prefix="train", global_step=final_step)
             tb_writer.log_episode_stats(episode_stats, first_step=first_step)
 
-        return IterationCarry(carry.iteration_count + 1, step_carry, policy, opt_state)
+        return self.per_iteration(
+            IterationCarry(carry.iteration_count + 1, step_carry, policy, opt_state)
+        )

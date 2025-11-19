@@ -76,6 +76,12 @@ class PPO(AbstractOnPolicyAlgorithm):
         clip = optax.clip_by_global_norm(self.max_grad_norm)
         self.optimizer = optax.chain(clip, adam)
 
+    def per_step(self, step_carry):
+        return step_carry
+
+    def per_iteration(self, iteration_carry):
+        return iteration_carry
+
     # Needs to be static so the first argument can be a policy
     # eqx.filter_value_and_grad doesn't support argnums
     @staticmethod
