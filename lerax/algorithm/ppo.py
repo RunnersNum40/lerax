@@ -186,11 +186,11 @@ class PPO(AbstractOnPolicyAlgorithm):
                 AbstractStatefulActorCriticPolicy,
                 optax.OptState,
             ],
-            rb: RolloutBuffer,
+            buffer: RolloutBuffer,
         ):
-            pol, opt_st = carry
-            pol, opt_st, stats = self.train_batch(pol, opt_st, rb)
-            return (pol, opt_st), stats
+            policy, opt_state = carry
+            policy, opt_state, stats = self.train_batch(policy, opt_state, buffer)
+            return (policy, opt_state), stats
 
         (policy, opt_state), stats = filter_scan(
             batch_scan,
@@ -211,28 +211,25 @@ class PPO(AbstractOnPolicyAlgorithm):
         self,
         policy: AbstractStatefulActorCriticPolicy,
         opt_state: optax.OptState,
-        rollout_buffer: RolloutBuffer,
+        buffer: RolloutBuffer,
         *,
         key: Key,
     ) -> tuple[AbstractStatefulActorCriticPolicy, optax.OptState, dict[str, Scalar]]:
         def epoch_scan(
-            carry: tuple[AbstractStatefulActorCriticPolicy, optax.OptState, Key], _
-        ):
-            pol, opt_st, ky = carry
-            epoch_key, next_key = jr.split(ky, 2)
-            pol, opt_st, stats = self.train_epoch(
-                pol, opt_st, rollout_buffer, key=epoch_key
+            carry: tuple[AbstractStatefulActorCriticPolicy, optax.OptState], key: Key
+        ) -> tuple[tuple[AbstractStatefulActorCriticPolicy, optax.OptState], PPOStats]:
+            policy, opt_state = carry
+            policy, opt_state, stats = self.train_epoch(
+                policy, opt_state, buffer, key=key
             )
-            return (pol, opt_st, next_key), stats
+            return (policy, opt_state), stats
 
         (policy, opt_state, _), stats = filter_scan(
-            epoch_scan, (policy, opt_state, key), length=self.num_epochs
+            epoch_scan, (policy, opt_state, key), jr.split(key, self.num_epochs)
         )
 
         stats = jax.tree.map(jnp.mean, stats)
-        explained_variance = self.explained_variance(
-            rollout_buffer.returns, rollout_buffer.values
-        )
+        explained_variance = self.explained_variance(buffer.returns, buffer.values)
         log = {
             "approx_kl": stats.approx_kl,
             "loss": stats.total_loss,

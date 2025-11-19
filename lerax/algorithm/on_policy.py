@@ -161,7 +161,7 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
         self,
         policy: AbstractStatefulActorCriticPolicy,
         opt_state: optax.OptState,
-        rollout_buffer: RolloutBuffer,
+        buffer: RolloutBuffer,
         *,
         key: Key,
     ) -> tuple[AbstractStatefulActorCriticPolicy, optax.OptState, dict[str, Scalar]]:
