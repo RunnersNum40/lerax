@@ -50,6 +50,7 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
 
     buffer_size: eqx.AbstractVar[int]
     gamma: eqx.AbstractVar[float]
+    learning_starts: eqx.AbstractVar[int]
 
     num_envs: eqx.AbstractVar[int]
     num_steps: eqx.AbstractVar[int]
@@ -111,6 +112,21 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
             next_env_state, next_policy_state, next_episode_stats, replay_buffer
         )
 
+    def collect_learning_starts(
+        self,
+        env: AbstractEnvLike,
+        policy: AbstractStatefulPolicy,
+        carry: StepCarry,
+        key: Key,
+    ) -> StepCarry:
+        def scan_step(carry: StepCarry, key: Key) -> tuple[StepCarry, None]:
+            carry = self.step(env, policy, carry, key)
+            return carry, None
+
+        carry, _ = filter_scan(scan_step, carry, jr.split(key, self.learning_starts))
+
+        return carry
+
     def collect_rollout(
         self,
         env: AbstractEnvLike,
@@ -146,12 +162,19 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
         *,
         key: Key,
     ) -> IterationCarry[A]:
+        init_key, starts_key = jr.split(key, 2)
         if self.num_envs == 1:
-            step_carry = StepCarry.initial(self.buffer_size, env, policy, key)
+            step_carry = StepCarry.initial(self.buffer_size, env, policy, init_key)
+            step_carry = self.collect_learning_starts(
+                env, policy, step_carry, key=starts_key
+            )
         else:
             step_carry = jax.vmap(StepCarry.initial, in_axes=(None, None, None, 0))(
-                self.buffer_size, env, policy, jr.split(key, self.num_envs)
+                self.buffer_size, env, policy, jr.split(init_key, self.num_envs)
             )
+            step_carry = jax.vmap(
+                self.collect_learning_starts, in_axes=(None, None, 0, 0)
+            )(env, policy, step_carry, jr.split(starts_key, self.num_envs))
 
         return IterationCarry(
             jnp.array(0, dtype=int),
@@ -172,7 +195,7 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
         rollout_key, train_key = jr.split(key, 2)
         if self.num_envs == 1:
             step_carry, episode_stats = self.collect_rollout(
-                env, carry.policy, carry.step_carry, key=rollout_key
+                env, carry.policy, carry.step_carry, rollout_key
             )
         else:
             step_carry, episode_stats = eqx.filter_vmap(
