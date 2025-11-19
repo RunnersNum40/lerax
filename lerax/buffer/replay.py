@@ -13,7 +13,7 @@ from .base_buffer import AbstractBuffer
 
 
 class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuffer):
-    size: int
+    size: int = eqx.field(static=True)
     position: Integer[Array, ""]
 
     observations: PyTree[ObsType]
@@ -153,19 +153,24 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuf
         batch_size: int,
         *,
         key: Key,
-        batch_axes: tuple[int, ...] | int | None = None,
     ) -> ReplayBuffer[StateType, ActType, ObsType]:
-        flat_self = self.flatten_axes(batch_axes)
+        flat_self = self.flatten_axes(None)
+        total = flat_self.rewards.shape[0]
 
         current_size = self.current_size
-        current_size = eqx.error_if(
-            current_size,
-            current_size < batch_size,
-            "Cannot sample more elements than are currently stored in the buffer.",
-        )
 
-        batch_indices = jr.randint(
-            key, shape=(batch_size,), minval=0, maxval=current_size
+        if current_size.ndim == 0:
+            valid_mask = jnp.arange(self.size) < current_size
+        else:
+            valid_mask = (jnp.arange(self.size) < current_size[..., None]).reshape(-1)
+
+        probs = valid_mask.astype(float) / jnp.sum(valid_mask)
+        batch_indices = jr.choice(
+            key,
+            total,
+            shape=(batch_size,),
+            replace=False,
+            p=probs,
         )
 
         def take_sample(x):
@@ -175,6 +180,4 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuf
 
         batch = jax.tree.map(take_sample, flat_self)
 
-        return eqx.tree_at(
-            lambda rb: (rb.size, rb.position), batch, (batch_size, batch_size)
-        )
+        return batch

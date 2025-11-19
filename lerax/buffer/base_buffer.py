@@ -70,7 +70,6 @@ class AbstractBuffer(eqx.Module):
         batch_size: int,
         *,
         key: Key,
-        batch_axes: tuple[int, ...] | int | None = None,
     ) -> SelfType:
         """Return uniformly sampled batch of data from the buffer."""
 

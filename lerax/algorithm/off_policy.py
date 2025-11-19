@@ -173,7 +173,10 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
             )
         else:
             step_carry = jax.vmap(StepCarry.initial, in_axes=(None, None, None, 0))(
-                self.buffer_size, env, policy, jr.split(init_key, self.num_envs)
+                self.buffer_size // self.num_envs,
+                env,
+                policy,
+                jr.split(init_key, self.num_envs),
             )
             step_carry = jax.vmap(
                 self.collect_learning_starts, in_axes=(None, None, 0, 0)
