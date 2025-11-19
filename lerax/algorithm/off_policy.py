@@ -75,9 +75,7 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
         ) = jr.split(key, 8)
 
         observation = env.observation(carry.env_state, key=observation_key)
-        next_policy_state, action = policy(
-            carry.policy_state, observation, key=action_key
-        )
+        policy_state, action = policy(carry.policy_state, observation, key=action_key)
 
         next_env_state = env.transition(carry.env_state, action, key=transition_key)
 
@@ -95,7 +93,7 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
         )
 
         next_policy_state = lax.cond(
-            done, lambda: policy.reset(key=policy_reset_key), lambda: next_policy_state
+            done, lambda: policy.reset(key=policy_reset_key), lambda: policy_state
         )
 
         replay_buffer = carry.buffer.add(
@@ -106,6 +104,7 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
             done,
             timeout,
             carry.policy_state,
+            policy_state,
         )
 
         return StepCarry(
