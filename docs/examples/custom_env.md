@@ -9,16 +9,23 @@ We will create an version of the [CartPole](https://gymnasium.farama.org/environ
 ## State
 
 Lerax environments cannot have internal state.
-Instead the state must be a [PyTree](https://jax.readthedocs.io/en/latest/pytrees.html) that is passed around by the environment methods. We can create a state by subclassing `lerax.env.AbstractEnvState`.
+Instead the state must be a [PyTree](https://jax.readthedocs.io/en/latest/pytrees.html) that is passed around by the environment methods.
+We can create a state by subclassing `lerax.env.AbstractEnvState`.
 
 ```py
 from jax import numpy as jnp
+from jaxtyping import Array
 
 from lerax.env import AbstractEnvState
 
 class CartPoleState(AbstractEnvState):
-    position: jnp.ndarray
-    velocity: jnp.ndarray
-    angle: jnp.ndarray
-    angular_velocity: jnp.ndarray
+    position: Array
+    velocity: Array
+    angle: Array
+    angular_velocity: Array
 ```
+
+## Functional Style
+
+Contrary to the OpenAI Gym style, Lerax environments are functional.
+
