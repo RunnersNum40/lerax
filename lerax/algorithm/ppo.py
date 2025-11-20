@@ -11,7 +11,7 @@ from lerax.buffer import RolloutBuffer
 from lerax.policy import AbstractStatefulActorCriticPolicy
 from lerax.utils import filter_scan
 
-from .on_policy import AbstractOnPolicyAlgorithm
+from .on_policy import AbstractOnPolicyAlgorithm, IterationCarry, StepCarry
 
 
 class PPOStats(eqx.Module):
@@ -76,10 +76,10 @@ class PPO(AbstractOnPolicyAlgorithm):
         clip = optax.clip_by_global_norm(self.max_grad_norm)
         self.optimizer = optax.chain(clip, adam)
 
-    def per_step(self, step_carry):
+    def per_step(self, step_carry: StepCarry) -> StepCarry:
         return step_carry
 
-    def per_iteration(self, iteration_carry):
+    def per_iteration(self, iteration_carry: IterationCarry) -> IterationCarry:
         return iteration_carry
 
     # Needs to be static so the first argument can be a policy

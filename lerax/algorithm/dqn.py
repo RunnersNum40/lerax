@@ -12,7 +12,7 @@ from lerax.buffer import ReplayBuffer
 from lerax.policy import AbstractStatefulDQNPolicy
 from lerax.utils import filter_scan
 
-from .off_policy import AbstractOffPolicyAlgorithm, IterationCarry
+from .off_policy import AbstractOffPolicyAlgorithm, IterationCarry, StepCarry
 
 
 class DQNStats(eqx.Module):
@@ -67,7 +67,7 @@ class DQN(AbstractOffPolicyAlgorithm):
         clip = optax.clip_by_global_norm(self.max_grad_norm)
         self.optimizer = optax.chain(clip, adam)
 
-    def per_step(self, step_carry):
+    def per_step(self, step_carry: StepCarry) -> StepCarry:
         return step_carry
 
     def per_iteration(self, iteration_carry: IterationCarry) -> IterationCarry:
