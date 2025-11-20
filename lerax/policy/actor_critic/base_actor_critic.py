@@ -19,25 +19,55 @@ from ..base_policy import (
 class AbstractStatelessActorCriticPolicy[ActType, ObsType](
     AbstractStatelessPolicy[ActType, ObsType]
 ):
-    name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+    name: eqx.AbstractClassVar[str]
 
     @abstractmethod
     def action_and_value(
         self, observation: ObsType, *, key: Key
     ) -> tuple[ActType, Float[Array, ""], Float[Array, ""]]:
-        """Get an action and value from an observation."""
+        """
+        Get an action and value from an observation.
+
+        **Arguments:**
+            - observation: The observation to get the action and value for.
+            - key: A JAX Key.
+
+        **Returns:**
+            - action: The action to take.
+            - value: The value of the observation.
+            - log_prob: The log probability of the action.
+        """
 
     @abstractmethod
     def evaluate_action(
         self, observation: ObsType, action: ActType
     ) -> tuple[Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
-        """Evaluate an action given an observation."""
+        """
+        Evaluate an action given an observation.
+
+        **Arguments:**
+            - observation: The observation to evaluate the action for.
+            - action: The action to evaluate.
+
+        **Returns:**
+            - value: The value of the observation.
+            - log_prob: The log probability of the action.
+            - entropy: The entropy of the action distribution.
+        """
 
     @abstractmethod
     def value(self, observation: ObsType) -> Float[Array, ""]:
-        """Get the value of an observation."""
+        """
+        Get the value of an observation.
+
+        **Arguments:**
+            - observation: The observation to get the value for.
+
+        **Returns:**
+            - value: The value of the observation.
+        """
 
     def into_stateful[SelfType: AbstractStatelessActorCriticPolicy](
         self: SelfType,
@@ -48,27 +78,63 @@ class AbstractStatelessActorCriticPolicy[ActType, ObsType](
 class AbstractStatefulActorCriticPolicy[
     StateType: AbstractPolicyState, ActType, ObsType
 ](AbstractStatefulPolicy[StateType, ActType, ObsType]):
-    name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+    name: eqx.AbstractClassVar[str]
 
     @abstractmethod
     def action_and_value(
         self, state: StateType, observation: ObsType, *, key: Key
     ) -> tuple[StateType, ActType, Float[Array, ""], Float[Array, ""]]:
-        """Get an action and value from an observation."""
+        """
+        Get an action and value from an observation.
+
+        **Arguments:**
+            - state: The current policy state.
+            - observation: The observation to get the action and value for.
+            - key: A JAX Key.
+
+        **Returns:**
+            - new_state: The new policy state.
+            - action: The action to take.
+            - value: The value of the observation.
+            - log_prob: The log probability of the action.
+        """
 
     @abstractmethod
     def evaluate_action(
         self, state: StateType, observation: ObsType, action: ActType
     ) -> tuple[StateType, Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
-        """Evaluate an action given an observation."""
+        """
+        Evaluate an action given an observation.
+
+        **Arguments:**
+            - state: The current policy state.
+            - observation: The observation to evaluate the action for.
+            - action: The action to evaluate.
+
+        **Returns:**
+            - new_state: The new policy state.
+            - value: The value of the observation.
+            - log_prob: The log probability of the action.
+            - entropy: The entropy of the action distribution.
+        """
 
     @abstractmethod
     def value(
         self, state: StateType, observation: ObsType
     ) -> tuple[StateType, Float[Array, ""]]:
-        """Get the value of an observation."""
+        """
+        Get the value of an observation.
+
+        **Arguments:**
+            - state: The current policy state.
+            - observation: The observation to get the value for.
+
+        **Returns:**
+            - new_state: The new policy state.
+            - value: The value of the observation.
+        """
 
 
 class ActorCriticStatefulWrapper[

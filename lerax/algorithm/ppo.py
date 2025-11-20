@@ -57,6 +57,24 @@ class PPO(AbstractOnPolicyAlgorithm):
         normalize_advantages: bool = True,
         learning_rate: float = 3e-4,
     ):
+        """
+        Proximal Policy Optimization (PPO) algorithm.
+
+        **Arguments:**
+            - num_envs: Number of parallel environments.
+            - num_steps: Number of steps to run for each environment per update.
+            - num_epochs: Number of epochs to train the policy per update.
+            - num_batches: Number of batches to split the rollout buffer into for training.
+            - gae_lambda: Lambda parameter for Generalized Advantage Estimation (GAE).
+            - gamma: Discount factor.
+            - clip_coefficient: Clipping coefficient for policy and value function updates.
+            - clip_value_loss: Whether to clip the value function loss.
+            - entropy_loss_coefficient: Coefficient for the entropy loss term.
+            - value_loss_coefficient: Coefficient for the value function loss term.
+            - max_grad_norm: Maximum gradient norm for gradient clipping.
+            - normalize_advantages: Whether to normalize advantages.
+            - learning_rate: Learning rate for the Adam optimizer.
+        """
         self.gae_lambda = gae_lambda
         self.gamma = gamma
 

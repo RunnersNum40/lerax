@@ -131,6 +131,20 @@ class AbstractAlgorithm(eqx.Module):
         show_progress_bar: bool = False,
         tb_log: str | bool = False,
     ) -> A:
+        """
+        Train the policy on the environment for a given number of timesteps.
+
+        **Arguments:**
+            - env: The environment to train on.
+            - policy: The policy to train.
+            - total_timesteps: The total number of timesteps to train for.
+            - key: A JAX Key.
+            - show_progress_bar: Whether to show a progress bar during training.
+            - tb_log: The TensorBoard log directory or True, or False to disable logging.
+
+        **Returns:**
+            - policy: The trained policy.
+        """
         progress_bar = self.init_progress_bar(
             env, policy, total_timesteps, show_progress_bar
         )
