@@ -5,8 +5,9 @@ from datetime import datetime
 
 import equinox as eqx
 import optax
+from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Int, Key
+from jaxtyping import Array, Int, Key, Scalar
 
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.policy import AbstractPolicy, AbstractPolicyState, AbstractStatefulPolicy
@@ -15,20 +16,41 @@ from lerax.utils import filter_scan
 from .utils import EpisodeStats, JITProgressBar, JITSummaryWriter
 
 
-class AbstractStepCarry(eqx.Module):
-    env_state: AbstractEnvLikeState
-    policy_state: AbstractPolicyState
-    episode_stats: EpisodeStats
+class AbstractStepState(eqx.Module):
+    """Base class for algorithm state that is vectorized over environment steps."""
+
+    env_state: eqx.AbstractVar[AbstractEnvLikeState]
+    policy_state: eqx.AbstractVar[AbstractPolicyState]
+    episode_stats: eqx.AbstractVar[EpisodeStats]
 
 
-class AbstractIterationCarry[PolicyType: AbstractStatefulPolicy](eqx.Module):
-    iteration_count: Int[Array, ""]
-    step_carry: AbstractStepCarry
-    policy: PolicyType
-    opt_state: optax.OptState
+class AbstractAlgorithmState[PolicyType: AbstractStatefulPolicy](eqx.Module):
+    """Base class for algorithm states."""
+
+    iteration_count: eqx.AbstractVar[Int[Array, ""]]
+    step_state: eqx.AbstractVar[AbstractStepState]
+    env: eqx.AbstractVar[AbstractEnvLike]
+    policy: eqx.AbstractVar[PolicyType]
+    opt_state: eqx.AbstractVar[optax.OptState]
+    tb_writer: eqx.AbstractVar[JITSummaryWriter | None]
+    progress_bar: eqx.AbstractVar[JITProgressBar | None]
+
+    def next[A: AbstractAlgorithmState](
+        self: A,
+        step_state: AbstractStepState,
+        policy: PolicyType,
+        opt_state: optax.OptState,
+    ) -> A:
+        return eqx.tree_at(
+            lambda s: (s.iteration_count, s.step_state, s.policy, s.opt_state),
+            self,
+            (self.iteration_count + 1, step_state, policy, opt_state),
+        )
 
 
-class AbstractAlgorithm[PolicyType: AbstractStatefulPolicy](eqx.Module):
+class AbstractAlgorithm[
+    PolicyType: AbstractStatefulPolicy, StateType: AbstractAlgorithmState
+](eqx.Module):
     """Base class for RL algorithms."""
 
     optimizer: eqx.AbstractVar[optax.GradientTransformation]
@@ -37,17 +59,23 @@ class AbstractAlgorithm[PolicyType: AbstractStatefulPolicy](eqx.Module):
     num_steps: eqx.AbstractVar[int]
 
     @abstractmethod
-    def init_iteration_carry(
+    def reset(
         self,
         env: AbstractEnvLike,
         policy: PolicyType,
         *,
         key: Key,
-    ) -> AbstractIterationCarry[PolicyType]:
+        tb_writer: JITSummaryWriter | None,
+        progress_bar: JITProgressBar | None,
+    ) -> StateType:
         """Return the initial carry for the training iteration."""
 
+    @abstractmethod
+    def per_iteration(self, state: StateType) -> StateType:
+        """Process the algorithm state after each iteration."""
+
+    @staticmethod
     def init_tensorboard(
-        self,
         env: AbstractEnvLike,
         policy: AbstractPolicy,
         tb_log: str | bool,
@@ -60,8 +88,24 @@ class AbstractAlgorithm[PolicyType: AbstractStatefulPolicy](eqx.Module):
 
         return JITSummaryWriter(tb_log)
 
-    def init_progress_bar(
+    def write_tensorboard(
         self,
+        state: StateType,
+        log: dict[str, Scalar],
+        episode_stats: EpisodeStats,
+    ) -> None:
+        tb_writer = state.tb_writer
+        last_step = state.iteration_count * self.num_envs * self.num_steps - 1
+        first_step = last_step - self.num_envs * self.num_steps + 1
+        if tb_writer is not None:
+            log["learning_rate"] = optax.tree_utils.tree_get(
+                state.opt_state, "learning_rate", jnp.nan
+            )
+            tb_writer.add_dict(log, prefix="train", global_step=last_step)
+            tb_writer.log_episode_stats(episode_stats, first_step=first_step)
+
+    @staticmethod
+    def init_progress_bar(
         env: AbstractEnvLike,
         policy: AbstractPolicy,
         total_timesteps: int,
@@ -75,17 +119,32 @@ class AbstractAlgorithm[PolicyType: AbstractStatefulPolicy](eqx.Module):
         else:
             return None
 
+    def update_progress_bar(self, state: StateType) -> None:
+        progress_bar = state.progress_bar
+        if progress_bar is not None:
+            progress_bar.update(advance=self.num_envs * self.num_steps)
+
     @abstractmethod
     def iteration(
         self,
-        env: AbstractEnvLike,
-        carry,
+        state: StateType,
         *,
         key: Key,
-        progress_bar: JITProgressBar | None,
-        tb_writer: JITSummaryWriter | None,
-    ) -> AbstractIterationCarry:
-        """Perform a single iteration of training."""
+    ) -> StateType:
+        """
+        Perform a single iteration of training.
+
+        **Arguments:**
+            - state: The current algorithm state.
+            - key: A JAX Key.
+
+        **Returns:**
+            - state: The updated algorithm state.
+        """
+
+    @abstractmethod
+    def num_iterations(self, total_timesteps: int) -> int:
+        """Number of iterations per training session."""
 
     @eqx.filter_jit
     def _learn(
@@ -95,30 +154,28 @@ class AbstractAlgorithm[PolicyType: AbstractStatefulPolicy](eqx.Module):
         total_timesteps: int,
         *,
         key: Key,
-        progress_bar: JITProgressBar | None,
-        tb_writer: JITSummaryWriter | None,
+        tb_writer: JITSummaryWriter | None = None,
+        progress_bar: JITProgressBar | None = None,
     ) -> PolicyType:
-        init_key, learn_key = jr.split(key, 2)
-        carry = self.init_iteration_carry(env, policy, key=init_key)
-        num_iterations = total_timesteps // (self.num_steps * self.num_envs)
+        """
+        Wrapper around the learning process.
 
-        def scan_iteration(carry: tuple[AbstractIterationCarry, Key], _):
-            it_carry, key = carry
-            iter_key, next_key = jr.split(key, 2)
-            it_carry = self.iteration(
-                env,
-                it_carry,
-                key=iter_key,
-                progress_bar=progress_bar,
-                tb_writer=tb_writer,
-            )
-            return (it_carry, next_key), None
+        The scan will already lower the code but using eqx.filter_jit provides
+        better error messages.
+        """
+        reset_key, learn_key = jr.split(key, 2)
 
-        (carry, _), _ = filter_scan(
-            scan_iteration, (carry, learn_key), length=num_iterations
+        state = self.reset(
+            env, policy, key=reset_key, tb_writer=tb_writer, progress_bar=progress_bar
         )
 
-        return carry.policy
+        state, _ = filter_scan(
+            lambda s, k: (self.iteration(s, key=k), None),
+            state,
+            jr.split(learn_key, self.num_iterations(total_timesteps)),
+        )
+
+        return state.policy
 
     # TODO: Add support for callbacks
     def learn[A: AbstractPolicy](

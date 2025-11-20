@@ -12,7 +12,7 @@ from lerax.buffer import ReplayBuffer
 from lerax.policy import AbstractStatefulDQNPolicy
 from lerax.utils import filter_scan
 
-from .off_policy import AbstractOffPolicyAlgorithm, IterationCarry, StepCarry
+from .off_policy import AbstractOffPolicyAlgorithm, OffPolicyState, OffPolicyStepState
 
 
 class DQNStats(eqx.Module):
@@ -69,18 +69,20 @@ class DQN[PolicyType: AbstractStatefulDQNPolicy](
         clip = optax.clip_by_global_norm(self.max_grad_norm)
         self.optimizer = optax.chain(clip, adam)
 
-    def per_step(self, step_carry: StepCarry[PolicyType]) -> StepCarry[PolicyType]:
-        return step_carry
+    def per_step(
+        self, step_state: OffPolicyStepState[PolicyType]
+    ) -> OffPolicyStepState[PolicyType]:
+        return step_state
 
     def per_iteration(
-        self, iteration_carry: IterationCarry[PolicyType]
-    ) -> IterationCarry[PolicyType]:
+        self, state: OffPolicyState[PolicyType]
+    ) -> OffPolicyState[PolicyType]:
         if self.target_update_period <= 0:
-            return iteration_carry
+            return state
 
-        updates = iteration_carry.iteration_count * self.gradient_steps
+        updates = state.iteration_count * self.gradient_steps
 
-        policy = iteration_carry.policy
+        policy = state.policy
         current_dynamic = eqx.filter(policy.q_network, eqx.is_inexact_array)
         target_dynamic, target_static = eqx.partition(
             policy.target_q_network, eqx.is_inexact_array
@@ -100,12 +102,7 @@ class DQN[PolicyType: AbstractStatefulDQNPolicy](
         target_q_network = eqx.combine(next_target_dynamic, target_static)
         policy = eqx.tree_at(lambda p: p.target_q_network, policy, target_q_network)
 
-        return IterationCarry(
-            iteration_carry.iteration_count,
-            iteration_carry.step_carry,
-            policy,
-            iteration_carry.opt_state,
-        )
+        return eqx.tree_at(lambda s: s.policy, state, policy)
 
     # Needs to be static so the first argument can be a policy
     # eqx.filter_value_and_grad doesn't support argnums
