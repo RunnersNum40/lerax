@@ -45,7 +45,9 @@ class IterationCarry[PolicyType: AbstractStatefulPolicy](AbstractIterationCarry)
     opt_state: optax.OptState
 
 
-class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
+class AbstractOffPolicyAlgorithm[PolicyType: AbstractStatefulPolicy](
+    AbstractAlgorithm[PolicyType]
+):
     optimizer: eqx.AbstractVar[optax.GradientTransformation]
 
     buffer_size: eqx.AbstractVar[int]
@@ -57,16 +59,16 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
     batch_size: eqx.AbstractVar[int]
 
     @abstractmethod
-    def per_step(self, step_carry: StepCarry) -> StepCarry:
+    def per_step(self, step_carry: StepCarry[PolicyType]) -> StepCarry[PolicyType]:
         """Process the step carry after each step."""
 
     def step(
         self,
         env: AbstractEnvLike,
-        policy: AbstractStatefulPolicy,
-        carry: StepCarry,
+        policy: PolicyType,
+        carry: StepCarry[PolicyType],
         key: Key,
-    ) -> StepCarry:
+    ) -> StepCarry[PolicyType]:
         (
             action_key,
             transition_key,
@@ -118,10 +120,10 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
     def collect_learning_starts(
         self,
         env: AbstractEnvLike,
-        policy: AbstractStatefulPolicy,
-        carry: StepCarry,
+        policy: PolicyType,
+        carry: StepCarry[PolicyType],
         key: Key,
-    ) -> StepCarry:
+    ) -> StepCarry[PolicyType]:
         def scan_step(carry: StepCarry, key: Key) -> tuple[StepCarry, None]:
             carry = self.step(env, policy, carry, key)
             return carry, None
@@ -133,10 +135,10 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
     def collect_rollout(
         self,
         env: AbstractEnvLike,
-        policy: AbstractStatefulPolicy,
-        carry: StepCarry,
+        policy: PolicyType,
+        carry: StepCarry[PolicyType],
         key: Key,
-    ) -> tuple[StepCarry, EpisodeStats]:
+    ) -> tuple[StepCarry[PolicyType], EpisodeStats]:
         def scan_step(carry: StepCarry, key: Key) -> tuple[StepCarry, EpisodeStats]:
             carry = self.step(env, policy, carry, key)
             return self.per_step(carry), carry.episode_stats
@@ -150,21 +152,21 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
     @abstractmethod
     def train(
         self,
-        policy: AbstractStatefulPolicy,
+        policy: PolicyType,
         opt_state: optax.OptState,
         buffer: ReplayBuffer,
         *,
         key: Key,
-    ) -> tuple[AbstractStatefulPolicy, optax.OptState, dict[str, Scalar]]:
+    ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
         """Trains the policy using data from the replay buffer."""
 
-    def init_iteration_carry[A: AbstractStatefulPolicy](
+    def init_iteration_carry(
         self,
         env: AbstractEnvLike,
-        policy: A,
+        policy: PolicyType,
         *,
         key: Key,
-    ) -> IterationCarry[A]:
+    ) -> IterationCarry[PolicyType]:
         init_key, starts_key = jr.split(key, 2)
         if self.num_envs == 1:
             step_carry = StepCarry.initial(self.buffer_size, env, policy, init_key)
@@ -190,18 +192,20 @@ class AbstractOffPolicyAlgorithm(AbstractAlgorithm):
         )
 
     @abstractmethod
-    def per_iteration(self, iteration_carry: IterationCarry) -> IterationCarry:
+    def per_iteration(
+        self, iteration_carry: IterationCarry[PolicyType]
+    ) -> IterationCarry[PolicyType]:
         """Process the iteration carry after each iteration."""
 
     def iteration(
         self,
         env: AbstractEnvLike,
-        carry: IterationCarry,
+        carry: IterationCarry[PolicyType],
         *,
         key: Key,
         progress_bar: JITProgressBar | None,
         tb_writer: JITSummaryWriter | None,
-    ) -> IterationCarry:
+    ) -> IterationCarry[PolicyType]:
         rollout_key, train_key = jr.split(key, 2)
         if self.num_envs == 1:
             step_carry, episode_stats = self.collect_rollout(

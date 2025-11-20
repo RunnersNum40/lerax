@@ -45,7 +45,9 @@ class IterationCarry[PolicyType: AbstractStatefulPolicy](AbstractIterationCarry)
     opt_state: optax.OptState
 
 
-class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
+class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
+    AbstractAlgorithm[PolicyType]
+):
     """
     Base class for on-policy algorithms.
 
@@ -63,13 +65,13 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
     batch_size: eqx.AbstractVar[int]
 
     @abstractmethod
-    def per_step(self, step_carry: StepCarry) -> StepCarry:
+    def per_step(self, step_carry: StepCarry[PolicyType]) -> StepCarry[PolicyType]:
         """Process the step carry after each step."""
 
     def step(
         self,
         env: AbstractEnvLike,
-        policy: AbstractStatefulActorCriticPolicy,
+        policy: PolicyType,
         carry: StepCarry,
         *,
         key: Key,
@@ -136,15 +138,15 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
     def collect_rollout(
         self,
         env: AbstractEnvLike,
-        policy: AbstractStatefulActorCriticPolicy,
-        carry: StepCarry,
+        policy: PolicyType,
+        carry: StepCarry[PolicyType],
         key: Key,
-    ) -> tuple[StepCarry, RolloutBuffer, EpisodeStats]:
+    ) -> tuple[StepCarry[PolicyType], RolloutBuffer, EpisodeStats]:
         key, observation_key = jr.split(key, 2)
 
         def scan_step(
-            carry: StepCarry, key: Key
-        ) -> tuple[StepCarry, tuple[RolloutBuffer, EpisodeStats]]:
+            carry: StepCarry[PolicyType], key: Key
+        ) -> tuple[StepCarry[PolicyType], tuple[RolloutBuffer, EpisodeStats]]:
             carry, rollout = self.step(env, policy, carry, key=key)
             return self.per_step(carry), (rollout, carry.episode_stats)
 
@@ -163,21 +165,21 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
     @abstractmethod
     def train(
         self,
-        policy: AbstractStatefulActorCriticPolicy,
+        policy: PolicyType,
         opt_state: optax.OptState,
         buffer: RolloutBuffer,
         *,
         key: Key,
-    ) -> tuple[AbstractStatefulActorCriticPolicy, optax.OptState, dict[str, Scalar]]:
+    ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
         """Train the policy using the rollout buffer."""
 
-    def init_iteration_carry[A: AbstractStatefulPolicy](
+    def init_iteration_carry(
         self,
         env: AbstractEnvLike,
-        policy: A,
+        policy: PolicyType,
         *,
         key: Key,
-    ) -> IterationCarry[A]:
+    ) -> IterationCarry[PolicyType]:
         if self.num_envs == 1:
             step_carry = StepCarry.initial(env, policy, key)
         else:
@@ -193,18 +195,20 @@ class AbstractOnPolicyAlgorithm(AbstractAlgorithm):
         )
 
     @abstractmethod
-    def per_iteration(self, iteration_carry: IterationCarry) -> IterationCarry:
+    def per_iteration(
+        self, iteration_carry: IterationCarry[PolicyType]
+    ) -> IterationCarry[PolicyType]:
         """Process the iteration carry after each iteration."""
 
     def iteration(
         self,
         env: AbstractEnvLike,
-        carry: IterationCarry,
+        carry: IterationCarry[PolicyType],
         *,
         key: Key,
         progress_bar: JITProgressBar | None,
         tb_writer: JITSummaryWriter | None,
-    ) -> IterationCarry:
+    ) -> IterationCarry[PolicyType]:
         rollout_key, train_key = jr.split(key, 2)
         if self.num_envs == 1:
             step_carry, rollout_buffer, episode_stats = self.collect_rollout(

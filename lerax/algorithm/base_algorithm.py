@@ -28,7 +28,7 @@ class AbstractIterationCarry[PolicyType: AbstractStatefulPolicy](eqx.Module):
     opt_state: optax.OptState
 
 
-class AbstractAlgorithm(eqx.Module):
+class AbstractAlgorithm[PolicyType: AbstractStatefulPolicy](eqx.Module):
     """Base class for RL algorithms."""
 
     optimizer: eqx.AbstractVar[optax.GradientTransformation]
@@ -37,13 +37,13 @@ class AbstractAlgorithm(eqx.Module):
     num_steps: eqx.AbstractVar[int]
 
     @abstractmethod
-    def init_iteration_carry[A: AbstractStatefulPolicy](
+    def init_iteration_carry(
         self,
         env: AbstractEnvLike,
-        policy: A,
+        policy: PolicyType,
         *,
         key: Key,
-    ) -> AbstractIterationCarry[A]:
+    ) -> AbstractIterationCarry[PolicyType]:
         """Return the initial carry for the training iteration."""
 
     def init_tensorboard(
@@ -79,7 +79,7 @@ class AbstractAlgorithm(eqx.Module):
     def iteration(
         self,
         env: AbstractEnvLike,
-        carry,  # Generic typing, eugh :(
+        carry,
         *,
         key: Key,
         progress_bar: JITProgressBar | None,
@@ -88,16 +88,16 @@ class AbstractAlgorithm(eqx.Module):
         """Perform a single iteration of training."""
 
     @eqx.filter_jit
-    def _learn[A: AbstractStatefulPolicy](
+    def _learn(
         self,
         env: AbstractEnvLike,
-        policy: A,
+        policy: PolicyType,
         total_timesteps: int,
         *,
         key: Key,
         progress_bar: JITProgressBar | None,
         tb_writer: JITSummaryWriter | None,
-    ) -> A:
+    ) -> PolicyType:
         init_key, learn_key = jr.split(key, 2)
         carry = self.init_iteration_carry(env, policy, key=init_key)
         num_iterations = total_timesteps // (self.num_steps * self.num_envs)
@@ -150,10 +150,11 @@ class AbstractAlgorithm(eqx.Module):
         )
         tb_writer = self.init_tensorboard(env, policy, tb_log)
 
+        # TODO: Revisit the typing here
         if isinstance(policy, AbstractStatefulPolicy):
             return self._learn(
                 env,
-                policy,
+                policy,  # pyright: ignore
                 total_timesteps,
                 key=key,
                 progress_bar=progress_bar,
@@ -162,9 +163,9 @@ class AbstractAlgorithm(eqx.Module):
         else:
             return self._learn(
                 env,
-                policy.into_stateful(),
+                policy.into_stateful(),  # pyright: ignore
                 total_timesteps,
                 key=key,
                 progress_bar=progress_bar,
                 tb_writer=tb_writer,
-            ).into_stateless()
+            ).into_stateless()  # pyright: ignore

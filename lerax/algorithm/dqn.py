@@ -21,7 +21,9 @@ class DQNStats(eqx.Module):
     mean_q: Float[Array, ""]
 
 
-class DQN(AbstractOffPolicyAlgorithm):
+class DQN[PolicyType: AbstractStatefulDQNPolicy](
+    AbstractOffPolicyAlgorithm[PolicyType]
+):
     optimizer: optax.GradientTransformation
 
     gamma: float
@@ -67,10 +69,12 @@ class DQN(AbstractOffPolicyAlgorithm):
         clip = optax.clip_by_global_norm(self.max_grad_norm)
         self.optimizer = optax.chain(clip, adam)
 
-    def per_step(self, step_carry: StepCarry) -> StepCarry:
+    def per_step(self, step_carry: StepCarry[PolicyType]) -> StepCarry[PolicyType]:
         return step_carry
 
-    def per_iteration(self, iteration_carry: IterationCarry) -> IterationCarry:
+    def per_iteration(
+        self, iteration_carry: IterationCarry[PolicyType]
+    ) -> IterationCarry[PolicyType]:
         if self.target_update_period <= 0:
             return iteration_carry
 
@@ -105,7 +109,7 @@ class DQN(AbstractOffPolicyAlgorithm):
 
     @staticmethod
     def dqn_loss(
-        policy: AbstractStatefulDQNPolicy,
+        policy: PolicyType,
         sample: ReplayBuffer,
         gamma: float,
     ) -> tuple[Float[Array, ""], DQNStats]:
@@ -142,10 +146,10 @@ class DQN(AbstractOffPolicyAlgorithm):
 
     def train_sample(
         self,
-        policy: AbstractStatefulDQNPolicy,
+        policy: PolicyType,
         opt_state: optax.OptState,
         sample: ReplayBuffer,
-    ) -> tuple[AbstractStatefulDQNPolicy, optax.OptState, DQNStats]:
+    ) -> tuple[PolicyType, optax.OptState, DQNStats]:
         (_, stats), grads = self.dqn_loss_grad(policy, sample, self.gamma)
 
         updates, new_opt_state = self.optimizer.update(
@@ -157,15 +161,15 @@ class DQN(AbstractOffPolicyAlgorithm):
 
     def train(
         self,
-        policy: AbstractStatefulDQNPolicy,
+        policy: PolicyType,
         opt_state: optax.OptState,
         buffer: ReplayBuffer,
         *,
         key: Key,
-    ) -> tuple[AbstractStatefulDQNPolicy, optax.OptState, dict[str, Scalar]]:
+    ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
         def sample_scan(
-            carry: tuple[AbstractStatefulDQNPolicy, optax.OptState], key: Key
-        ) -> tuple[tuple[AbstractStatefulDQNPolicy, optax.OptState], DQNStats]:
+            carry: tuple[PolicyType, optax.OptState], key: Key
+        ) -> tuple[tuple[PolicyType, optax.OptState], DQNStats]:
             policy, opt_state = carry
             policy, opt_state, stats = self.train_sample(
                 policy, opt_state, buffer.sample(self.batch_size, key=key)

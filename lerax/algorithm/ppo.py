@@ -22,7 +22,9 @@ class PPOStats(eqx.Module):
     entropy_loss: Float[Array, ""]
 
 
-class PPO(AbstractOnPolicyAlgorithm):
+class PPO[PolicyType: AbstractStatefulActorCriticPolicy](
+    AbstractOnPolicyAlgorithm[PolicyType]
+):
     optimizer: optax.GradientTransformation
 
     gae_lambda: float
@@ -94,17 +96,19 @@ class PPO(AbstractOnPolicyAlgorithm):
         clip = optax.clip_by_global_norm(self.max_grad_norm)
         self.optimizer = optax.chain(clip, adam)
 
-    def per_step(self, step_carry: StepCarry) -> StepCarry:
+    def per_step(self, step_carry: StepCarry[PolicyType]) -> StepCarry[PolicyType]:
         return step_carry
 
-    def per_iteration(self, iteration_carry: IterationCarry) -> IterationCarry:
+    def per_iteration(
+        self, iteration_carry: IterationCarry[PolicyType]
+    ) -> IterationCarry[PolicyType]:
         return iteration_carry
 
     # Needs to be static so the first argument can be a policy
     # eqx.filter_value_and_grad doesn't support argnums
     @staticmethod
     def ppo_loss(
-        policy: AbstractStatefulActorCriticPolicy,
+        policy: PolicyType,
         rollout_buffer: RolloutBuffer,
         normalize_advantages: bool,
         clip_coefficient: float,
@@ -176,10 +180,10 @@ class PPO(AbstractOnPolicyAlgorithm):
 
     def train_batch(
         self,
-        policy: AbstractStatefulActorCriticPolicy,
+        policy: PolicyType,
         opt_state: optax.OptState,
         rollout_buffer: RolloutBuffer,
-    ) -> tuple[AbstractStatefulActorCriticPolicy, optax.OptState, PPOStats]:
+    ) -> tuple[PolicyType, optax.OptState, PPOStats]:
         (_, stats), grads = self.ppo_loss_grad(
             policy,
             rollout_buffer,
@@ -199,15 +203,15 @@ class PPO(AbstractOnPolicyAlgorithm):
 
     def train_epoch(
         self,
-        policy: AbstractStatefulActorCriticPolicy,
+        policy: PolicyType,
         opt_state: optax.OptState,
         rollout_buffer: RolloutBuffer,
         *,
         key: Key,
-    ) -> tuple[AbstractStatefulActorCriticPolicy, optax.OptState, PPOStats]:
+    ) -> tuple[PolicyType, optax.OptState, PPOStats]:
         def batch_scan(
             carry: tuple[
-                AbstractStatefulActorCriticPolicy,
+                PolicyType,
                 optax.OptState,
             ],
             buffer: RolloutBuffer,
@@ -233,15 +237,15 @@ class PPO(AbstractOnPolicyAlgorithm):
 
     def train(
         self,
-        policy: AbstractStatefulActorCriticPolicy,
+        policy: PolicyType,
         opt_state: optax.OptState,
         buffer: RolloutBuffer,
         *,
         key: Key,
-    ) -> tuple[AbstractStatefulActorCriticPolicy, optax.OptState, dict[str, Scalar]]:
+    ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
         def epoch_scan(
-            carry: tuple[AbstractStatefulActorCriticPolicy, optax.OptState], key: Key
-        ) -> tuple[tuple[AbstractStatefulActorCriticPolicy, optax.OptState], PPOStats]:
+            carry: tuple[PolicyType, optax.OptState], key: Key
+        ) -> tuple[tuple[PolicyType, optax.OptState], PPOStats]:
             policy, opt_state = carry
             policy, opt_state, stats = self.train_epoch(
                 policy, opt_state, buffer, key=key
