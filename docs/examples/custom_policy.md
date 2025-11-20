@@ -26,7 +26,7 @@ This makes them an Equinox Module as well.
 ## A Custom Stateless Actor-Critic Policy
 
 Let's create a simple custom stateless actor-critic policy.
-API documentation is coming but for now reference the base class [`lerax.policy.AbstractStatelessActorCriticPolicy`](https://github.com/RunnersNum40/lerax/blob/main/lerax/policy/actor_critic/base_actor_critic.py#L19)
+API documentation is coming but for now reference the base class [`lerax.policy.AbstractStatelessActorCriticPolicy`](https://github.com/RunnersNum40/lerax/blob/main/lerax/policy/actor_critic/base_actor_critic.py#L19) and its base class [`lerax.policy.AbstractStatelessPolicy`](https://github.com/RunnersNum40/lerax/blob/main/lerax/policy/base_policy.py#L15).
 
 The fields that need to be specified and initialized are:
 
@@ -36,6 +36,7 @@ The fields that need to be specified and initialized are:
 
 The methods that need to be implemented are:
 
+- `#!python __call__(observation: ObsType, *, key: Key) -> ActType`: Returns the action for a given observation.
 - `#!python action_and_value(observation: ObsType, *, key: Key) -> tuple[ActType, Float, Float]`: Returns the action, value, and log probability of the action for a given observation.
 - `#!python evaluate_action(observation: ObsType, action: ActType) -> tuple[Float, Float, Float]`: Returns the value, log probability, and entropy for a given observation and action.
 - `#!python value(observation: ObsType) -> Float`: Returns the value for a given observation.
@@ -113,6 +114,15 @@ class ActorCriticPolicy(AbstractStatelessActorCriticPolicy):
     def value(self, observation):
         """Return the value for a given observation."""
         return self.critic(self.features(observation))
+
+    def __call__(self, observation, *, key=None):
+        """Return the action for a given observation."""
+        action_dist = self.action_distribution(observation)
+
+        if key is None:
+            return action_dist.mode()
+        else:
+            return action_dist.sample(key=key)
 ```
 
 1. Lerax spaces provide `flatten_sample` to convert samples into 1D vectors.
@@ -125,8 +135,6 @@ class ActorCriticPolicy(AbstractStatelessActorCriticPolicy):
 Now we can train it on the CartPole environment:
 
 ```py
-from jax import random as jr
-
 from lerax.algorithm import PPO
 from lerax.env import CartPole
 
