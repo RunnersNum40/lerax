@@ -230,8 +230,8 @@ class PPO(AbstractOnPolicyAlgorithm):
             )
             return (policy, opt_state), stats
 
-        (policy, opt_state, _), stats = filter_scan(
-            epoch_scan, (policy, opt_state, key), jr.split(key, self.num_epochs)
+        (policy, opt_state), stats = filter_scan(
+            epoch_scan, (policy, opt_state), jr.split(key, self.num_epochs)
         )
 
         stats = jax.tree.map(jnp.mean, stats)
