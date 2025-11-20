@@ -107,6 +107,8 @@ class DQN[PolicyType: AbstractStatefulDQNPolicy](
             iteration_carry.opt_state,
         )
 
+    # Needs to be static so the first argument can be a policy
+    # eqx.filter_value_and_grad doesn't support argnums
     @staticmethod
     def dqn_loss(
         policy: PolicyType,
