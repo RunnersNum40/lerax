@@ -13,25 +13,41 @@ from jaxtyping import Array, Bool, Float, Key
 
 from lerax.env import AbstractEnv, AbstractEnvState
 from lerax.render import AbstractRenderer
-from lerax.space import AbstractSpace, Box, Dict, Discrete, Tuple
+from lerax.space import (
+    AbstractSpace,
+    Box,
+    Dict,
+    Discrete,
+    MultiBinary,
+    MultiDiscrete,
+    Tuple,
+)
 
 
 def gym_space_to_lerax_space(space: gym.Space) -> AbstractSpace:
     if isinstance(space, gym.spaces.Discrete):
-        return Discrete(n=space.n)
+        if not space.start == 0:
+            raise NotImplementedError(
+                "Gym Discrete space with non-zero start are not supported"
+            )
+        return Discrete(n=int(space.n))
     elif isinstance(space, gym.spaces.Box):
         return Box(low=space.low, high=space.high, shape=space.shape)
     elif isinstance(space, gym.spaces.Dict):
         return Dict({k: gym_space_to_lerax_space(s) for k, s in space.spaces.items()})
     elif isinstance(space, gym.spaces.Tuple):
         return Tuple(tuple(gym_space_to_lerax_space(s) for s in space.spaces))
+    elif isinstance(space, gym.spaces.MultiBinary):
+        return MultiBinary(n=space.n)
+    elif isinstance(space, gym.spaces.MultiDiscrete):
+        return MultiDiscrete(ns=tuple(int(n) for n in space.nvec))
     else:
         raise NotImplementedError(f"Space type {type(space)} not supported")
 
 
 def lerax_to_gym_space(space: AbstractSpace) -> gym.Space:
     if isinstance(space, Discrete):
-        return gym.spaces.Discrete(int(space.n), start=int(space.start))
+        return gym.spaces.Discrete(int(space.n))
     elif isinstance(space, Box):
         return gym.spaces.Box(
             low=np.asarray(space.low),
@@ -43,6 +59,12 @@ def lerax_to_gym_space(space: AbstractSpace) -> gym.Space:
         )
     elif isinstance(space, Tuple):
         return gym.spaces.Tuple(tuple(lerax_to_gym_space(s) for s in space.spaces))
+    elif isinstance(space, MultiBinary):
+        return gym.spaces.MultiBinary(
+            n=int(space.n[0]) if len(space.n) == 1 else space.n
+        )
+    elif isinstance(space, MultiDiscrete):
+        return gym.spaces.MultiDiscrete(nvec=list(space.ns))
     else:
         raise NotImplementedError(f"Space type {type(space)} not supported")
 

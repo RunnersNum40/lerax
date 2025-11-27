@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from jax import numpy as jnp
 from jaxtyping import Array, Float, Integer, Key, Real
 
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
@@ -40,8 +39,8 @@ class MLPQPolicy[ObsType: Real[Array, "..."]](AbstractStatelessQPolicy[ObsType])
 
         self.epsilon = epsilon
         self.q_network = MLP(
-            in_size=int(jnp.array(self.observation_space.flat_size)),
-            out_size=int(jnp.array(self.action_space.n)),
+            in_size=self.observation_space.flat_size,
+            out_size=self.action_space.n,
             width_size=width_size,
             depth=depth,
             key=key,

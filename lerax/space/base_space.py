@@ -4,7 +4,7 @@ from abc import abstractmethod
 from typing import Any
 
 import equinox as eqx
-from jaxtyping import Array, Bool, Float, Int, Key
+from jaxtyping import Array, Bool, Float, Key
 
 
 class AbstractSpace[SampleType](eqx.Module):
@@ -52,5 +52,5 @@ class AbstractSpace[SampleType](eqx.Module):
 
     @property
     @abstractmethod
-    def flat_size(self) -> Int[Array, ""]:
+    def flat_size(self) -> int:
         """Returns the dimension of the flattened sample."""

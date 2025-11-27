@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
 
@@ -51,7 +50,7 @@ class MLPActorCriticPolicy[
         feat_key, val_key, act_key = jr.split(key, 3)
 
         self.encoder = MLP(
-            in_size=int(jnp.array(self.observation_space.flat_size)),
+            in_size=self.observation_space.flat_size,
             out_size=feature_size,
             width_size=feature_width,
             depth=feature_depth,

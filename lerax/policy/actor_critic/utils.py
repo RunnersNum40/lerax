@@ -76,12 +76,14 @@ class CategoricalActionLayer(AbstractActionLayer[Int[Array, ""]]):
 class BernoulliActionLayer(AbstractActionLayer[Int[Array, ""]]):
 
     mapping: eqx.nn.Linear
+    shape: tuple[int, ...]
 
     def __init__(self, latent_dim: int, action_space: MultiBinary, *, key: Key):
-        self.mapping = eqx.nn.Linear(latent_dim, int(action_space.n), key=key)
+        self.mapping = eqx.nn.Linear(latent_dim, action_space.flat_size, key=key)
+        self.shape = action_space.shape
 
     def __call__(self, inputs: Float[Array, " latent_dim"]) -> Bernoulli:
-        return Bernoulli(logits=self.mapping(inputs))
+        return Bernoulli(logits=self.mapping(inputs).reshape(self.shape))
 
 
 def make_action_layer(

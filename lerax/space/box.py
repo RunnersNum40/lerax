@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import operator
+from functools import reduce
 from typing import Any
 
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
+from jaxtyping import Array, ArrayLike, Bool, Float, Key
 
 from .base_space import AbstractSpace
 from .utils import try_cast
@@ -112,9 +114,5 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
         return jnp.asarray(sample, dtype=float).ravel()
 
     @property
-    def flat_size(self) -> Int[Array, ""]:
-        return jnp.prod(jnp.asarray(self._shape)).astype(int)
-
-    @property
-    def dtype(self) -> jnp.dtype:
-        return self.low.dtype
+    def flat_size(self) -> int:
+        return reduce(operator.mul, self._shape)

@@ -74,7 +74,7 @@ class NCDEActorCriticPolicy[
         enc_key, val_key, act_key = jr.split(key, 3)
 
         self.encoder = MLPNeuralCDE(
-            in_size=int(jnp.array(self.observation_space.flat_size)),
+            in_size=self.observation_space.flat_size,
             latent_size=latent_size,
             solver=solver,
             field_width=field_width,

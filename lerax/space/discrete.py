@@ -4,7 +4,7 @@ from typing import Any
 
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
+from jaxtyping import Array, Bool, Float, Int, Key
 
 from .base_space import AbstractSpace
 from .utils import try_cast
@@ -17,28 +17,22 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
     A finite closed set of integers.
     """
 
-    _n: Int[Array, ""]
-    start: Int[Array, ""]
+    n: int
 
-    def __init__(self, n: Int[ArrayLike, ""], start: Int[ArrayLike, ""] = 0):
+    def __init__(self, n: int):
         assert n > 0, "n must be positive"  # pyright: ignore
 
-        self._n = jnp.array(n, dtype=float)
-        self.start = jnp.array(start, dtype=float)
-
-    @property
-    def n(self) -> Int[Array, ""]:
-        return self._n
+        self.n = n
 
     @property
     def shape(self) -> tuple[int, ...]:
         return ()
 
     def canonical(self) -> Int[Array, ""]:
-        return self.start
+        return jnp.array(0, dtype=int)
 
     def sample(self, key: Key) -> Int[Array, ""]:
-        return jr.randint(key, shape=(), minval=self.start, maxval=self._n + self.start)
+        return jr.randint(key, shape=(), minval=0, maxval=self.n)
 
     def contains(self, x: Any) -> Bool[Array, ""]:
         x = try_cast(x)
@@ -52,26 +46,22 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
         if ~jnp.array_equal(x, jnp.floor(x)):
             return jnp.array(False)
 
-        return self.start <= x < self._n + self.start
+        return 0 <= x < self.n
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Discrete):
             return False
-        return bool((self._n == other._n) & (self.start == other.start))
+        return self.n == other.n
 
     def __repr__(self) -> str:
-        return f"Discrete({self._n}, start={self.start})"
+        return f"Discrete({self.n})"
 
     def __hash__(self) -> int:
-        return hash((int(self._n), int(self.start)))
+        return hash(self.n)
 
     def flatten_sample(self, sample: Int[Array, ""]) -> Float[Array, " 1"]:
         return jnp.asarray(sample, dtype=float).ravel()
 
     @property
-    def flat_size(self) -> Int[Array, ""]:
-        return jnp.array(1, dtype=int)
-
-    @property
-    def dtype(self) -> jnp.dtype:
-        return self._n.dtype
+    def flat_size(self) -> int:
+        return 1

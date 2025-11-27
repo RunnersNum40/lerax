@@ -4,7 +4,7 @@ from typing import Any
 
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Bool, Float, Int, Key
+from jaxtyping import Array, Bool, Float, Key
 
 from .base_space import AbstractSpace
 
@@ -70,8 +70,8 @@ class Tuple(AbstractSpace[tuple[Any, ...]]):
         return jnp.concatenate(parts)
 
     @property
-    def flat_size(self) -> Int[Array, ""]:
-        return jnp.array(space.flat_size for space in self.spaces).sum()
+    def flat_size(self) -> int:
+        return sum(space.flat_size for space in self.spaces)
 
     def __getitem__(self, index: int) -> AbstractSpace:
         return self.spaces[index]
