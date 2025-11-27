@@ -11,9 +11,7 @@ key, policy_key, learn_key = jr.split(key, 3)
 env = CartPole()
 policy = MLPActorCriticPolicy(env=env, key=policy_key)
 algo = PPO()
-policy = algo.learn(
-    env, policy, total_timesteps=2**16, key=learn_key, show_progress_bar=True
-)
+policy = algo.learn(env, policy, total_timesteps=2**16, key=learn_key)
 
 
 def step(env_state, key):

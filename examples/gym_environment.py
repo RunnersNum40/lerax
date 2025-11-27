@@ -2,6 +2,7 @@ import gymnasium as gym
 from jax import random as jr
 
 from lerax.algorithm import PPO
+from lerax.callback import ProgressBarCallback, TensorBoardCallback
 from lerax.compatibility.gym import GymToLeraxEnv
 from lerax.policy import MLPActorCriticPolicy
 
@@ -11,12 +12,8 @@ gym_env = gym.make("CartPole-v1")
 env = GymToLeraxEnv(gym_env)
 policy = MLPActorCriticPolicy(env=env, key=policy_key)
 algo = PPO(num_envs=1)  # Vectorization is not supported for Gym environments
+callbacks = [ProgressBarCallback(2**16), TensorBoardCallback(env=env, policy=policy)]
 
 policy = algo.learn(
-    env,
-    policy,
-    total_timesteps=2**16,
-    key=learn_key,
-    show_progress_bar=True,
-    tb_log=True,
+    env, policy, total_timesteps=2**16, key=learn_key, callbacks=callbacks
 )

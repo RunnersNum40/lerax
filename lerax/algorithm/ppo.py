@@ -8,12 +8,10 @@ from jax import random as jr
 from jaxtyping import Array, Float, Key, Scalar
 
 from lerax.buffer import RolloutBuffer
-from lerax.env import AbstractEnvLike
 from lerax.policy import AbstractStatefulActorCriticPolicy
 from lerax.utils import filter_scan
 
 from .on_policy import AbstractOnPolicyAlgorithm, OnPolicyState, OnPolicyStepState
-from .utils import EpisodeStats
 
 
 class PPOStats(eqx.Module):
@@ -107,34 +105,6 @@ class PPO[PolicyType: AbstractStatefulActorCriticPolicy](
         self, state: OnPolicyState[PolicyType]
     ) -> OnPolicyState[PolicyType]:
         return state
-
-    def collect_rollout(
-        self,
-        env: AbstractEnvLike,
-        policy: PolicyType,
-        step_state: OnPolicyStepState[PolicyType],
-        key: Key,
-    ) -> tuple[OnPolicyStepState[PolicyType], RolloutBuffer, EpisodeStats]:
-        key, observation_key = jr.split(key, 2)
-
-        def scan_step(
-            carry: OnPolicyStepState[PolicyType], key: Key
-        ) -> tuple[OnPolicyStepState[PolicyType], tuple[RolloutBuffer, EpisodeStats]]:
-            carry, rollout = self.step(env, policy, carry, key=key)
-            return self.per_step(carry), (rollout, carry.episode_stats)
-
-        step_state, (rollout_buffer, episode_stats) = filter_scan(
-            scan_step, step_state, jr.split(key, self.num_steps)
-        )
-
-        _, next_value = policy.value(
-            step_state.policy_state,
-            env.observation(step_state.env_state, key=observation_key),
-        )
-        rollout_buffer = rollout_buffer.compute_returns_and_advantages(
-            next_value, self.gae_lambda, self.gamma
-        )
-        return step_state, rollout_buffer, episode_stats
 
     # Needs to be static so the first argument can be a policy
     # eqx.filter_value_and_grad doesn't support argnums
