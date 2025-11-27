@@ -58,7 +58,7 @@ policy = algo.learn(
 )
 ```
 
-Note that that progress bars will not wosk if the entire `learn` method is run in a JIT-compiled region.
+Note that that progress bars will not work if the entire `learn` method is run in a JIT-compiled region.
 This includes using `equinox.filter_jit` or `jax.jit` on the `learn` method or other Jax transformations such as `jax.vmap` or `jax.pmap`.
 
 ```py
@@ -148,3 +148,45 @@ env.render_states(states, dt=1 / 60) # (1)!
 ```
 
 1. Passing `dt` specifies the time interval between frames in seconds.
+
+## Saving and Loading Policies
+
+Saving and loading policies is supported via the `serialize` and `deserialize` methods of Lerax policies.
+The serialize method takes a static path, a format string and arguments, or a callable and arguments and saves the policy to a `.eqx` file at the specified location.
+
+For example, to save this policy:
+
+```py
+from jax import random as jr
+
+from lerax.env import CartPole
+from lerax.policy import MLPActorCriticPolicy
+
+policy_key, learn_key = jr.split(jr.key(0), 2)
+
+env = CartPole()
+policy = MLPActorCriticPolicy(env=env, key=policy_key)
+```
+
+### Static path
+
+```py
+policy.serialize("policy.eqx")
+```
+
+### Format string and arguments
+
+```py
+policy.serialize("policy_{}_epoch_{epoch}.eqx", 1, epoch=10)
+```
+
+### Function and arguments
+
+```py
+policy.serialize(
+    lambda base_path, n, epoch: f"{base_path}_{n}_epoch_{epoch}.eqx",
+    "policy",
+    1,
+    epoch=10,
+)
+```

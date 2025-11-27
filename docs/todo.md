@@ -3,9 +3,35 @@ title: TODO List
 description: A list of tasks and features to be implemented in Lerax.
 ---
 
-- API Documentation
-    - Pending mkdocstrings style documentation support in Zensical. For now refer to the codebase directly.
+# TODO List
+
+- Official release
+    - Marketing on social media
+    - Collect feedback from users
+
+## Documentation
+
+- API documentation (pending Zensical first-class support)
+
+## API
+
 - Training Callbacks
-- Saving and Loading Policies and Algorithms
+- Sharding support for distributed training
+
+## Features
+
 - Console Rendering of Environments
-- Off Policy Algorithms
+- More Environments
+    - Brax-based environments
+    - Pgx environments
+- Masked actions
+- Multi-agent environments and algorithms
+    - MADDPG, MAPPO
+    - Memory gym
+
+## Development
+
+- Unit tests for all modules
+- Integration tests for training loops
+- Developer guide
+- GitFlow branching model

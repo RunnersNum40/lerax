@@ -49,4 +49,3 @@ policy = algo.learn(env, policy, total_timesteps=2**16, key=jr.key(1))
     - Any off-policy algorithms
   - Create a more comprehensive set of environments
     - Brax based environments
-  - Model saving and loading

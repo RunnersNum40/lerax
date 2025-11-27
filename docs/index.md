@@ -3,6 +3,16 @@ title: Getting Started
 description: Documentation for Lerax, Jax based reinforcement learning library.
 ---
 
+# Getting Started with Lerax
+
+Do you want to leverage the power of JAX for high performance RL training?
+Lerax is a JAX-based reinforcement learning library that aims to make it easy to build, train, and evaluate RL agents using modern JAX tooling.
+Lerax provides a collection of environments, policies, and algorithms that can be easily combined to create custom RL agents.
+It is designed to be modular and extensible, allowing users to implement their own policies and algorithms with minimal effort.
+
+Lerax is very much a work in progress, but it is already usable for training simple RL agents.
+To track the progress of the library, see the [TODO list](todo.md){ data-preview } and [the repository](https://github.com/RunnersNum40/lerax)
+
 ## Installation
 
 ```bash
