@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from functools import partial, wraps
-from typing import Any, Callable
+from pathlib import Path
+from typing import Any, Callable, overload
 
 import equinox as eqx
 import jax
@@ -135,3 +136,81 @@ def unstack_pytree[T](tree: T, *, axis: int = 0) -> tuple[T]:
     unstacked = jax.tree.map(partial(jnp.unstack, axis=axis), tree)
     transposed = jax.tree.transpose(outer_structure, None, unstacked)
     return transposed
+
+
+class Serializable(eqx.Module):
+    @overload
+    def serialize(
+        self,
+        path: str | Path,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        pass
+
+    @overload
+    def serialize[**PathArgs](
+        self,
+        path: Callable[PathArgs, str],
+        *args: PathArgs.args,
+        **kwargs: PathArgs.kwargs,
+    ) -> None:
+        pass
+
+    @callback_wrapper
+    def serialize[**PathArgs](
+        self,
+        path: str | Path | Callable[PathArgs, str],
+        *args: PathArgs.args,
+        **kwargs: PathArgs.kwargs,
+    ) -> None:
+        """
+        Serialize the model to the specified path. Works under JIT.
+        If a callable is provided as path, it will be called with the provided
+        arguments to obtain the path. If a format string is provided as path,
+        then it will be formatted with the provided arguments.
+
+        **Aguments:**
+            path: The path to serialize to. If a callable is provided, it will
+                be called with the provided `args` and `kwargs` to obtain the
+                path.
+            args: Additional arguments to pass to the path callable or format
+                string.
+            kwargs: Additional keyword arguments to pass to the path callable
+                or format string.
+        """
+        if callable(path):
+            path = path(*args, **kwargs)
+        elif isinstance(path, str) and not (args is None and kwargs is None):
+            path = path.format(*args, **kwargs)
+
+        path = Path(path)
+        if not path.parent.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+        if path.suffix != ".eqx":
+            path = path.with_suffix(".eqx")
+
+        eqx.tree_serialise_leaves(path, self)
+
+    @classmethod
+    def deserialize[**Params, ClassType](
+        cls: Callable[Params, ClassType],
+        path: str | Path,
+        *args: Params.args,
+        **kwargs: Params.kwargs,
+    ) -> ClassType:
+        """
+        Deserialize the model from the specified path.
+        Must provide any additional arguments required by the class constructor.
+
+        **Arguments:**
+            path: The path to deserialize from.
+            args: Additional arguments to pass to the class constructor
+            kwargs: Additional keyword arguments to pass to the class constructor
+
+        **Returns:**
+            cls: The deserialized model.
+        """
+        return eqx.tree_deserialise_leaves(
+            path, eqx.filter_eval_shape(cls, *args, **kwargs)
+        )

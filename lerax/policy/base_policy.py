@@ -6,13 +6,14 @@ import equinox as eqx
 from jaxtyping import Key
 
 from lerax.space.base_space import AbstractSpace
+from lerax.utils import Serializable
 
 
 class AbstractPolicyState(eqx.Module):
     pass
 
 
-class AbstractStatelessPolicy[ActType, ObsType](eqx.Module):
+class AbstractStatelessPolicy[ActType, ObsType](Serializable):
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
@@ -29,7 +30,7 @@ class AbstractStatelessPolicy[ActType, ObsType](eqx.Module):
 
 
 class AbstractStatefulPolicy[StateType: AbstractPolicyState, ActType, ObsType](
-    eqx.Module
+    Serializable
 ):
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
