@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from abc import abstractmethod
 
 import equinox as eqx
@@ -55,13 +56,14 @@ class AbstractTransformedDistribution[SampleType](AbstractDistribution[SampleTyp
     distribution: eqx.AbstractVar[distributions.AbstractTransformed]
 
     def mode(self) -> SampleType:
-        # Computing the mode this way is not always correct, but it is a reasonable workaround for the
-        # use cases of this library.
         try:
             return super().mode()
         except NotImplementedError:
-            # TODO: Add a warning here about the mode not being implemented for
-            # the underlying distribution.
+            # Computing the mode this way is not always correct, but it is a reasonable workaround for the
+            # use cases of this library.
+            warnings.warn(
+                "Mode not implemented for base distribution; using bijector to compute mode."
+            )
             return self.distribution._bijector.forward(
                 self.distribution._distribution.mode()
             )
