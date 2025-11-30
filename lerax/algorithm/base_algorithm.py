@@ -12,7 +12,8 @@ from lerax.callback import (
     AbstractCallback,
     AbstractCallbackState,
     AbstractCallbackStepState,
-    AbstractTrainingCallback,
+    CallbackList,
+    TrainingContext,
 )
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.policy import AbstractPolicy, AbstractPolicyState, AbstractStatefulPolicy
@@ -24,7 +25,7 @@ class AbstractStepState(eqx.Module):
 
     env_state: eqx.AbstractVar[AbstractEnvLikeState]
     policy_state: eqx.AbstractVar[AbstractPolicyState]
-    callback_states: eqx.AbstractVar[list[AbstractCallbackStepState | None]]
+    callback_state: eqx.AbstractVar[AbstractCallbackStepState]
 
     def with_callback_state[A: AbstractStepState](
         self: A, callback_state: AbstractCallbackStepState | None
@@ -40,7 +41,7 @@ class AbstractAlgorithmState[PolicyType: AbstractStatefulPolicy](eqx.Module):
     env: eqx.AbstractVar[AbstractEnvLike]
     policy: eqx.AbstractVar[PolicyType]
     opt_state: eqx.AbstractVar[optax.OptState]
-    callback_states: eqx.AbstractVar[list[AbstractCallbackState]]
+    callback_state: eqx.AbstractVar[AbstractCallbackState]
 
     def next[A: AbstractAlgorithmState](
         self: A,
@@ -55,9 +56,9 @@ class AbstractAlgorithmState[PolicyType: AbstractStatefulPolicy](eqx.Module):
         )
 
     def with_callback_states[A: AbstractAlgorithmState](
-        self: A, callback_states: list[AbstractCallbackState]
+        self: A, callback_state: AbstractCallbackState
     ) -> A:
-        return eqx.tree_at(lambda s: s.callback_states, self, callback_states)
+        return eqx.tree_at(lambda s: s.callback_state, self, callback_state)
 
 
 class AbstractAlgorithm[
@@ -77,7 +78,7 @@ class AbstractAlgorithm[
         policy: PolicyType,
         *,
         key: Key,
-        callbacks: list[AbstractCallback],
+        callback: AbstractCallback,
     ) -> StateType:
         """Return the initial carry for the training iteration."""
 
@@ -91,7 +92,7 @@ class AbstractAlgorithm[
         state: StateType,
         *,
         key: Key,
-        callbacks: list[AbstractCallback],
+        callback: AbstractCallback,
     ) -> StateType:
         """
         Perform a single iteration of training.
@@ -99,7 +100,7 @@ class AbstractAlgorithm[
         **Arguments:**
             - state: The current algorithm state.
             - key: A JAX Key.
-            - callbacks: A list of training callbacks.
+            - callback: A callback or list of callbacks to use during training.
 
         **Returns:**
             - state: The updated algorithm state.
@@ -117,7 +118,7 @@ class AbstractAlgorithm[
         total_timesteps: int,
         *,
         key: Key,
-        callbacks: Sequence[AbstractCallback] | AbstractCallback | None = None,
+        callback: Sequence[AbstractCallback] | AbstractCallback | None = None,
     ) -> A:
         """
         Train the policy on the environment for a given number of timesteps.
@@ -127,53 +128,63 @@ class AbstractAlgorithm[
             - policy: The policy to train.
             - total_timesteps: The total number of timesteps to train for.
             - key: A JAX Key.
-            - callbacks: A sequence of training callback, a single callback, or None.
+            - callback: A callback or list of callbacks to use during training.
 
         **Returns:**
             - policy: The trained policy.
         """
         callback_start_key, reset_key, learn_key, callback_end_key = jr.split(key, 4)
 
-        if callbacks is None:
-            callbacks = []
-        elif isinstance(callbacks, AbstractCallback):
-            callbacks = [callbacks]
-        else:
-            callbacks = list(callbacks)
+        if callback is None:
+            callback = []
+        if not isinstance(callback, AbstractCallback):
+            callbacks = list(callback)
+            callback = CallbackList(callbacks=callbacks)
 
         if isinstance(policy, AbstractStatefulPolicy):
             _policy = cast(PolicyType, policy)
         else:
             _policy = cast(PolicyType, policy.into_stateful())
 
-        state = self.reset(env, _policy, key=reset_key, callbacks=callbacks)
+        state = self.reset(env, _policy, key=reset_key, callback=callback)
 
-        callback_states = [
-            (
-                callback.on_training_start(
-                    callback_state, locals(), key=callback_start_key
-                )
-                if isinstance(callback, AbstractTrainingCallback)
-                else callback_state
+        state = state.with_callback_states(
+            callback.on_training_start(
+                ctx=TrainingContext(
+                    state.callback_state,
+                    state.step_state.callback_state,
+                    env,
+                    state.policy,
+                    total_timesteps,
+                    state.iteration_count,
+                    state.opt_state,
+                    locals(),
+                ),
+                key=callback_start_key,
             )
-            for callback_state, callback in zip(state.callback_states, callbacks)
-        ]
-        state = state.with_callback_states(callback_states)
+        )
 
         state, _ = filter_scan(
-            lambda s, k: (self.iteration(s, key=k, callbacks=callbacks), None),
+            lambda s, k: (self.iteration(s, key=k, callback=callback), None),
             state,
             jr.split(learn_key, self.num_iterations(total_timesteps)),
         )
 
-        [
-            (
-                callback.on_training_end(callback_state, locals(), key=callback_end_key)
-                if isinstance(callback, AbstractTrainingCallback)
-                else callback_state
+        state = state.with_callback_states(
+            callback.on_training_end(
+                ctx=TrainingContext(
+                    state.callback_state,
+                    state.step_state.callback_state,
+                    env,
+                    state.policy,
+                    total_timesteps,
+                    state.iteration_count,
+                    state.opt_state,
+                    locals(),
+                ),
+                key=callback_end_key,
             )
-            for callback_state, callback in zip(state.callback_states, callbacks)
-        ]
+        )
 
         if isinstance(policy, AbstractStatefulPolicy):
             return state.policy

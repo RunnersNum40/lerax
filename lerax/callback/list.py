@@ -1,0 +1,107 @@
+import equinox as eqx
+from jax import numpy as jnp
+from jax import random as jr
+from jaxtyping import Array, Bool, Key
+
+from .base_callback import (
+    AbstractCallback,
+    AbstractCallbackState,
+    AbstractCallbackStepState,
+    IterationContext,
+    ResetContext,
+    StepContext,
+    TrainingContext,
+)
+
+
+class CallbackListStepState(AbstractCallbackStepState):
+    states: list[AbstractCallbackStepState | None]
+
+
+class CallbackListState(AbstractCallbackState):
+    states: list[AbstractCallbackState]
+
+
+class CallbackList(AbstractCallback[CallbackListState, CallbackListStepState]):
+    callbacks: list[AbstractCallback]
+
+    def __init__(self, callbacks: list[AbstractCallback]) -> None:
+        self.callbacks = callbacks
+
+    def reset(self, ctx: ResetContext, *, key: Key) -> CallbackListState:
+        states = [
+            callback.reset(ctx, key=key)
+            for callback, key in zip(self.callbacks, jr.split(key, len(self.callbacks)))
+        ]
+        return CallbackListState(states=states)
+
+    def step_reset(self, ctx: ResetContext, *, key: Key) -> CallbackListStepState:
+        states = [
+            callback.step_reset(ctx, key=key)
+            for callback, key in zip(self.callbacks, jr.split(key, len(self.callbacks)))
+        ]
+        return CallbackListStepState(states=states)
+
+    def on_step(self, ctx: StepContext, *, key: Key) -> CallbackListStepState:
+        contexts = [
+            eqx.tree_at(lambda c: c.state, ctx, state) for state in ctx.state.states
+        ]
+        new_states = [
+            callback.on_step(ctx, key=key)
+            for callback, ctx, key in zip(
+                self.callbacks, contexts, jr.split(key, len(self.callbacks))
+            )
+        ]
+        return CallbackListStepState(states=new_states)
+
+    def on_iteration(self, ctx: IterationContext, *, key: Key) -> CallbackListState:
+        contexts = [
+            eqx.tree_at(lambda c: (c.state, c.step_state), ctx, state)
+            for state in zip(ctx.state.states, ctx.step_state.states)
+        ]
+        new_states = [
+            callback.on_iteration(ctx, key=key)
+            for callback, ctx, key in zip(
+                self.callbacks, contexts, jr.split(key, len(self.callbacks))
+            )
+        ]
+        return CallbackListState(states=new_states)
+
+    def on_training_start(self, ctx: TrainingContext, *, key: Key) -> CallbackListState:
+        contexts = [
+            eqx.tree_at(lambda c: (c.state, c.step_state), ctx, state)
+            for state in zip(ctx.state.states, ctx.step_state.states)
+        ]
+        new_states = [
+            callback.on_training_start(ctx, key=key)
+            for callback, ctx, key in zip(
+                self.callbacks, contexts, jr.split(key, len(self.callbacks))
+            )
+        ]
+        return CallbackListState(states=new_states)
+
+    def on_training_end(self, ctx: TrainingContext, *, key: Key) -> CallbackListState:
+        contexts = [
+            eqx.tree_at(lambda c: (c.state, c.step_state), ctx, state)
+            for state in zip(ctx.state.states, ctx.step_state.states)
+        ]
+        new_states = [
+            callback.on_training_end(ctx, key=key)
+            for callback, ctx, key in zip(
+                self.callbacks, contexts, jr.split(key, len(self.callbacks))
+            )
+        ]
+        return CallbackListState(states=new_states)
+
+    def continue_training(self, ctx: IterationContext, *, key: Key) -> Bool[Array, ""]:
+        contexts = [
+            eqx.tree_at(lambda c: (c.state, c.step_state), ctx, state)
+            for state in zip(ctx.state.states, ctx.step_state.states)
+        ]
+        continue_flags = [
+            callback.continue_training(ctx, key=key)
+            for callback, ctx, key in zip(
+                self.callbacks, contexts, jr.split(key, len(self.callbacks))
+            )
+        ]
+        return jnp.all(jnp.array(continue_flags))

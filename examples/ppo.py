@@ -13,5 +13,5 @@ algo = PPO()
 callbacks = [ProgressBarCallback(2**16), TensorBoardCallback(env=env, policy=policy)]
 
 policy = algo.learn(
-    env, policy, total_timesteps=2**16, key=learn_key, callbacks=callbacks
+    env, policy, total_timesteps=2**16, key=learn_key, callback=callbacks
 )

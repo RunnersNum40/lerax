@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import jax
-from jaxtyping import Array, Key
+from jax import numpy as jnp
+from jaxtyping import Array, Bool, Int, Key
 from rich import progress, text
 
 from lerax.env import AbstractEnvLike
@@ -9,9 +9,13 @@ from lerax.policy import AbstractPolicy
 from lerax.utils import callback_with_list_wrapper, callback_wrapper
 
 from .base_callback import (
-    AbstractIterationCallback,
-    AbstractTrainingCallback,
+    AbstractCallback,
+    AbstractCallbackStepState,
     EmptyCallbackState,
+    IterationContext,
+    ResetContext,
+    StepContext,
+    TrainingContext,
 )
 
 
@@ -93,11 +97,19 @@ class JITProgressBar:
         self.progress_bar.stop()
 
     @callback_with_list_wrapper
-    def update(self, advance: float) -> None:
-        self.progress_bar.update(self.task, advance=advance)
+    def update(
+        self, advance: float | None = None, completed: float | None = None
+    ) -> None:
+        self.progress_bar.update(self.task, advance=advance, completed=completed)
 
 
-class ProgressBarCallback(AbstractTrainingCallback, AbstractIterationCallback):
+class ProgressBarCallbackStepState(AbstractCallbackStepState):
+    steps: Int[Array, ""]
+
+
+class ProgressBarCallback(
+    AbstractCallback[EmptyCallbackState, ProgressBarCallbackStepState]
+):
     """Callback for displaying a progress bar during training."""
 
     progress_bar: JITProgressBar
@@ -125,31 +137,31 @@ class ProgressBarCallback(AbstractTrainingCallback, AbstractIterationCallback):
 
         self.progress_bar = JITProgressBar(name, total=total_timesteps)
 
-    def reset(self, locals, *, key: Key) -> EmptyCallbackState:
+    def reset(self, ctx: ResetContext, *, key: Key) -> EmptyCallbackState:
         self.progress_bar.start()
         return EmptyCallbackState()
 
+    def step_reset(
+        self, ctx: ResetContext, *, key: Key
+    ) -> ProgressBarCallbackStepState:
+        return ProgressBarCallbackStepState(jnp.array(0, dtype=int))
+
+    def on_step(self, ctx: StepContext, *, key: Key) -> ProgressBarCallbackStepState:
+        return ProgressBarCallbackStepState(ctx.state.steps + 1)
+
+    def on_iteration(self, ctx: IterationContext, *, key: Key) -> EmptyCallbackState:
+        self.progress_bar.update(completed=jnp.sum(ctx.step_state.steps))
+        return ctx.state
+
     def on_training_start(
-        self, state: EmptyCallbackState, locals, *, key: Key
+        self, ctx: TrainingContext, *, key: Key
     ) -> EmptyCallbackState:
-        return state
+        return ctx.state
 
-    def on_iteration_start(
-        self, state: EmptyCallbackState, locals, *, key: Key
-    ) -> EmptyCallbackState:
-        return state
-
-    def on_iteration_end(
-        self, state: EmptyCallbackState, locals, *, key: Key
-    ) -> EmptyCallbackState:
-        num_envs = locals["self"].num_envs
-        num_steps = locals["self"].num_steps
-        self.progress_bar.update(advance=num_envs * num_steps)
-        return state
-
-    def on_training_end(
-        self, state: EmptyCallbackState, locals, *, key: Key
-    ) -> EmptyCallbackState:
+    def on_training_end(self, ctx: TrainingContext, *, key: Key) -> EmptyCallbackState:
         # TODO: Fix ordered callback issue
         # self.progress_bar.stop()
-        return state
+        return ctx.state
+
+    def continue_training(self, ctx: IterationContext, *, key: Key) -> Bool[Array, ""]:
+        return jnp.array(True)

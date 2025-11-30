@@ -7,9 +7,13 @@ from .base_callback import (
     AbstractStatelessCallback,
     AbstractStepCallback,
     AbstractTrainingCallback,
-    AbstractVectorizedCallback,
+    IterationContext,
+    ResetContext,
+    StepContext,
+    TrainingContext,
 )
 from .empty import EmptyCallback
+from .list import CallbackList
 from .progress_bar import ProgressBarCallback
 from .tensorboard import TensorBoardCallback
 
@@ -22,8 +26,12 @@ __all__ = [
     "AbstractStatelessCallback",
     "AbstractStepCallback",
     "AbstractTrainingCallback",
-    "AbstractVectorizedCallback",
+    "IterationContext",
+    "ResetContext",
+    "StepContext",
+    "TrainingContext",
     "EmptyCallback",
+    "CallbackList",
     "ProgressBarCallback",
     "TensorBoardCallback",
 ]

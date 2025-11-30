@@ -15,9 +15,9 @@ from lerax.callback import (
     AbstractCallback,
     AbstractCallbackState,
     AbstractCallbackStepState,
-    AbstractIterationCallback,
-    AbstractStepCallback,
-    AbstractVectorizedCallback,
+    IterationContext,
+    ResetContext,
+    StepContext,
 )
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.policy import (
@@ -33,28 +33,21 @@ from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractS
 class OnPolicyStepState[PolicyType: AbstractStatefulPolicy](AbstractStepState):
     env_state: AbstractEnvLikeState
     policy_state: AbstractPolicyState
-    callback_states: list[AbstractCallbackStepState | None]
+    callback_state: AbstractCallbackStepState
 
     @classmethod
     def initial(
         cls,
         env: AbstractEnvLike,
         policy: PolicyType,
-        callbacks: list[AbstractCallback],
+        callback: AbstractCallback,
         key: Key,
     ) -> OnPolicyStepState[PolicyType]:
         env_key, policy_key = jr.split(key, 2)
         env_state = env.initial(key=env_key)
         policy_state = policy.reset(key=policy_key)
 
-        callback_states = [
-            (
-                callback.step_reset(locals(), key=key)
-                if isinstance(callback, AbstractVectorizedCallback)
-                else None
-            )
-            for callback in callbacks
-        ]
+        callback_states = callback.step_reset(ResetContext(locals()), key=key)
 
         return cls(env_state, policy_state, callback_states)
 
@@ -67,7 +60,7 @@ class OnPolicyState[PolicyType: AbstractStatefulPolicy](
     env: AbstractEnvLike
     policy: PolicyType
     opt_state: optax.OptState
-    callback_states: list[AbstractCallbackState]
+    callback_state: AbstractCallbackState
 
 
 class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
@@ -105,10 +98,9 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
         state: OnPolicyStepState[PolicyType],
         *,
         key: Key,
-        callbacks: list[AbstractCallback],
+        callback: AbstractCallback,
     ) -> tuple[OnPolicyStepState[PolicyType], RolloutBuffer]:
         (
-            start_callback_key,
             action_key,
             transition_key,
             observation_key,
@@ -117,18 +109,8 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
             bootstrap_key,
             env_reset_key,
             policy_reset_key,
-            end_callback_key,
-        ) = jr.split(key, 10)
-
-        callback_states = state.callback_states
-        callback_states = [
-            (
-                callback.on_step_start(state, locals(), key=start_callback_key)
-                if isinstance(callback, AbstractStepCallback)
-                else state
-            )
-            for callback, state in zip(callbacks, callback_states)
-        ]
+            callback_key,
+        ) = jr.split(key, 9)
 
         observation = env.observation(state.env_state, key=observation_key)
         next_policy_state, action, value, log_prob = policy.action_and_value(
@@ -164,17 +146,15 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
             done, lambda: policy.reset(key=policy_reset_key), lambda: next_policy_state
         )
 
-        callback_states = [
-            (
-                callback.on_step_end(state, locals(), key=end_callback_key)
-                if isinstance(callback, AbstractStepCallback)
-                else state
-            )
-            for callback, state in zip(callbacks, callback_states)
-        ]
+        callback_state = callback.on_step(
+            StepContext(
+                state.callback_state, env, policy, done, bootstrapped_reward, locals()
+            ),
+            key=callback_key,
+        )
 
         return (
-            OnPolicyStepState(next_env_state, next_policy_state, callback_states),
+            OnPolicyStepState(next_env_state, next_policy_state, callback_state),
             RolloutBuffer(
                 observations=observation,
                 actions=action,
@@ -191,7 +171,7 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
         env: AbstractEnvLike,
         policy: PolicyType,
         step_state: OnPolicyStepState[PolicyType],
-        callbacks: list[AbstractCallback],
+        callback: AbstractCallback,
         key: Key,
     ) -> tuple[OnPolicyStepState[PolicyType], RolloutBuffer]:
         """Collect a rollout using the current policy."""
@@ -205,7 +185,7 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
                 policy,
                 carry,
                 key=key,
-                callbacks=callbacks,
+                callback=callback,
             )
             return self.per_step(carry), rollout
 
@@ -239,20 +219,18 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
         policy: PolicyType,
         *,
         key: Key,
-        callbacks: list[AbstractCallback],
+        callback: AbstractCallback,
     ) -> OnPolicyState[PolicyType]:
         step_key, callback_key = jr.split(key, 2)
 
         if self.num_envs == 1:
-            step_state = OnPolicyStepState.initial(env, policy, callbacks, step_key)
+            step_state = OnPolicyStepState.initial(env, policy, callback, step_key)
         else:
             step_state = jax.vmap(
                 OnPolicyStepState.initial, in_axes=(None, None, None, 0)
-            )(env, policy, callbacks, jr.split(step_key, self.num_envs))
+            )(env, policy, callback, jr.split(step_key, self.num_envs))
 
-        callback_states = [
-            callback.reset(locals(), key=callback_key) for callback in callbacks
-        ]
+        callback_state = callback.reset(ResetContext(locals()), key=callback_key)
 
         return OnPolicyState(
             jnp.array(0, dtype=int),
@@ -260,7 +238,7 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
             env,
             policy,
             self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array)),
-            callback_states,
+            callback_state,
         )
 
     def iteration(
@@ -268,26 +246,16 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
         state: OnPolicyState[PolicyType],
         *,
         key: Key,
-        callbacks: list[AbstractCallback],
+        callback: AbstractCallback,
     ) -> OnPolicyState[PolicyType]:
-        callback_start_key, rollout_key, train_key, callback_end_key = jr.split(key, 4)
-
-        callback_states = state.callback_states
-        callback_states = [
-            (
-                callback.on_iteration_start(state, locals(), key=callback_start_key)
-                if isinstance(callback, AbstractIterationCallback)
-                else state
-            )
-            for callback, state in zip(callbacks, callback_states)
-        ]
+        rollout_key, train_key, callback_key = jr.split(key, 3)
 
         if self.num_envs == 1:
             step_state, rollout_buffer = self.collect_rollout(
                 state.env,
                 state.policy,
                 state.step_state,
-                callbacks,
+                callback,
                 rollout_key,
             )
         else:
@@ -297,7 +265,7 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
                 state.env,
                 state.policy,
                 state.step_state,
-                callbacks,
+                callback,
                 jr.split(rollout_key, self.num_envs),
             )
 
@@ -307,15 +275,20 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
 
         state = state.next(step_state, policy, opt_state)
 
-        callback_states = [
-            (
-                callback.on_iteration_end(
-                    callback_state, locals(), key=callback_end_key
-                )
-                if isinstance(callback, AbstractIterationCallback)
-                else callback_state
+        state = state.with_callback_states(
+            callback.on_iteration(
+                IterationContext(
+                    state.callback_state,
+                    state.step_state.callback_state,
+                    state.env,
+                    state.policy,
+                    state.iteration_count,
+                    state.opt_state,
+                    log,
+                    locals(),
+                ),
+                key=callback_key,
             )
-            for callback, callback_state in zip(callbacks, callback_states)
-        ]
+        )
 
         return self.per_iteration(state)

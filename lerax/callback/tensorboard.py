@@ -14,11 +14,13 @@ from lerax.policy import AbstractPolicy
 from lerax.utils import callback_with_numpy_wrapper
 
 from .base_callback import (
+    AbstractCallback,
     AbstractCallbackStepState,
-    AbstractIterationCallback,
-    AbstractStatelessCallback,
-    AbstractStepCallback,
     EmptyCallbackState,
+    IterationContext,
+    ResetContext,
+    StepContext,
+    TrainingContext,
 )
 
 
@@ -124,9 +126,7 @@ class TensorBoardCallbackStepState(AbstractCallbackStepState):
 
 
 class TensorBoardCallback(
-    AbstractStatelessCallback,
-    AbstractStepCallback,
-    AbstractIterationCallback,
+    AbstractCallback[EmptyCallbackState, TensorBoardCallbackStepState]
 ):
     """
     Callback for recording training statistics to TensorBoard.
@@ -134,8 +134,9 @@ class TensorBoardCallback(
     Each training iteration, the following statistics are logged:
         - episode/return: The exponential moving average of episode returns.
         - episode/length: The exponential moving average of episode lengths.
-        - train/...: All entries in the training log dictionary (defined by the algorithm).
-          - learning_rate: The current learning rate.
+        - train/:
+            - learning_rate: The current learning rate.
+            - ...: Any other statistics in the training log.
     """
 
     tb_writer: JITSummaryWriter
@@ -165,45 +166,26 @@ class TensorBoardCallback(
         self.tb_writer = JITSummaryWriter(log_dir=name)
         self.alpha = alpha
 
-    def step_reset(self, locals, *, key: Key) -> TensorBoardCallbackStepState:
+    def reset(self, ctx: ResetContext, *, key: Key) -> EmptyCallbackState:
+        return EmptyCallbackState()
+
+    def step_reset(
+        self, ctx: ResetContext, *, key: Key
+    ) -> TensorBoardCallbackStepState:
         return TensorBoardCallbackStepState.initial()
 
-    def on_iteration_start(
-        self, state: EmptyCallbackState, locals, *, key: Key
-    ) -> EmptyCallbackState:
-        return state
+    def on_step(self, ctx: StepContext, *, key: Key) -> TensorBoardCallbackStepState:
+        return ctx.state.next(ctx.reward, ctx.done, self.alpha)
 
-    def on_step_start(
-        self, state: TensorBoardCallbackStepState, locals, *, key: Key
-    ) -> TensorBoardCallbackStepState:
-        return state
-
-    def on_step_end(
-        self, state: TensorBoardCallbackStepState, locals, *, key: Key
-    ) -> TensorBoardCallbackStepState:
-        done = locals["termination"] | locals["truncation"]
-        state = state.next(locals["reward"], done, self.alpha)
-
-        return state
-
-    def on_iteration_end(
-        self, state: EmptyCallbackState, locals, *, key: Key
-    ) -> EmptyCallbackState:
-        log = locals["log"]
-        opt_state = locals["opt_state"]
+    def on_iteration(self, ctx: IterationContext, *, key: Key) -> EmptyCallbackState:
+        log = ctx.training_log
+        opt_state = ctx.opt_state
 
         log["learning_rate"] = optax.tree_utils.tree_get(
             opt_state, "learning_rate", jnp.nan
         )
 
-        step_states = locals["state"].step_state.callback_states
-        step_state = step_states[
-            [
-                i
-                for i in range(len(step_states))
-                if isinstance(step_states[i], TensorBoardCallbackStepState)
-            ][0]
-        ]
+        step_state = ctx.step_state
 
         last_step = step_state.step.sum()
 
@@ -215,4 +197,15 @@ class TensorBoardCallback(
             "episode/length", step_state.average_length.mean(), last_step
         )
 
-        return state
+        return ctx.state
+
+    def on_training_start(
+        self, ctx: TrainingContext, *, key: Key
+    ) -> EmptyCallbackState:
+        return ctx.state
+
+    def on_training_end(self, ctx: TrainingContext, *, key: Key) -> EmptyCallbackState:
+        return ctx.state
+
+    def continue_training(self, ctx: IterationContext, *, key: Key) -> Bool[Array, ""]:
+        return jnp.array(True)
