@@ -5,15 +5,14 @@ description: Features of Lerax
 
 ## TensorBoard Logging
 
-To log metrics and visualizations using TensorBoard simply pass a path or `True` to the `tb_log` argument of the `learn` method of any algorithm.
-
-- If `tb_log` is a string, it is used as the log directory.
-- If `tb_log` is `True`, a default log directory is created.
+To log metrics to TensorBoard during training, you can use the `TensorBoardCallback` provided in `lerax.callback`.
+Configure the callback with the desired log directory or pick a name automatically from the policy and environment, and pass it to the `learn` method of your algorithm.
 
 ```py
 from jax import random as jr
 
 from lerax.algorithm import PPO
+from lerax.callback import TensorBoardCallback
 from lerax.env import CartPole
 from lerax.policy import MLPActorCriticPolicy
 
@@ -28,18 +27,20 @@ policy = algo.learn(
     policy,
     total_timesteps=2**16,
     key=learn_key,
-    tb_log=True, # Or tb_log="logs/name"
+    callback=TensorBoardCallback(env=env, policy=policy),
 )
 ```
 
 ## Showing a Progress Bar
 
-To show a progress bar during training, set `show_progress_bar` to `True` in the `learn` method of any algorithm.
+To show a progress bar during training, you can use the `ProgressBarCallback` provided in `lerax.callback`.
+Create a `ProgressBarCallback` instance with the total number of timesteps and pass it to the `learn` method of the algorithm.
 
 ```py
 from jax import random as jr
 
 from lerax.algorithm import PPO
+from lerax.callback import ProgressBarCallback
 from lerax.env import CartPole
 from lerax.policy import MLPActorCriticPolicy
 
@@ -54,23 +55,11 @@ policy = algo.learn(
     policy,
     total_timesteps=2**16,
     key=learn_key,
-    show_progress_bar=True,
+    callback=ProgressBarCallback(2**16),
 )
 ```
 
-Note that that progress bars will not work if the entire `learn` method is run in a JIT-compiled region.
-This includes using `equinox.filter_jit` or `jax.jit` on the `learn` method or other Jax transformations such as `jax.vmap` or `jax.pmap`.
-
-```py
-import equinox as eqx
-policy = eqx.filter_jit(algo.learn)(
-    env,
-    policy,
-    total_timesteps=2**16,
-    key=learn_key,
-    show_progress_bar=True, # Will not show progress bar
-)
-```
+Note that that progress bars will not work if the callback is created a JIT-compiled region. It must be created outside and passed in. This includes Jax transformations such as `grad`, and `vmap`.
 
 ## Gymnasium Compatibility
 

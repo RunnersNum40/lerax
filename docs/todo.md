@@ -15,7 +15,7 @@ description: A list of tasks and features to be implemented in Lerax.
 
 ## API
 
-- Training Callbacks
+- Early Stopping
 - Sharding support for distributed training
 
 ## Features
