@@ -56,8 +56,9 @@ reportIncompatibleMethodOverride = true
 reportIncompatibleVariableOverride = false  # Incompatible with eqx.AbstractVar
 reportFunctionMemberAccess = false
 
-[tool.pytest.ini_options]
-addopts = ["--import-mode=importlib", "-Werror", "--cov=lerax"]
+[tool.pytest]
+addopts = ["--cov=lerax", "--import-mode=importlib", "-Werror"]
+testpaths = ["tests"]
 
 [tool.ruff.lint]
 fixable = ["I001", "F401"]
