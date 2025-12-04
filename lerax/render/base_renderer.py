@@ -2,15 +2,22 @@ from abc import abstractmethod
 
 import equinox as eqx
 from jax import numpy as jnp
-from jaxtyping import ArrayLike, Float, Int
+from jaxtyping import Array, ArrayLike, Float, Int
 
 
 class Color(eqx.Module):
     """RGB in [0,1]. Helpers to convert to pygame-friendly formats."""
 
-    r: Float[ArrayLike, ""]
-    g: Float[ArrayLike, ""]
-    b: Float[ArrayLike, ""]
+    r: Float[Array, ""]
+    g: Float[Array, ""]
+    b: Float[Array, ""]
+
+    def __init__(
+        self, r: Float[ArrayLike, ""], g: Float[ArrayLike, ""], b: Float[ArrayLike, ""]
+    ):
+        self.r = jnp.asarray(r)
+        self.g = jnp.asarray(g)
+        self.b = jnp.asarray(b)
 
     def to_tuple(
         self,
@@ -59,18 +66,54 @@ class Transform(eqx.Module):
     Affine mapping from world coords to screen pixels.
 
     Has a constant scale for all axis to avoid distortion.
+
+    Attributes:
+        width: Width of the screen in pixels.
+        height: Height of the screen in pixels.
+        scale: Scale factor from world units to pixels.
+        offset: Offset to add after scaling.
+        y_up: If True, the y-axis points up in world space.
+
+    Args:
+        width: Width of the screen in pixels.
+        height: Height of the screen in pixels.
+        scale: Scale factor from world units to pixels.
+        offset: Offset to add after scaling.
+        y_up: If True, the y-axis points up in world space.
     """
 
-    width: Int[ArrayLike, ""]
-    height: Int[ArrayLike, ""]
+    width: Int[Array, ""]
+    height: Int[Array, ""]
 
-    scale: Float[ArrayLike, ""]
-    offset: Float[ArrayLike, "2"]
+    scale: Float[Array, ""]
+    offset: Float[Array, "2"]
 
     y_up: bool = True
 
-    def world_to_px(self, point: Float[ArrayLike, "2"]) -> Int[ArrayLike, "2"]:
-        """Return pixel coordinates corresponding to a point in world space."""
+    def __init__(
+        self,
+        width: Int[ArrayLike, ""],
+        height: Int[ArrayLike, ""],
+        scale: Float[ArrayLike, ""],
+        offset: Float[ArrayLike, "2"],
+        y_up: bool = True,
+    ):
+        self.width = jnp.asarray(width)
+        self.height = jnp.asarray(height)
+        self.scale = jnp.asarray(scale)
+        self.offset = jnp.asarray(offset)
+        self.y_up = y_up
+
+    def world_to_px(self, point: Float[ArrayLike, "2"]) -> Int[Array, "2"]:
+        """
+        Return pixel coordinates corresponding to a point in world space.
+
+        Args:
+            point: A point in world space.
+
+        Returns:
+            The corresponding pixel coordinates.
+        """
         pixel = jnp.asarray(point) * self.scale + self.offset
 
         if self.y_up:
@@ -78,17 +121,28 @@ class Transform(eqx.Module):
 
         return pixel.astype(int)
 
-    def scale_length(self, length: Float[ArrayLike, ""]) -> Float[ArrayLike, ""]:
-        """Scale a length in world space to pixel space."""
-        return length * self.scale
+    def scale_length(self, length: Float[ArrayLike, ""]) -> Float[Array, ""]:
+        """
+        Scale a length in world space to pixel space.
+
+        Args:
+            length: A length in world space.
+
+        Returns:
+            The corresponding length in pixel space.
+        """
+        return jnp.asarray(length * self.scale)
 
 
 class AbstractRenderer(eqx.Module):
     """
     Renderer interface.
 
-    All methods take coordinates in world space.
-    Renderers are not necessarily thread-safe or JITtable.
+    Note:
+        Renderers are not necessarily thread-safe or safe for JIT compilation.
+
+    Attributes:
+        transform: Transform from world space to pixel space.
     """
 
     transform: eqx.AbstractVar[Transform]
@@ -149,4 +203,4 @@ class AbstractRenderer(eqx.Module):
         color: Color,
     ): ...
     @abstractmethod
-    def as_array(self) -> Float[ArrayLike, "H W 3"]: ...
+    def as_array(self) -> Float[Array, "H W 3"]: ...

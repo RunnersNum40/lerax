@@ -19,6 +19,19 @@ from .base_renderer import WHITE, AbstractRenderer, Color, Transform
 class PygameRenderer(AbstractRenderer):
     """
     PyGame renderer implementation.
+
+    Attributes:
+        transform: Transform from world coordinates to screen pixels.
+        width: The width of the rendering window in pixels.
+        height: The height of the rendering window in pixels.
+        screen: The PyGame surface representing the rendering window.
+        background_color: The background color of the rendering window.
+
+    Args:
+        width: The width of the rendering window in pixels.
+        height: The height of the rendering window in pixels.
+        background_color: The background color of the rendering window.
+        transform: Transform from world coordinates to screen pixels.
     """
 
     transform: Transform
