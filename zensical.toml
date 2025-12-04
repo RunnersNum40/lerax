@@ -12,7 +12,6 @@ extra_css = ["stylesheets/extra.css"]
 draft = "Draft"
 
 [project.theme]
-# favicon =
 language = "en"
 features = [
   "announce.dismiss",
@@ -30,7 +29,6 @@ features = [
   "navigation.instant.progress",
   "navigation.path",
   "navigation.prune",
-  "navigation.sections",
   "navigation.tracking",
   "search.highlight",
   "toc.follow",
@@ -54,12 +52,22 @@ repo = "fontawesome/brands/github"
 
 [project.plugins.mkdocstrings.handlers.python]
 inventories = ["https://docs.python.org/3/objects.inv"]
-paths = ["lerax", "examples"]
+paths = [".", "examples"]
 
 [project.plugins.mkdocstrings.handlers.python.options]
 docstring_style = "google"
 inherited_members = true
+show_symbol_type_toc = true
+show_symbol_type_heading = true
 show_source = false
+separate_signature = true
+members_order = "source"
+show_signature_annotations = true
+show_signature_type_parameters = true
+show_root_heading = true
+show_root_full_path = true
+type_parameter_headings = true
+annotations_path = "source"
 
 [project.markdown_extensions.attr_list]
 
@@ -74,4 +82,8 @@ pygments_lang_class = true
 
 [project.markdown_extensions.pymdownx.superfences]
 
+[project.markdown_extensions.pymdownx.details]
+
 [project.markdown_extensions.footnotes]
+
+[project.markdown_extensions.admonition]

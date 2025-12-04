@@ -1,20 +1,17 @@
 ---
-title: TODO List
+title: To Do List
 description: A list of tasks and features to be implemented in Lerax.
 ---
 
-# TODO List
+# To Do List
 
 - Official release
     - Marketing on social media
     - Collect feedback from users
 
-## Documentation
-
-- API documentation (pending Zensical first-class support)
-
 ## API
 
+- Learning Rate Schedules
 - Early Stopping
 - Sharding support for distributed training
 

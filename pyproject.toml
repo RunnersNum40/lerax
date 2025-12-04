@@ -27,7 +27,7 @@ source = "https://github.com/RunnersNum40/lerax.git"
 
 [project.optional-dependencies]
 compatibility = ["gymnasium", "stable-baselines3", "gymnax", "flax"]
-docs = ["zensical", "griffe", "mkdocstrings-python"]
+docs = ["zensical", "mkdocstrings-python"]
 render = ["pygame", "imageio", "imageio-ffmpeg"]
 test = [
   "pytest",
