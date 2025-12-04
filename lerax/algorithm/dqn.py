@@ -16,6 +16,15 @@ from .off_policy import AbstractOffPolicyAlgorithm, OffPolicyState, OffPolicySte
 
 
 class DQNStats(eqx.Module):
+    """
+    DQN training statistics.
+
+    Attributes:
+        q_loss: The Q-value loss.
+        td_error: The temporal difference error.
+        mean_q: The mean Q-value.
+    """
+
     q_loss: Float[Array, ""]
     td_error: Float[Array, ""]
     mean_q: Float[Array, ""]
@@ -24,6 +33,36 @@ class DQNStats(eqx.Module):
 class DQN[PolicyType: AbstractStatefulDQNPolicy](
     AbstractOffPolicyAlgorithm[PolicyType]
 ):
+    """
+    Deep Q-Network (DQN) algorithm.
+
+    Attributes:
+        optimizer: The optimizer used for training.
+        gamma: Discount factor for future rewards.
+        tau: Soft update coefficient for target network.
+        learning_starts: Number of steps before learning starts.
+        target_update_period: Number of updates between target network updates.
+        max_grad_norm: Maximum gradient norm for clipping.
+        num_envs: Number of parallel environments.
+        num_steps: Number of steps to collect per environment.
+        gradient_steps: Number of gradient steps per training iteration.
+        batch_size: Batch size for training.
+        buffer_size: Size of the replay buffer.
+
+    Args:
+        gamma: Discount factor for future rewards.
+        tau: Soft update coefficient for target network.
+        learning_starts: Number of steps before learning starts.
+        target_update_period: Number of updates between target network updates.
+        max_grad_norm: Maximum gradient norm for clipping.
+        num_envs: Number of parallel environments.
+        num_steps: Number of steps to collect per environment.
+        gradient_steps: Number of gradient steps per training iteration.
+        batch_size: Batch size for training.
+        buffer_size: Size of the replay buffer.
+        learning_rate: Learning rate for the optimizer.
+    """
+
     optimizer: optax.GradientTransformation
 
     gamma: float

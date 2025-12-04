@@ -24,6 +24,62 @@ class AcrobotState(AbstractClassicControlEnvState):
 class Acrobot(
     AbstractClassicControlEnv[AcrobotState, Int[Array, ""], Float[Array, "4"]]
 ):
+    """
+    Acrobot environment matching the [Gymnasium Acrobot environment](https://gymnasium.farama.org/environments/classic_control/acrobot/).
+
+    Note:
+        To achieve identical dynamics to Gymnasium set `solver=diffrax.Euler()`.
+
+    ## Action Space
+
+    The action space is discrete with three actions:
+
+    - 0: Apply -1 torque to the joint between the two links
+    - 1: Apply 0 torque
+    - 2: Apply +1 torque to the joint between the two links
+
+    The action applies a fixed magnitude torque to the joint for the duration of the time step.
+
+    ## Observation Space
+
+    The observation space is a 6-dimensional continuous space representing the state of the two links:
+
+    | Index | Observation               | Min Value | Max Value |
+    |-------|---------------------------|-----------|-----------|
+    | 0     | Cosine of Joint Angle 1   | -1.0      | 1.0       |
+    | 1     | Sine of Joint Angle 1     | -1.0      | 1.0       |
+    | 2     | Cosine of Joint Angle 2   | -1.0      | 1.0       |
+    | 3     | Sine of Joint Angle 2     | -1.0      | 1.0       |
+    | 4     | Joint Velocity 1          | -4π       | 4π        |
+    | 5     | Joint Velocity 2          | -9π       | 9π        |
+
+    ## Reward
+
+    Non-terminal steps yield a reward of -1.0 and the terminal step yields a reward of 0.0.
+
+    ## Termination
+
+    The episode terminates when the tip of the second link reaches a height greater than 1.0 unit above the base.
+    This corresponds to the condition: -cos(theta1) - cos(theta1 + theta2) > 1.0
+
+    Args:
+        gravity: Gravitational acceleration.
+        link_length_1: Length of the first link.
+        link_length_2: Length of the second link.
+        link_mass_1: Mass of the first link.
+        link_mass_2: Mass of the second link.
+        link_com_pos_1: Center of mass position of the first link.
+        link_com_pos_2: Center of mass position of the second link.
+        link_moi: Moment of inertia of the links.
+        max_vel_1: Maximum angular velocity for the first joint.
+        max_vel_2: Maximum angular velocity for the second joint.
+        torque_max_noise: Maximum noise to add to the applied torque.
+        torques: Array of possible torques corresponding to each action.
+        dt: Time step for integration.
+        solver: Diffrax solver to use for integration.
+        stepsize_controller: Step size controller for adaptive solvers.
+    """
+
     name: ClassVar[str] = "Acrobot"
 
     action_space: Discrete

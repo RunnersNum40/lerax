@@ -21,6 +21,19 @@ from ..base_policy import (
 class AbstractStatelessQPolicy[ObsType](
     AbstractStatelessPolicy[Integer[Array, ""], ObsType]
 ):
+    """
+    Base class for stateless Q-learning policies.
+
+    Q-learning policies map observations to actions by selecting the action
+    with the highest Q-value, with epsilon-greedy exploration.
+
+    Attributes:
+        name: Name of the policy class.
+        action_space: The action space of the environment.
+        observation_space: The observation space of the environment.
+        epsilon: The epsilon value for epsilon-greedy action selection.
+    """
+
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[Discrete]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
@@ -29,7 +42,15 @@ class AbstractStatelessQPolicy[ObsType](
 
     @abstractmethod
     def q_values(self, observation: ObsType) -> Float[Array, " actions"]:
-        """Return Q-values for all actions given an observation."""
+        """
+        Return Q-values for all actions given an observation.
+
+        Args:
+            observation: The current observation from the environment.
+
+        Returns:
+            Q-values for all actions.
+        """
 
     def into_stateful[SelfType: AbstractStatelessQPolicy](
         self: SelfType,
@@ -39,6 +60,17 @@ class AbstractStatelessQPolicy[ObsType](
     def __call__(
         self, observation: ObsType, *, key: Array | None = None
     ) -> Integer[Array, ""]:
+        """
+        Return the action for a given observation.
+
+        Args:
+            observation: The current observation from the environment.
+            key: JAX PRNG key for stochastic action selection. If None, the
+                action with the highest Q-value is always selected.
+
+        Returns:
+            The selected action.
+        """
         q_vals = self.q_values(observation)
 
         if key is None or self.epsilon <= 0.0:
@@ -57,6 +89,20 @@ class AbstractStatelessQPolicy[ObsType](
 class AbstractStatefulQPolicy[StateType: AbstractPolicyState, ObsType](
     AbstractStatefulPolicy[StateType, Integer[Array, ""], ObsType]
 ):
+    """
+    Base class for stateful Q-learning policies.
+
+    Q-learning policies map observations and internal states to actions by
+    selecting the action with the highest Q-value, with epsilon-greedy
+    exploration.
+
+    Attributes:
+        name: Name of the policy class.
+        action_space: The action space of the environment.
+        observation_space: The observation space of the environment.
+        epsilon: The epsilon value for epsilon-greedy action selection.
+    """
+
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[Discrete]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
@@ -67,11 +113,34 @@ class AbstractStatefulQPolicy[StateType: AbstractPolicyState, ObsType](
     def q_values(
         self, state: StateType, observation: ObsType
     ) -> tuple[StateType, Float[Array, " actions"]]:
-        """Return Q-values for all actions given an observation and state."""
+        """
+        Return Q-values for all actions given an observation and state.
+
+        Args:
+            state: The current internal state of the policy.
+            observation: The current observation from the environment.
+
+        Returns:
+            A tuple of the next internal state and the Q-values for all actions.
+        """
 
     def __call__(
         self, state: StateType, observation: ObsType, *, key: Array | None = None
     ) -> tuple[StateType, Integer[Array, ""]]:
+        """
+        Return the next state and action for a given observation and state.
+
+        Uses epsilon-greedy action selection.
+
+        Args:
+            state: The current internal state of the policy.
+            observation: The current observation from the environment.
+            key: JAX PRNG key for stochastic action selection. If None, the
+                action with the highest Q-value is always selected.
+
+        Returns:
+            A tuple of the next internal state and the selected action.
+        """
         state, q_vals = self.q_values(state, observation)
 
         if key is None or self.epsilon <= 0.0:

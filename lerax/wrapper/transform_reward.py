@@ -52,11 +52,48 @@ class AbstractPureTransformRewardWrapper[
         return self.env.transition_info(state, action, next_state)
 
 
+class TransformReward[StateType: AbstractEnvLikeState, ActType, ObsType](
+    AbstractPureTransformRewardWrapper[StateType, ActType, ObsType]
+):
+    """
+    Apply an arbitrary function to the rewards emitted by the wrapped environment.
+
+    Attributes:
+        env: The environment to wrap.
+        func: The function to apply to the rewards.
+
+    Args:
+        env: The environment to wrap.
+        func: The function to apply to the rewards.
+    """
+
+    env: AbstractEnvLike[StateType, ActType, ObsType]
+    func: Callable[[Float[Array, ""]], Float[Array, ""]]
+
+    def __init__(
+        self,
+        env: AbstractEnvLike[StateType, ActType, ObsType],
+        func: Callable[[Float[Array, ""]], Float[Array, ""]],
+    ):
+        self.env = env
+        self.func = func
+
+
 class ClipReward[StateType: AbstractEnvLikeState, ActType, ObsType](
     AbstractPureTransformRewardWrapper[StateType, ActType, ObsType]
 ):
     """
-    Element-wise clip of rewards:  `reward -> clamp(min, max)`.
+    Cip the rewards emitted by the wrapped environment to a specified range.
+
+    Attributes:
+        env: The environment to wrap.
+        min: The minimum reward value.
+        max: The maximum reward value.
+
+    Args:
+        env: The environment to wrap.
+        min: The minimum reward value.
+        max: The maximum reward value.
     """
 
     env: AbstractEnvLike[StateType, ActType, ObsType]

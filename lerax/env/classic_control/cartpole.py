@@ -24,6 +24,61 @@ class CartPoleState(AbstractClassicControlEnvState):
 class CartPole(
     AbstractClassicControlEnv[CartPoleState, Int[Array, ""], Float[Array, "4"]]
 ):
+    """
+    CartPole environment matching the [Gymnasium Cart Pole environment](https://gymnasium.farama.org/environments/classic_control/cart_pole/).
+
+    Note:
+        To achieve identical dynamics to Gymnasium set `solver=diffrax.Euler()`.
+
+    ## Action Space
+
+    The action space is discrete with two actions:
+
+    - 0: Push cart to the left
+    - 1: Push cart to the right
+
+    The action applies a fixed magnitude force to the cart in the specified direction for the duration of the time step.
+
+    ## Observation Space
+
+    The observation space is a 4-dimensional continuous space representing the state of the cart and pole:
+
+    | Index | Observation           | Min Value           | Max Value          |
+    |-------|-----------------------|---------------------|--------------------|
+    | 0     | Cart Position         | -4.8                | 4.8                |
+    | 1     | Cart Velocity         | -Inf                | Inf                |
+    | 2     | Pole Angle            | -24 deg (-0.418 rad)| 24 deg (0.418 rad) |
+    | 3     | Pole Angular Velocity | -Inf                | Inf                |
+
+    These values are double the termination thresholds to allow for some margin.
+    These limits can be modified via the `theta_threshold_radians` and `x_threshold` parameters.
+
+    ## Reward
+
+    The reward is 1 for every step taken, including the termination step.
+
+    ## Termination
+
+    The episode terminates when:
+
+    - The pole angle exceeds ±12 degrees from vertical.
+    - The cart position exceeds ±2.4 units from the center.
+
+    These values can be modified via the `theta_threshold_radians` and `x_threshold` parameters.
+
+    Args:
+        gravity: The gravity constant.
+        cart_mass: The mass of the cart.
+        pole_mass: The mass of the pole.
+        half_length: The half-length of the pole.
+        force_mag: The magnitude of the force applied to the cart.
+        theta_threshold_radians: The angle threshold for terminating the episode.
+        x_threshold: The position threshold for terminating the episode.
+        dt: The time step for the simulation.
+        solver: The differential equation solver used for simulating the dynamics.
+        stepsize_controller: The step size controller for the solver.
+    """
+
     name: ClassVar[str] = "CartPole"
 
     action_space: Discrete

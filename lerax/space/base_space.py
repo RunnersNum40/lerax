@@ -17,11 +17,7 @@ class AbstractSpace[SampleType](eqx.Module):
     @property
     @abstractmethod
     def shape(self) -> tuple[int, ...] | None:
-        """Returns the shape of the space as an immutable property."""
-
-    @abstractmethod
-    def canonical(self) -> SampleType:
-        """Returns a canonical element of the space."""
+        """The shape of a sample of the space."""
 
     @abstractmethod
     def sample(self, key: Key) -> SampleType:
@@ -31,26 +27,30 @@ class AbstractSpace[SampleType](eqx.Module):
     def contains(self, x: Any) -> Bool[Array, ""]:
         """Returns True if the input is in the space, False otherwise."""
 
+    @abstractmethod
+    def flatten_sample(self, sample: SampleType) -> Float[Array, " n"]:
+        """Flatten a sample from the space into a 1-D array."""
+
+    @property
+    @abstractmethod
+    def flat_size(self) -> int:
+        """Return the size of a flattened sample from the space."""
+
+    @abstractmethod
+    def canonical(self) -> SampleType:
+        """Return an element of the space."""
+
     def __contains__(self, x: Any) -> bool:
         return bool(self.contains(x))
 
     @abstractmethod
     def __eq__(self, other: object) -> bool:
-        """Checks if two spaces are equal based on their properties."""
+        """Return if this space is equal to another space."""
 
     @abstractmethod
     def __repr__(self) -> str:
-        """Returns a string representation of the space."""
+        """Return a string representation of the space."""
 
     @abstractmethod
     def __hash__(self) -> int:
-        """Returns a hash of the space."""
-
-    @abstractmethod
-    def flatten_sample(self, sample: SampleType) -> Float[Array, " n"]:
-        """Flattens a sample from the space into a 1-D array."""
-
-    @property
-    @abstractmethod
-    def flat_size(self) -> int:
-        """Returns the dimension of the flattened sample."""
+        """Return a hash of the space."""

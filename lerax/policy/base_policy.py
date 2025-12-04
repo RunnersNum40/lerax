@@ -10,10 +10,25 @@ from lerax.utils import Serializable
 
 
 class AbstractPolicyState(eqx.Module):
+    """
+    Base class for policy internal states.
+    """
+
     pass
 
 
 class AbstractStatelessPolicy[ActType, ObsType](Serializable):
+    """
+    Base class for stateless policies.
+
+    Policies map observations to actions.
+
+    Attributes:
+        name: The name of the policy.
+        action_space: The action space of the policy.
+        observation_space: The observation space of the policy.
+    """
+
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
@@ -32,6 +47,17 @@ class AbstractStatelessPolicy[ActType, ObsType](Serializable):
 class AbstractStatefulPolicy[StateType: AbstractPolicyState, ActType, ObsType](
     Serializable
 ):
+    """
+    Base class for stateful policies.
+
+    Policies map observations and internal states to actions and new internal states.
+
+    Attributes:
+        name: The name of the policy.
+        action_space: The action space of the policy.
+        observation_space: The observation space of the policy.
+    """
+
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
@@ -57,6 +83,18 @@ class NullStatefulPolicyState(AbstractPolicyState):
 class AbstractStatefulWrapper[PolicyType: AbstractStatelessPolicy, ActType, ObsType](
     AbstractStatefulPolicy[NullStatefulPolicyState, ActType, ObsType]
 ):
+    """
+    Wrapper to convert a stateless policy into a stateful policy with a null state.
+
+    Used to enable compatibility between stateless and stateful policy interfaces.
+
+    Attributes:
+        name: The name of the policy.
+        action_space: The action space of the policy.
+        observation_space: The observation space of the policy.
+        policy: The underlying stateless policy.
+    """
+
     policy: eqx.AbstractVar[PolicyType]
 
     @property

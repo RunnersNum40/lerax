@@ -34,6 +34,36 @@ class NCDEActorCriticPolicy[
 ](AbstractStatefulActorCriticPolicy[NCDEPolicyState, ActType, ObsType]):
     """
     Actor–critic with a shared MLPNeuralCDE encoder and MLP heads.
+
+    Acts by encoding observations with a Neural CDE, then passing the
+    encoded features to separate MLPs to produce action distributions and
+    value estimates.
+
+    Attributes:
+        name: Name of the policy class.
+        action_space: The action space of the environment.
+        observation_space: The observation space of the environment.
+        encoder: Neural CDE to encode observations into features.
+        value_head: MLP to produce value estimates from features.
+        action_head: MLP to produce action distributions from features.
+
+    Args:
+        env: The environment to create the policy for.
+        solver: Diffrax solver to use for the Neural CDE.
+        feature_size: Size of the feature representation.
+        latent_size: Size of the latent state in the Neural CDE.
+        field_width: Width of the hidden layers in the Neural CDE vector field.
+        field_depth: Depth of the hidden layers in the Neural CDE vector field.
+        initial_width: Width of the hidden layers in the Neural CDE initial network.
+        initial_depth: Depth of the hidden layers in the Neural CDE initial network.
+        value_width: Width of the hidden layers in the value head.
+        value_depth: Depth of the hidden layers in the value head.
+        action_width: Width of the hidden layers in the action head.
+        action_depth: Depth of the hidden layers in the action head.
+        history_length: Number of past observations to condition on.
+        dt: Time step between observations for the Neural CDE.
+        log_std_init: Initial log standard deviation for continuous action spaces.
+        key: JAX PRNG key for parameter initialization.
     """
 
     name: ClassVar[str] = "NCDEActorCriticPolicy"

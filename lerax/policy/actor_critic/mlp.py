@@ -19,6 +19,32 @@ class MLPActorCriticPolicy[
 ](AbstractStatelessActorCriticPolicy[ActType, ObsType]):
     """
     Actor–critic policy with MLP components.
+
+    Uses an MLP to encode observations into features, then separate MLPs to
+    produce action distributions and value estimates from those features.
+
+    Action distributions are produced by mapping action head outputs to the
+    parameters of the appropriate distribution for the action space.
+
+    Attributes:
+        name: Name of the policy class.
+        action_space: The action space of the environment.
+        observation_space: The observation space of the environment.
+        encoder: MLP to encode observations into features.
+        value_head: MLP to produce value estimates from features.
+        action_head: MLP to produce action distributions from features.
+
+    Args:
+        env: The environment to create the policy for.
+        feature_size: Size of the feature representation.
+        feature_width: Width of the hidden layers in the feature encoder.
+        feature_depth: Depth of the hidden layers in the feature encoder.
+        value_width: Width of the hidden layers in the value head.
+        value_depth: Depth of the hidden layers in the value head.
+        action_width: Width of the hidden layers in the action head.
+        action_depth: Depth of the hidden layers in the action head.
+        log_std_init: Initial log standard deviation for continuous action spaces.
+        key: JAX PRNG key for parameter initialization.
     """
 
     name: ClassVar[str] = "MLPActorCriticPolicy"

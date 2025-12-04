@@ -27,6 +27,16 @@ from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractS
 
 
 class OffPolicyStepState[PolicyType: AbstractStatefulPolicy](AbstractStepState):
+    """
+    State object for off-policy algorithms steps.
+
+    Attributes:
+        env_state: The state of the environment.
+        policy_state: The state of the policy.
+        callback_state: The state of the callback for this step.
+        buffer: The replay buffer storing experience.
+    """
+
     env_state: AbstractEnvLikeState
     policy_state: AbstractPolicyState
     callback_state: AbstractCallbackStepState
@@ -41,6 +51,22 @@ class OffPolicyStepState[PolicyType: AbstractStatefulPolicy](AbstractStepState):
         callback: AbstractCallback,
         key: Key,
     ) -> OffPolicyStepState[PolicyType]:
+        """
+        Initialize the off-policy step state.
+
+        Resets the environment and policy, initializes the callback state,
+        and creates an empty replay buffer.
+
+        Args:
+            size: The size of the replay buffer.
+            env: The environment to initialize.
+            policy: The policy to initialize.
+            callback: The callback to initialize.
+            key: A JAX PRNG key.
+
+        Returns:
+            The initialized step state.
+        """
         env_key, policy_key = jr.split(key, 2)
         env_state = env.initial(key=env_key)
         policy_state = policy.reset(key=policy_key)
@@ -56,6 +82,18 @@ class OffPolicyStepState[PolicyType: AbstractStatefulPolicy](AbstractStepState):
 class OffPolicyState[PolicyType: AbstractStatefulPolicy](
     AbstractAlgorithmState[PolicyType]
 ):
+    """
+    State for off-policy algorithms.
+
+    Attributes:
+        iteration_count: The current iteration count.
+        step_state: The current step state.
+        env: The environment being used.
+        policy: The policy being trained.
+        opt_state: The optimizer state.
+        callback_state: The state of the callback for this iteration.
+    """
+
     iteration_count: Int[Array, ""]
     step_state: OffPolicyStepState[PolicyType]
     env: AbstractEnvLike
@@ -67,6 +105,21 @@ class OffPolicyState[PolicyType: AbstractStatefulPolicy](
 class AbstractOffPolicyAlgorithm[PolicyType: AbstractStatefulPolicy](
     AbstractAlgorithm[PolicyType, OffPolicyState[PolicyType]]
 ):
+    """
+    Base class for off-policy algorithms.
+
+    Generates experience using a policy and environment, stores it in a replay buffer,
+    and trains the policy using samples from the replay buffer.
+
+    Attributes:
+        optimizer: The optimizer used for training the policy.
+        buffer_size: The size of the replay buffer.
+        gamma: The discount factor for future rewards.
+        learning_starts: The number of initial steps to collect before training.
+        num_envs: The number of parallel environments.
+        batch_size: The batch size for training.
+    """
+
     optimizer: eqx.AbstractVar[optax.GradientTransformation]
 
     buffer_size: eqx.AbstractVar[int]
@@ -196,7 +249,19 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractStatefulPolicy](
         *,
         key: Key,
     ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
-        """Trains the policy using data from the replay buffer."""
+        """
+        Trains the policy using data from the replay buffer.
+
+        Args:
+            policy: The policy to train.
+            opt_state: The current optimizer state.
+            buffer: The replay buffer containing experience.
+            key: A JAX PRNG key.
+
+        Returns:
+            A tuple containing the updated policy, updated optimizer state,
+            and a log dictionary with training information.
+        """
 
     def reset(
         self,

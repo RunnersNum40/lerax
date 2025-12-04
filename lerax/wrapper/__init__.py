@@ -7,7 +7,7 @@ from .transform_observation import (
     RescaleObservation,
     TransformObservation,
 )
-from .transform_reward import ClipReward
+from .transform_reward import ClipReward, TransformReward
 
 __all__ = [
     "AbstractWrapper",
@@ -22,4 +22,5 @@ __all__ = [
     "RescaleObservation",
     "TransformObservation",
     "ClipReward",
+    "TransformReward",
 ]

@@ -31,6 +31,15 @@ from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractS
 
 
 class OnPolicyStepState[PolicyType: AbstractStatefulPolicy](AbstractStepState):
+    """
+    State for on-policy algorithm steps.
+
+    Attributes:
+        env_state: The state of the environment.
+        policy_state: The state of the policy.
+        callback_state: The state of the callback for this step.
+    """
+
     env_state: AbstractEnvLikeState
     policy_state: AbstractPolicyState
     callback_state: AbstractCallbackStepState
@@ -43,6 +52,20 @@ class OnPolicyStepState[PolicyType: AbstractStatefulPolicy](AbstractStepState):
         callback: AbstractCallback,
         key: Key,
     ) -> OnPolicyStepState[PolicyType]:
+        """
+        Initialize the step state for the on-policy algorithm.
+
+        Resets the environment, policy, and callback states.
+
+        Args:
+            env: The environment to initialize.
+            policy: The policy to initialize.
+            callback: The callback to initialize.
+            key: A JAX PRNG key.
+
+        Returns:
+            The initialized step state.
+        """
         env_key, policy_key = jr.split(key, 2)
         env_state = env.initial(key=env_key)
         policy_state = policy.reset(key=policy_key)
@@ -55,6 +78,18 @@ class OnPolicyStepState[PolicyType: AbstractStatefulPolicy](AbstractStepState):
 class OnPolicyState[PolicyType: AbstractStatefulPolicy](
     AbstractAlgorithmState[PolicyType]
 ):
+    """
+    State for on-policy algorithms.
+
+    Attributes:
+        iteration_count: The current iteration count.
+        step_state: The state for the current step.
+        env: The environment being used.
+        policy: The policy being trained.
+        opt_state: The optimizer state.
+        callback_state: The state of the callback for this iteration.
+    """
+
     iteration_count: Int[Array, ""]
     step_state: OnPolicyStepState[PolicyType]
     env: AbstractEnvLike
@@ -71,6 +106,14 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
 
     Generates rollouts using the current policy and estimates advantages and
     returns using GAE. Trains the policy using the collected rollouts.
+
+    Attributes:
+        optimizer: The optimizer used for training the policy.
+        gae_lambda: The GAE lambda parameter.
+        gamma: The discount factor.
+        num_envs: The number of parallel environments.
+        num_steps: The number of steps to collect per environment.
+        batch_size: The batch size for training.
     """
 
     optimizer: eqx.AbstractVar[optax.GradientTransformation]
@@ -211,7 +254,19 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
         *,
         key: Key,
     ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
-        """Train the policy using the rollout buffer."""
+        """
+        Train the policy using the rollout buffer.
+
+        Args:
+            policy: The current policy.
+            opt_state: The current optimizer state.
+            buffer: The rollout buffer containing collected experiences.
+            key: A JAX PRNG key.
+
+        Returns:
+            A tuple containing the updated policy, updated optimizer state,
+            and a log dictionary.
+        """
 
     def reset(
         self,

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime
 
-import equinox as eqx
 import optax
 from jax import lax
 from jax import numpy as jnp
@@ -27,6 +26,12 @@ from .base_callback import (
 class JITSummaryWriter:
     """
     A wrapper around `tensorboardX.SummaryWriter` with a JIT compatible interface.
+
+    Attributes:
+        summary_writer: The underlying SummaryWriter instance.
+
+    Args:
+        log_dir: Directory to save TensorBoard logs. If None, uses default.
     """
 
     summary_writer: SummaryWriter
@@ -44,11 +49,6 @@ class JITSummaryWriter:
         """
         Add a scalar value to the summary writer.
         """
-        scalar_value = eqx.error_if(
-            scalar_value,
-            jnp.isnan(scalar_value) | jnp.isinf(scalar_value),
-            "Scalar value cannot be NaN or Inf.",
-        )
         callback_with_numpy_wrapper(self.summary_writer.add_scalar)(
             tag, scalar_value, global_step, walltime
         )
@@ -78,6 +78,22 @@ class TensorBoardCallbackStepState(AbstractCallbackStepState):
 
     Records cumulative episode returns and lengths, and the exponential moving
     average of them over episodes.
+
+    Attributes:
+        step: Current training step.
+        episode_return: Cumulative return for the current episode.
+        episode_length: Length of the current episode.
+        episode_done: Boolean indicating if the current episode is done.
+        average_return: Exponential moving average of episode returns.
+        average_length: Exponential moving average of episode lengths.
+
+    Args:
+        step: Current training step.
+        episode_return: Cumulative return for the current episode.
+        episode_length: Length of the current episode.
+        episode_done: Boolean indicating if the current episode is done.
+        average_return: Exponential moving average of episode returns.
+        average_length: Exponential moving average of episode lengths.
     """
 
     step: Int[Array, ""]
@@ -88,6 +104,22 @@ class TensorBoardCallbackStepState(AbstractCallbackStepState):
 
     average_return: Float[Array, ""]
     average_length: Float[Array, ""]
+
+    def __init__(
+        self,
+        step: Int[Array, ""],
+        episode_return: Float[ArrayLike, ""],
+        episode_length: Int[ArrayLike, ""],
+        episode_done: Bool[ArrayLike, ""],
+        average_return: Float[ArrayLike, ""],
+        average_length: Float[ArrayLike, ""],
+    ):
+        self.step = jnp.asarray(step)
+        self.episode_return = jnp.asarray(episode_return)
+        self.episode_length = jnp.asarray(episode_length)
+        self.episode_done = jnp.asarray(episode_done)
+        self.average_return = jnp.asarray(average_return)
+        self.average_length = jnp.asarray(average_length)
 
     @classmethod
     def initial(cls) -> TensorBoardCallbackStepState:
@@ -137,6 +169,21 @@ class TensorBoardCallback(
         - train/:
             - learning_rate: The current learning rate.
             - ...: Any other statistics in the training log.
+
+    Note:
+        If the callback is instantiated inside a JIT-compiled function, it may
+        not work correctly.
+
+    Attributes:
+        tb_writer: The TensorBoard summary writer.
+        alpha: Smoothing factor for exponential moving averages.
+
+    Args:
+        name: Name for the TensorBoard log directory. If None, a name
+            is generated based on the current time, environment name, and policy name.
+        env: The environment being trained on. Used for naming if `name` is None.
+        policy: The policy being trained. Used for naming if `name` is None.
+        alpha: Smoothing factor for exponential moving averages.
     """
 
     tb_writer: JITSummaryWriter

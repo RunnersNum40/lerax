@@ -16,17 +16,32 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
     """
     A space of continuous values.
 
-    A continuous closed set of floats.
+    Values in the Box space can be unbounded (i.e., infinite) on either
+    the lower or upper end. Sampling from an unbounded dimension uses a
+    normal distribution. Sampling from a dimension that is only bounded on
+    one end uses an exponential distribution shifted to the bound. Sampling
+    a bounded dimension uses a uniform distribution.
+
+    Attributes:
+        low: The lower bounds of the space.
+        high: The upper bounds of the space.
+        shape: The shape of the space.
+
+    Args:
+        low: The lower bounds of the space.
+        high: The upper bounds of the space.
+        shape: The shape of the space. If None, the shape is inferred from low
+            and high.
     """
 
     _shape: tuple[int, ...]
-    high: Float[Array, " ..."]
-    low: Float[Array, " ..."]
+    low: Float[Array, "#n"]
+    high: Float[Array, "#n"]
 
     def __init__(
         self,
-        low: Float[ArrayLike, " ..."],
-        high: Float[ArrayLike, " ..."],
+        low: Float[ArrayLike, "#n"],
+        high: Float[ArrayLike, "#n"],
         shape: tuple[int, ...] | None = None,
     ):
         low = jnp.asarray(low, dtype=float)

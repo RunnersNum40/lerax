@@ -11,7 +11,15 @@ from .utils import try_cast
 
 
 class MultiDiscrete(AbstractSpace[Int[Array, " n"]]):
-    """Cartesian product of discrete spaces."""
+    """
+    Cartesian product of discrete spaces.
+
+    Attributes:
+        ns: The number of discrete values for each dimension.
+
+    Args:
+        ns: The number of discrete values for each dimension.
+    """
 
     ns: tuple[int, ...]
 

@@ -15,14 +15,38 @@ from .base_callback import (
 
 
 class CallbackListStepState(AbstractCallbackStepState):
-    states: list[AbstractCallbackStepState | None]
+    """
+    State for CallbackList callback step.
+
+    Attributes:
+        states: List of step states for each callback.
+    """
+
+    states: list[AbstractCallbackStepState]
 
 
 class CallbackListState(AbstractCallbackState):
+    """
+    State for CallbackList callback.
+
+    Attributes:
+        states: List of states for each callback.
+    """
+
     states: list[AbstractCallbackState]
 
 
 class CallbackList(AbstractCallback[CallbackListState, CallbackListStepState]):
+    """
+    Callback that aggregates multiple callbacks and forwards calls to them.
+
+    Attributes:
+        callbacks: List of callbacks to aggregate.
+
+    Args:
+        callbacks: List of callbacks to aggregate.
+    """
+
     callbacks: list[AbstractCallback]
 
     def __init__(self, callbacks: list[AbstractCallback]) -> None:

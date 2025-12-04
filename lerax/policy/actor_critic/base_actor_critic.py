@@ -19,9 +19,21 @@ from ..base_policy import (
 class AbstractStatelessActorCriticPolicy[ActType, ObsType](
     AbstractStatelessPolicy[ActType, ObsType]
 ):
+    """
+    Base class for stateless actor-critic policies.
+
+    Actor-critic policies map observations to actions and values.
+
+    Attributes:
+        name: The name of the policy.
+        action_space: The action space of the policy.
+        observation_space: The observation space of the policy.
+    """
+
+    name: eqx.AbstractClassVar[str]
+
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
-    name: eqx.AbstractClassVar[str]
 
     @abstractmethod
     def action_and_value(
@@ -30,14 +42,14 @@ class AbstractStatelessActorCriticPolicy[ActType, ObsType](
         """
         Get an action and value from an observation.
 
-        **Arguments:**
-            - observation: The observation to get the action and value for.
-            - key: A JAX Key.
+        Args:
+            observation: The observation to get the action and value for.
+            key: A JAX PRNG key.
 
-        **Returns:**
-            - action: The action to take.
-            - value: The value of the observation.
-            - log_prob: The log probability of the action.
+        Returns:
+            action: The action to take.
+            value: The value of the observation.
+            log_prob: The log probability of the action.
         """
 
     @abstractmethod
@@ -47,14 +59,14 @@ class AbstractStatelessActorCriticPolicy[ActType, ObsType](
         """
         Evaluate an action given an observation.
 
-        **Arguments:**
-            - observation: The observation to evaluate the action for.
-            - action: The action to evaluate.
+        Args:
+            observation: The observation to evaluate the action for.
+            action: The action to evaluate.
 
-        **Returns:**
-            - value: The value of the observation.
-            - log_prob: The log probability of the action.
-            - entropy: The entropy of the action distribution.
+        Returns:
+            value: The value of the observation.
+            log_prob: The log probability of the action.
+            entropy: The entropy of the action distribution.
         """
 
     @abstractmethod
@@ -62,25 +74,43 @@ class AbstractStatelessActorCriticPolicy[ActType, ObsType](
         """
         Get the value of an observation.
 
-        **Arguments:**
-            - observation: The observation to get the value for.
+        Args:
+            observation: The observation to get the value for.
 
-        **Returns:**
-            - value: The value of the observation.
+        Returns:
+            value: The value of the observation.
         """
 
     def into_stateful[SelfType: AbstractStatelessActorCriticPolicy](
         self: SelfType,
     ) -> ActorCriticStatefulWrapper[SelfType, ActType, ObsType]:
+        """
+        Transform this stateless policy into a stateful one.
+
+        Returns:
+            A stateful wrapper around this policy.
+        """
         return ActorCriticStatefulWrapper(self)
 
 
 class AbstractStatefulActorCriticPolicy[
     StateType: AbstractPolicyState, ActType, ObsType
 ](AbstractStatefulPolicy[StateType, ActType, ObsType]):
+    """
+    Base class for stateful actor-critic policies.
+
+    Actor-critic policies map observations and internal states to actions, values, and new internal states.
+
+    Attributes:
+        name: The name of the policy.
+        action_space: The action space of the policy.
+        observation_space: The observation space of the policy.
+    """
+
+    name: eqx.AbstractClassVar[str]
+
     action_space: eqx.AbstractVar[AbstractSpace[ActType]]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
-    name: eqx.AbstractClassVar[str]
 
     @abstractmethod
     def action_and_value(
@@ -89,16 +119,16 @@ class AbstractStatefulActorCriticPolicy[
         """
         Get an action and value from an observation.
 
-        **Arguments:**
-            - state: The current policy state.
-            - observation: The observation to get the action and value for.
-            - key: A JAX Key.
+        Args:
+            state: The current policy state.
+            observation: The observation to get the action and value for.
+            key: A JAX PRNG key.
 
-        **Returns:**
-            - new_state: The new policy state.
-            - action: The action to take.
-            - value: The value of the observation.
-            - log_prob: The log probability of the action.
+        Returns:
+            new_state: The new policy state.
+            action: The action to take.
+            value: The value of the observation.
+            log_prob: The log probability of the action.
         """
 
     @abstractmethod
@@ -108,16 +138,16 @@ class AbstractStatefulActorCriticPolicy[
         """
         Evaluate an action given an observation.
 
-        **Arguments:**
-            - state: The current policy state.
-            - observation: The observation to evaluate the action for.
-            - action: The action to evaluate.
+        Args:
+            state: The current policy state.
+            observation: The observation to evaluate the action for.
+            action: The action to evaluate.
 
-        **Returns:**
-            - new_state: The new policy state.
-            - value: The value of the observation.
-            - log_prob: The log probability of the action.
-            - entropy: The entropy of the action distribution.
+        Returns:
+            new_state: The new policy state.
+            value: The value of the observation.
+            log_prob: The log probability of the action.
+            entropy: The entropy of the action distribution.
         """
 
     @abstractmethod
@@ -127,13 +157,13 @@ class AbstractStatefulActorCriticPolicy[
         """
         Get the value of an observation.
 
-        **Arguments:**
-            - state: The current policy state.
-            - observation: The observation to get the value for.
+        Args:
+            state: The current policy state.
+            observation: The observation to get the value for.
 
-        **Returns:**
-            - new_state: The new policy state.
-            - value: The value of the observation.
+        Returns:
+            new_state: The new policy state.
+            value: The value of the observation.
         """
 
 

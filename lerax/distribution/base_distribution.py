@@ -9,7 +9,15 @@ from jaxtyping import Array, Bool, Float, Key
 
 
 class AbstractDistribution[SampleType](eqx.Module):
-    """Base class for all distributions in Lerax."""
+    """
+    Base class for all distributions in Lerax.
+
+    Lerax distributions wrap around `distreqx` distributions to provide a
+    convenient interface for reinforcement learning.
+
+    Attributes:
+        distribution: The underlying distreqx distribution.
+    """
 
     distribution: eqx.AbstractVar[distributions.AbstractDistribution]
 
@@ -43,21 +51,49 @@ class AbstractDistribution[SampleType](eqx.Module):
 
 
 class AbstractMaskableDistribution[SampleType](AbstractDistribution[SampleType]):
+    """
+    Base class for all maskable distributions in Lerax.
+
+    Maskable distributions allow masking of elements in the distribution.
+
+    Attributes:
+        distribution: The underlying distreqx distribution.
+    """
 
     distribution: eqx.AbstractVar[distributions.AbstractDistribution]
 
     @abstractmethod
     def mask[SelfType](self: SelfType, mask: Bool[Array, "..."]) -> SelfType:
-        """Return a masked version of the distribution."""
+        """
+        Return a masked version of the distribution.
+
+        A masked distribution only considers the elements where the mask is True.
+
+        Args:
+            mask: A boolean array indicating which elements to keep.
+
+        Returns:
+            A new masked distribution.
+        """
 
 
 class AbstractTransformedDistribution[SampleType](AbstractDistribution[SampleType]):
+    """
+    Base class for all transformed distributions in Lerax.
+
+    Transformed distributions apply a bijective transformation to a base distribution.
+
+    Attributes:
+        distribution: The underlying distreqx transformed distribution.
+        bijector: The bijective transformation applied to the base distribution.
+    """
 
     distribution: eqx.AbstractVar[distributions.AbstractTransformed]
 
+    # This breaks from the abstract/formal pattern but I think it's justified
     def mode(self) -> SampleType:
         try:
-            return super().mode()
+            return self.distribution.mode()
         except NotImplementedError:
             # Computing the mode this way is not always correct, but it is a reasonable workaround for the
             # use cases of this library.

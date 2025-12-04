@@ -104,13 +104,36 @@ class JITProgressBar:
 
 
 class ProgressBarCallbackStepState(AbstractCallbackStepState):
+    """
+    State for ProgressBarCallback at each step.
+
+    Attributes:
+        steps: Number of steps taken in the current iteration.
+    """
+
     steps: Int[Array, ""]
 
 
 class ProgressBarCallback(
     AbstractCallback[EmptyCallbackState, ProgressBarCallbackStepState]
 ):
-    """Callback for displaying a progress bar during training."""
+    """
+    Callback for displaying a progress bar during training.
+
+    Note:
+        If the callback is instantiated inside a JIT-compiled function, it may
+        not work correctly.
+
+    Attributes:
+        progress_bar: JITProgressBar instance for displaying progress.
+
+    Args:
+        total_timesteps: Total number of timesteps for the progress bar.
+        name: Name of the progress bar. If None, a default name is generated
+            from the environment and policy names.
+        env: The environment being trained on. Used for naming if `name` is None.
+        policy: The policy being trained. Used for naming if `name` is None.
+    """
 
     progress_bar: JITProgressBar
 
@@ -162,6 +185,9 @@ class ProgressBarCallback(
         # TODO: Fix ordered callback issue
         # self.progress_bar.stop()
         return ctx.state
+
+    def stop(self) -> None:
+        self.progress_bar.stop()
 
     def continue_training(self, ctx: IterationContext, *, key: Key) -> Bool[Array, ""]:
         return jnp.array(True)

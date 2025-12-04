@@ -18,6 +18,20 @@ from ..q import AbstractStatefulQPolicy, AbstractStatelessQPolicy, QStatefulWrap
 class AbstractStatelessDQNPolicy[ObsType, PolicyType: AbstractStatelessQPolicy](
     AbstractStatelessPolicy[Integer[Array, ""], ObsType]
 ):
+    """
+    Base class for stateless Deep Q-Network (DQN) policies.
+
+    DQN policies utilize two Q-networks: a primary Q-network for action
+    selection and a target Q-network for stable learning.
+
+    Attributes:
+        name: Name of the policy class.
+        action_space: The action space of the environment.
+        observation_space: The observation space of the environment.
+        q_network: The primary Q-network used for action selection.
+        target_q_network: The target Q-network used for stable learning.
+    """
+
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[Discrete]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
@@ -45,6 +59,23 @@ class AbstractStatelessDQNPolicy[ObsType, PolicyType: AbstractStatelessQPolicy](
 class AbstractStatefulDQNPolicy[
     StateType: AbstractPolicyState, ObsType, PolicyType: AbstractStatefulQPolicy
 ](AbstractStatefulPolicy[StateType, Integer[Array, ""], ObsType]):
+    """
+    Base class for stateful Deep Q-Network (DQN) policies.
+
+    DQN policies utilize two Q-networks: a primary Q-network for action
+    selection and a target Q-network for stable learning.
+
+    In a stateful DQN policy the Q-networks should be identical in structure
+    and differ only in their parameters. Due to this the state is shared.
+
+    Attributes:
+        name: Name of the policy class.
+        action_space: The action space of the environment.
+        observation_space: The observation space of the environment.
+        q_network: The primary Q-network used for action selection.
+        target_q_network: The target Q-network used for stable learning.
+    """
+
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[Discrete]
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
@@ -55,16 +86,51 @@ class AbstractStatefulDQNPolicy[
     def __call__(
         self, state: StateType, observation: ObsType, *, key: Key | None = None
     ) -> tuple[StateType, Integer[Array, ""]]:
+        """
+        Return the next state and action for a given observation and state.
+
+        Acts by selecting the action with the highest Q-value or random action
+        based on epsilon-greedy exploration.
+
+        Args:
+            state: The current internal state of the policy.
+            observation: The current observation from the environment.
+            key: JAX PRNG key for stochastic action selection. If None, the
+                action with the highest Q-value is always selected.
+
+        Returns:
+            Tuple of the next internal state and the selected action.
+        """
         return self.q_network(state, observation, key=key)
 
     def q_values(
         self, state: StateType, observation: ObsType
     ) -> tuple[StateType, Array]:
+        """
+        Return Q-values for all actions given an observation and state.
+
+        Args:
+            state: The current internal state of the policy.
+            observation: The current observation from the environment.
+
+        Returns:
+            Tuple of the next internal state and the Q-values for all actions.
+        """
         return self.q_network.q_values(state, observation)
 
     def target_q_values(
         self, state: StateType, observation: ObsType
     ) -> tuple[StateType, Array]:
+        """
+        Return target Q-values for all actions given an observation and state.
+
+        Args:
+            state: The current internal state of the policy.
+            observation: The current observation from the environment.
+
+        Returns:
+            Tuple of the next internal state and the target Q-values for all actions.
+        """
         return self.target_q_network.q_values(state, observation)
 
 
@@ -93,3 +159,6 @@ class DQNStatefulWrapper[PolicyType: AbstractStatelessDQNPolicy, ObsType](
             self._policy,
             (self.q_network, self.target_q_network),
         )
+
+
+type AbstractDQNPolicy = AbstractStatefulDQNPolicy | AbstractStatelessDQNPolicy

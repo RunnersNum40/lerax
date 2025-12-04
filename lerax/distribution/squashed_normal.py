@@ -8,6 +8,22 @@ from .base_distribution import AbstractTransformedDistribution
 
 
 class SquashedNormal(AbstractTransformedDistribution[Float[Array, " dims"]]):
+    """
+    Normal distribution with squashing bijector for bounded outputs.
+
+    Note:
+        Either both `high` and `low` must be provided for bounded squashing,
+        or neither should be provided for tanh squashing.
+
+    Attributes:
+        distribution: The underlying distreqx Transformed distribution.
+
+    Args:
+        loc: The mean of the normal distribution.
+        scale: The standard deviation of the normal distribution.
+        high: The upper bound for bounded squashing. If None, uses tanh squashing.
+        low: The lower bound for bounded squashing. If None, uses tanh squashing.
+    """
 
     distribution: distributions.Transformed
 

@@ -1,4 +1,5 @@
 from .base_dqn import (
+    AbstractDQNPolicy,
     AbstractStatefulDQNPolicy,
     AbstractStatelessDQNPolicy,
     DQNStatefulWrapper,
@@ -6,6 +7,7 @@ from .base_dqn import (
 from .mlp import MLPDQNPolicy
 
 __all__ = [
+    "AbstractDQNPolicy",
     "AbstractStatelessDQNPolicy",
     "AbstractStatefulDQNPolicy",
     "DQNStatefulWrapper",

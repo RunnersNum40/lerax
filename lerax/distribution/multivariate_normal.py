@@ -8,6 +8,16 @@ from .base_distribution import AbstractDistribution
 
 
 class MultivariateNormalDiag(AbstractDistribution[Float[Array, " dims"]]):
+    """
+    Multivariate Normal distribution with diagonal covariance.
+
+    Attributes:
+        distribution: The underlying distreqx MultivariateNormalDiag distribution.
+
+    Args:
+        loc: The mean of the distribution.
+        scale_diag: The diagonal of the covariance matrix.
+    """
 
     distribution: distributions.MultivariateNormalDiag
 

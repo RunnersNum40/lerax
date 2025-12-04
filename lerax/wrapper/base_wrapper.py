@@ -17,6 +17,7 @@ class AbstractWrapperState[StateType: AbstractEnvLikeState](AbstractEnvLikeState
 
     @property
     def unwrapped(self) -> AbstractEnvState:
+        """The state of the wrapped environment"""
         return self.env_state.unwrapped
 
 
@@ -28,7 +29,16 @@ class AbstractWrapper[
     ActType,
     ObsType,
 ](AbstractEnvLike[WrapperStateType, WrapperActType, WrapperObsType]):
-    """Base class for environment wrappers"""
+    """
+    Base class for environment wrappers.
+
+    Attributes:
+        name: The name of the environment
+        env: The wrapped environment
+        unwrapped: The environment without any wrappers
+        action_space: The action space of the environment after wrapping
+        observation_space: The observation space of the environment after wrapping
+    """
 
     env: eqx.AbstractVar[AbstractEnvLike[StateType, ActType, ObsType]]
 
@@ -37,7 +47,7 @@ class AbstractWrapper[
 
     @property
     def unwrapped(self) -> AbstractEnv:
-        """Return the unwrapped environment"""
+        """Return the wrapped environment"""
         return self.env.unwrapped
 
     @property
@@ -46,7 +56,7 @@ class AbstractWrapper[
         return self.env.name
 
     def default_renderer(self) -> AbstractRenderer:
-        """Return the default renderer for the environment"""
+        """Return the default renderer for the wrapped environment"""
         return self.unwrapped.default_renderer()
 
     def render(self, state: WrapperStateType, renderer: AbstractRenderer):

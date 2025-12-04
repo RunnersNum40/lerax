@@ -8,6 +8,16 @@ from .base_distribution import AbstractMaskableDistribution
 
 
 class Bernoulli(AbstractMaskableDistribution[Bool[Array, " dims"]]):
+    """
+    Bernoulli distribution.
+
+    Attributes:
+        distribution: The underlying distreqx Bernoulli distribution.
+
+    Args:
+        logits: The log-odds of the distribution.
+        probs: The probabilities of the distribution.
+    """
 
     distribution: distributions.Bernoulli
 

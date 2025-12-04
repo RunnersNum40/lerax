@@ -20,7 +20,7 @@ def rescale_box(
     """
     Return functions to rescale one box space to another.
 
-    Logic stolen from Gymnasium library
+    Logic stolen from Gymnasium library.
 
     Returns:
         A rescaled box, a function to map from the original to the rescaled box, and a

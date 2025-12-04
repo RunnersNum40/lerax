@@ -61,6 +61,18 @@ class AbstractPureObservationWrapper[
 class TransformObservation[
     WrapperObsType, StateType: AbstractEnvLikeState, ActType, ObsType
 ](AbstractPureObservationWrapper[WrapperObsType, StateType, ActType, ObsType]):
+    """
+    Apply an arbitrary function to every observation that leaves the environment.
+
+    Attributes:
+        env: The environment to wrap.
+        observation_space: The observation space of the wrapper.
+
+    Args:
+        env: The environment to wrap.
+        observation_space: The observation space of the wrapper.
+    """
+
     env: AbstractEnvLike[StateType, ActType, ObsType]
     func: Callable[[ObsType], WrapperObsType]
     observation_space: AbstractSpace[WrapperObsType]
@@ -83,6 +95,19 @@ class ClipObservation[StateType: AbstractEnvLikeState](
 ):
     """
     Clips every observation to the environment's observation space.
+
+    Note:
+        Only works with `Box` observation spaces.
+
+    Attributes:
+        env: The environment to wrap.
+        observation_space: The observation space of the wrapper.
+
+    Args:
+        env: The environment to wrap.
+
+    Raises:
+        ValueError: If the environment's observation space is not a `Box`.
     """
 
     env: AbstractEnvLike
@@ -110,7 +135,21 @@ class RescaleObservation[StateType: AbstractEnvLikeState](
         Float[Array, " ..."], StateType, Float[Array, " ..."], Float[Array, " ..."]
     ],
 ):
-    """Affinely rescale a box observation to a different range"""
+    """
+    Affine rescaling of the box observation space to a specified range.
+
+    Attributes:
+        env: The environment to wrap.
+        observation_space: The observation space of the wrapper.
+
+    Args:
+        env: The environment to wrap.
+        min: The minimum value of the rescaled observation space.
+        max: The maximum value of the rescaled observation space.
+
+    Raises:
+        ValueError: If the environment's observation space is not a `Box`.
+    """
 
     env: AbstractEnvLike
     func: Callable
@@ -140,7 +179,16 @@ class FlattenObservation[StateType: AbstractEnvLikeState, ObsType](
         Float[Array, " flat"], StateType, Float[Array, " ..."], ObsType
     ]
 ):
-    """Flatten the observation space into a 1-D array."""
+    """
+    Flatten the observation space into a 1-D array.
+
+    Attributes:
+        env: The environment to wrap.
+        observation_space: The observation space of the wrapper.
+
+    Args:
+        env: The environment to wrap.
+    """
 
     env: AbstractEnvLike
     func: Callable

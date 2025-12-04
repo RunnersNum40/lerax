@@ -13,7 +13,18 @@ from .utils import try_cast
 
 
 class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
-    """A space of binary values."""
+    """
+    A space of binary values.
+
+    All dimensions are independent and can take values 0 or 1.
+
+    Attributes:
+        n: The shape of the multi-binary space.
+
+    Args:
+        n: The shape of the multi-binary space. If an integer is provided,
+            then the shape will be (n,).
+    """
 
     n: tuple[int, ...]
 

@@ -12,6 +12,27 @@ from .base_q import AbstractStatelessQPolicy
 
 
 class MLPQPolicy[ObsType: Real[Array, "..."]](AbstractStatelessQPolicy[ObsType]):
+    """
+    Q-learning policy with an MLP Q-network.
+
+    Attributes:
+        name: Name of the policy class.
+        action_space: The action space of the environment.
+        observation_space: The observation space of the environment.
+        epsilon: The epsilon value for epsilon-greedy action selection.
+        q_network: The MLP Q-network used for action value estimation.
+
+    Args:
+        env: The environment to create the policy for.
+        epsilon: The epsilon value for epsilon-greedy action selection.
+        width_size: The width of the hidden layers in the MLP.
+        depth: The number of hidden layers in the MLP.
+        key: JAX PRNG key for parameter initialization.
+
+    Raises:
+        ValueError: If the environment's action space is not Discrete.
+    """
+
     name: ClassVar[str] = "MLPQPolicy"
 
     action_space: Discrete
@@ -30,7 +51,7 @@ class MLPQPolicy[ObsType: Real[Array, "..."]](AbstractStatelessQPolicy[ObsType])
         key: Key,
     ):
         if not isinstance(env.action_space, Discrete):
-            raise TypeError(
+            raise ValueError(
                 f"MLPQPolicy only supports Discrete action spaces, got {type(env.action_space)}"
             )
 

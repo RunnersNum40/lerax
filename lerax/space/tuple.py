@@ -10,7 +10,15 @@ from .base_space import AbstractSpace
 
 
 class Tuple(AbstractSpace[tuple[Any, ...]]):
-    """A cartesian product of spaces."""
+    """
+    A cartesian product of spaces.
+
+    Attributes:
+        spaces: A tuple of the component spaces.
+
+    Args:
+        spaces: A tuple of the component spaces.
+    """
 
     spaces: tuple[AbstractSpace, ...]
 
@@ -31,12 +39,30 @@ class Tuple(AbstractSpace[tuple[Any, ...]]):
         return tuple(space.canonical() for space in self.spaces)
 
     def sample(self, key: Key) -> tuple[Any, ...]:
+        """
+        Returns a random sample from the space.
+
+        Args:
+            key: A JAX PRNGKey.
+
+        Returns:
+            A tuple containing a random sample from each component space.
+        """
         return tuple(
             space.sample(key)
             for space, key in zip(self.spaces, jr.split(key, len(self.spaces)))
         )
 
     def contains(self, x: Any) -> Bool[Array, ""]:
+        """
+        Returns whether the given value is contained in the space.
+
+        Args:
+            x: The value to check.
+
+        Returns:
+            Whether the value is contained in the space.
+        """
         if not isinstance(x, tuple):
             return jnp.array(False)
 

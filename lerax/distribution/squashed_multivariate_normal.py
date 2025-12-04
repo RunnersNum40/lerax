@@ -10,7 +10,22 @@ from .base_distribution import AbstractTransformedDistribution
 class SquashedMultivariateNormalDiag(
     AbstractTransformedDistribution[Float[Array, " dims"]]
 ):
-    """Multivariate Normal with squashing bijector for bounded outputs."""
+    """
+    Multivariate Normal with squashing bijector for bounded outputs.
+
+    Note:
+        Either both `high` and `low` must be provided for bounded squashing,
+        or neither should be provided for tanh squashing.
+
+    Attributes:
+        distribution: The underlying distreqx Transformed distribution.
+
+    Args:
+        loc: The mean of the multivariate normal distribution.
+        scale_diag: The diagonal of the covariance matrix.
+        high: The upper bound for bounded squashing. If None, uses tanh squashing.
+        low: The lower bound for bounded squashing. If None, uses tanh squashing.
+    """
 
     distribution: distributions.Transformed
 

@@ -15,6 +15,17 @@ from .on_policy import AbstractOnPolicyAlgorithm, OnPolicyState, OnPolicyStepSta
 
 
 class PPOStats(eqx.Module):
+    """
+    PPO training statistics.
+
+    Attributes:
+        approx_kl: Approximate KL divergence between old and new policy.
+        total_loss: Total loss.
+        policy_loss: Policy loss.
+        value_loss: Value function loss.
+        entropy_loss: Entropy loss.
+    """
+
     approx_kl: Float[Array, ""]
     total_loss: Float[Array, ""]
     policy_loss: Float[Array, ""]
@@ -25,6 +36,40 @@ class PPOStats(eqx.Module):
 class PPO[PolicyType: AbstractStatefulActorCriticPolicy](
     AbstractOnPolicyAlgorithm[PolicyType]
 ):
+    """
+    Proximal Policy Optimization (PPO) algorithm.
+
+    Attributes:
+        optimizer: The optimizer used for training.
+        gae_lambda: Lambda parameter for Generalized Advantage Estimation (GAE).
+        gamma: Discount factor.
+        num_envs: Number of parallel environments.
+        num_steps: Number of steps to run for each environment per update.
+        batch_size: Size of each training batch.
+        num_epochs: Number of epochs to train the policy per update.
+        normalize_advantages: Whether to normalize advantages.
+        clip_coefficient: Clipping coefficient for policy and value function updates.
+        clip_value_loss: Whether to clip the value function loss.
+        entropy_loss_coefficient: Coefficient for the entropy loss term.
+        value_loss_coefficient: Coefficient for the value function loss term.
+        max_grad_norm: Maximum gradient norm for gradient clipping.
+
+    Args:
+        num_envs: Number of parallel environments.
+        num_steps: Number of steps to run for each environment per update.
+        num_epochs: Number of epochs to train the policy per update.
+        num_batches: Number of batches to split the rollout buffer into for training.
+        gae_lambda: Lambda parameter for Generalized Advantage Estimation (GAE).
+        gamma: Discount factor.
+        clip_coefficient: Clipping coefficient for policy and value function updates.
+        clip_value_loss: Whether to clip the value function loss.
+        entropy_loss_coefficient: Coefficient for the entropy loss term.
+        value_loss_coefficient: Coefficient for the value function loss term.
+        max_grad_norm: Maximum gradient norm for gradient clipping.
+        normalize_advantages: Whether to normalize advantages.
+        learning_rate: Learning rate for the optimizer.
+    """
+
     optimizer: optax.GradientTransformation
 
     gae_lambda: float
@@ -59,24 +104,6 @@ class PPO[PolicyType: AbstractStatefulActorCriticPolicy](
         normalize_advantages: bool = True,
         learning_rate: float = 3e-4,
     ):
-        """
-        Proximal Policy Optimization (PPO) algorithm.
-
-        **Arguments:**
-            - num_envs: Number of parallel environments.
-            - num_steps: Number of steps to run for each environment per update.
-            - num_epochs: Number of epochs to train the policy per update.
-            - num_batches: Number of batches to split the rollout buffer into for training.
-            - gae_lambda: Lambda parameter for Generalized Advantage Estimation (GAE).
-            - gamma: Discount factor.
-            - clip_coefficient: Clipping coefficient for policy and value function updates.
-            - clip_value_loss: Whether to clip the value function loss.
-            - entropy_loss_coefficient: Coefficient for the entropy loss term.
-            - value_loss_coefficient: Coefficient for the value function loss term.
-            - max_grad_norm: Maximum gradient norm for gradient clipping.
-            - normalize_advantages: Whether to normalize advantages.
-            - learning_rate: Learning rate for the Adam optimizer.
-        """
         self.gae_lambda = gae_lambda
         self.gamma = gamma
 

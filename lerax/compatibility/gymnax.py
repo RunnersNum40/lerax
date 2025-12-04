@@ -13,6 +13,15 @@ from lerax.space import AbstractSpace, Box, Dict, Discrete, Tuple
 
 
 def gymnax_space_to_lerax_space(space: gym_spaces.Space) -> AbstractSpace:
+    """
+    Returns a Lerax space corresponding to the given Gymnax space.
+
+    Args:
+        space: Gymnax space to convert.
+
+    Returns:
+        The corresponding Lerax space.
+    """
     if isinstance(space, gym_spaces.Discrete):
         return Discrete(n=space.n)
     elif isinstance(space, gym_spaces.Box):
@@ -28,6 +37,15 @@ def gymnax_space_to_lerax_space(space: gym_spaces.Space) -> AbstractSpace:
 
 
 def lerax_to_gymnax_space(space: AbstractSpace) -> gym_spaces.Space:
+    """
+    Returns a Gymnax space corresponding to the given Lerax space.
+
+    Args:
+        space: Lerax space to convert.
+
+    Returns:
+        The corresponding Gymnax space.
+    """
     if isinstance(space, Discrete):
         return gym_spaces.Discrete(int(space.n))
     elif isinstance(space, Box):
@@ -54,8 +72,19 @@ class GymnaxToLeraxEnv(AbstractEnv[GymnaxEnvState, Array, Array]):
     """
     Wrapper of a Gymnax environment to make it compatible with Lerax.
 
-    For the sake of simplicity, truncation is not handled and always set to False.
-    To keep the API consistent, info returned by step is always an empty dict.
+    Note:
+        For the sake of simplicity, truncation is not handled and always set to False.
+        To keep the API consistent, info returned by step is always an empty dict.
+
+    Attributes:
+        action_space: Action space of the environment.
+        observation_space: Observation space of the environment.
+        env: Gymnax environment being wrapped.
+        params: Parameters for the Gymnax environment.
+
+    Args:
+        env: Gymnax environment to wrap.
+        params: Parameters for the Gymnax environment.
     """
 
     action_space: AbstractSpace
@@ -63,8 +92,6 @@ class GymnaxToLeraxEnv(AbstractEnv[GymnaxEnvState, Array, Array]):
 
     env: gym.Environment
     params: gym.EnvParams
-
-    renderer: None = None
 
     def __init__(self, env: gym.Environment, params: gym.EnvParams):
         self.env = env
@@ -155,14 +182,23 @@ class LeraxToGymnaxEnv[StateType: AbstractEnvState](
 ):
     """
     Wrapper of an Lerax environment to make it compatible with Gymnax.
+
+    Note:
+        Since Gymnax does not have a truncation concept, truncation and
+        termination are combined into a single "done" signal.
+
+    Attributes:
+        env: Lerax environment being wrapped.
+        state: Current state of the environment.
+
+    Args:
+        env: Lerax environment to wrap.
     """
 
     env: AbstractEnv[StateType, Array, Array]
     state: StateType
-    key: Key
 
     def __init__(self, env: AbstractEnv[StateType, Array, Array]):
-        self.key = jr.key(0)
         self.env = env
 
     def step_env(

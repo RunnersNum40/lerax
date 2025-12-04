@@ -14,7 +14,11 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
     """
     A space of finite discrete values.
 
-    A finite closed set of integers.
+    Attributes:
+        n: The number of discrete values.
+
+    Args:
+        n: The number of discrete values.
     """
 
     n: int

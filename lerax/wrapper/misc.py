@@ -15,7 +15,15 @@ from .base_wrapper import (
 class Identity[StateType: AbstractEnvLikeState, ActType, ObsType](
     AbstractWrapper[StateType, ActType, ObsType, StateType, ActType, ObsType]
 ):
-    """An identity wrapper that does nothing."""
+    """
+    An wrapper that does nothing.
+
+    Attributes:
+        env: The environment to wrap.
+
+    Args:
+        env: The environment to wrap.
+    """
 
     env: AbstractEnvLike[StateType, ActType, ObsType]
 
@@ -73,6 +81,17 @@ class TimeLimit[StateType: AbstractEnvLikeState, ActType, ObsType](
         TimeLimitState[StateType], ActType, ObsType, StateType, ActType, ObsType
     ]
 ):
+    """
+    Time limit wrapper that truncates episodes after a fixed number of steps.
+
+    Attributes:
+        env: The environment to wrap.
+        max_episode_steps: The maximum number of steps per episode.
+
+    Args:
+        env: The environment to wrap.
+        max_episode_steps: The maximum number of steps per episode.
+    """
 
     env: AbstractEnvLike[StateType, ActType, ObsType]
     max_episode_steps: Int[Array, ""]

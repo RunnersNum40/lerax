@@ -26,6 +26,38 @@ class ContinuousMountainCar(
         ContinuousMountainCarState, Float[Array, ""], Float[Array, "2"]
     ]
 ):
+    """
+    Continuous Mountain Car environment matching the [Gymnasium Continuous MountainCar environment](https://gymnasium.farama.org/environments/classic_control/continuous_mountain_car/).
+
+    Note:
+        To achieve identical dynamics to Gymnasium set `solver=diffrax.Euler()`.
+
+    ## Action Space
+
+    The action space is a 1-dimensional continuous space representing the force applied to the car in the range [-1.0, 1.0].
+
+    ## Observation Space
+
+    The observation space is a 2-dimensional continuous space representing the position and velocity of the car:
+
+    | Index | Observation  | Min Value | Max Value |
+    |-------|--------------|-----------|-----------|
+    | 0     | Car Position | -1.2      | 0.6       |
+    | 1     | Car Velocity | -0.07     | 0.07      |
+
+    Args:
+        min_action: Minimum action value (default: -1.0).
+        max_action: Maximum action value (default: 1.0).
+        min_position: Minimum position of the car (default: -1.2).
+        max_position: Maximum position of the car (default: 0.6).
+        max_speed: Maximum speed of the car (default: 0.07).
+        goal_position: Position at which the goal is reached (default: 0.5).
+        power: Power of the car's engine (default: 0.0015).
+        dt: Time step for each action (default: 1.0).
+        solver: Diffrax solver to use for ODE integration (default: Tsit5).
+        stepsize_controller: Step size controller for adaptive solvers (default: PIDController with rtol=1e-5, atol=1e-5).
+    """
+
     name: ClassVar[str] = "ContinuousMountainCar"
 
     action_space: Box

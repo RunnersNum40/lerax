@@ -24,6 +24,55 @@ class MountainCarState(AbstractClassicControlEnvState):
 class MountainCar(
     AbstractClassicControlEnv[MountainCarState, Int[Array, ""], Float[Array, "2"]]
 ):
+    """
+    Mountain Car environment matching the [Gymnasium MountainCar environment](https://gymnasium.farama.org/environments/classic_control/mountain_car/).
+
+    Note:
+        To achieve identical dynamics to Gymnasium set `solver=diffrax.Euler()`.
+
+    ## Action Space
+
+    The action space is discrete with 3 actions:
+
+    - 0: Push left
+    - 1: No push
+    - 2: Push right
+
+    The action applies a fixed magnitude force to the car in the specified direction for the duration of the time step.
+
+    ## Observation Space
+
+    The observation space is a 2-dimensional continuous space representing the position and velocity of the car:
+
+    | Index | Observation      | Min Value | Max Value |
+    |-------|------------------|-----------|-----------|
+    | 0     | Car Position     | -1.2      | 0.6       |
+    | 1     | Car Velocity     | -0.07     | 0.07      |
+
+    These values reflect the physical limits of the environment.
+    These limits can be modified via the `min_position`, `max_position`, and `max_speed` parameters.
+
+    ## Reward
+
+    The reward is -1 for every step taken until the goal position is reached.
+
+    ## Termination
+
+    The episode terminates when the car reaches the goal position of 0.5 with a velocity of at least 0.0.
+
+    Args:
+        min_position: Minimum position of the car.
+        max_position: Maximum position of the car.
+        max_speed: Maximum speed of the car.
+        goal_position: Position at which the episode terminates.
+        goal_velocity: Minimum velocity at the goal position to terminate the episode.
+        force: Magnitude of the force applied when pushing the car.
+        gravity: Gravity constant affecting the car's movement.
+        dt: Time step for the environment dynamics.
+        solver: Diffrax solver to use for integrating the dynamics.
+        stepsize_controller: Step size controller for adaptive solvers.
+    """
+
     name: ClassVar[str] = "MountainCar"
 
     action_space: Discrete

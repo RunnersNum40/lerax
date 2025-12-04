@@ -14,6 +14,27 @@ from .base_dqn import AbstractStatelessDQNPolicy
 class MLPDQNPolicy[ObsType: Real[Array, "..."]](
     AbstractStatelessDQNPolicy[ObsType, MLPQPolicy]
 ):
+    """
+    Deep Q-Network (DQN) policy with MLP Q-network components.
+
+    Attributes:
+        name: Name of the policy class.
+        action_space: The action space of the environment.
+        observation_space: The observation space of the environment.
+        q_network: The Q-network used for action selection.
+        target_q_network: The target Q-network used for stable learning.
+
+    Args:
+        env: The environment to create the policy for.
+        epsilon: The epsilon value for epsilon-greedy action selection.
+        width_size: The width of the hidden layers in the MLP.
+        depth: The number of hidden layers in the MLP.
+        key: JAX PRNG key for parameter initialization.
+
+    Raises:
+        ValueError: If the environment's action space is not Discrete.
+    """
+
     name: ClassVar[str] = "MLPDQNPolicy"
 
     action_space: Discrete
@@ -32,7 +53,7 @@ class MLPDQNPolicy[ObsType: Real[Array, "..."]](
         key: Key,
     ):
         if not isinstance(env.action_space, Discrete):
-            raise TypeError(
+            raise ValueError(
                 f"MLPQPolicy only supports Discrete action spaces, got {type(env.action_space)}"
             )
 

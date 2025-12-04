@@ -8,6 +8,16 @@ from .base_distribution import AbstractMaskableDistribution
 
 
 class Categorical(AbstractMaskableDistribution[Integer[Array, ""]]):
+    """
+    Categorical distribution.
+
+    Attributes:
+        distribution: The underlying distreqx Categorical distribution.
+
+    Args:
+        logits: The log-odds of the distribution.
+        probs: The probabilities of the distribution.
+    """
 
     distribution: distributions.Categorical
 

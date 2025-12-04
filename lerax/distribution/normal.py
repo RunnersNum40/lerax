@@ -8,6 +8,16 @@ from .base_distribution import AbstractDistribution
 
 
 class Normal(AbstractDistribution[Float[Array, " dims"]]):
+    """
+    Normal distribution.
+
+    Attributes:
+        distribution: The underlying distreqx Normal distribution.
+
+    Args:
+        loc: The mean of the distribution.
+        scale: The standard deviation of the distribution.
+    """
 
     distribution: distributions.Normal
 

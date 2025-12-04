@@ -15,19 +15,15 @@ from .utils import rescale_box
 
 class AbstractPureTransformActionWrapper[
     WrapperActType, StateType: AbstractEnvLikeState, ActType, ObsType
-](
-    AbstractWrapper[
-        StateType,
-        WrapperActType,
-        ObsType,
-        StateType,
-        ActType,
-        ObsType,
-    ]
-):
+](AbstractWrapper[StateType, WrapperActType, ObsType, StateType, ActType, ObsType]):
     """
     Base class for wrappers that apply a pure function to the action before passing it to
-    the environment
+    the environment.
+
+    Attributes:
+        env: The environment to wrap.
+        func: The function to apply to the action.
+        action_space: The action space of the wrapper.
     """
 
     env: eqx.AbstractVar[AbstractEnvLike[StateType, ActType, ObsType]]
@@ -77,7 +73,19 @@ class AbstractPureTransformActionWrapper[
 class TransformAction[
     WrapperActType, StateType: AbstractEnvLikeState, ActType, ObsType
 ](AbstractPureTransformActionWrapper[WrapperActType, StateType, ActType, ObsType]):
-    """Apply a function to the action before passing it to the environment"""
+    """
+    Apply a function to the action before passing it to the environment.
+
+    Attributes:
+        env: The environment to wrap.
+        func: The function to apply to the action.
+        action_space: The action space of the wrapper.
+
+    Args:
+        env: The environment to wrap.
+        func: The function to apply to the action.
+        action_space: The action space of the wrapper.
+    """
 
     env: AbstractEnvLike[StateType, ActType, ObsType]
     func: Callable[[WrapperActType], ActType]
@@ -97,10 +105,23 @@ class TransformAction[
 class ClipAction[StateType: AbstractEnvLikeState, ObsType](
     AbstractPureTransformActionWrapper[
         Float[Array, " ..."], StateType, Float[Array, " ..."], ObsType
-    ],
+    ]
 ):
     """
     Clips every action to the environment's action space.
+
+    Note:
+        Only compatible with `Box` action spaces.
+
+    Attributes:
+        env: The environment to wrap.
+        action_space: The action space of the wrapper.
+
+    Args:
+        env: The environment to wrap.
+
+    Raises:
+        ValueError: If the environment's action space is not a `Box`.
     """
 
     env: AbstractEnvLike[StateType, Float[Array, " ..."], ObsType]
@@ -128,9 +149,24 @@ class ClipAction[StateType: AbstractEnvLikeState, ObsType](
 class RescaleAction[StateType: AbstractEnvLikeState, ObsType](
     AbstractPureTransformActionWrapper[
         Float[Array, " ..."], StateType, Float[Array, " ..."], ObsType
-    ],
+    ]
 ):
-    """Affinely rescale a box action to a different range"""
+    """
+    Affine rescaling of a box action to a different range.
+
+    Note:
+        Only compatible with `Box` action spaces.
+
+    Attributes:
+        env: The environment to wrap.
+        action_space: The action space of the wrapper.
+
+    Args:
+        env: The environment to wrap.
+
+    Raises:
+        ValueError: If the environment's action space is not a `Box`.
+    """
 
     env: AbstractEnvLike[StateType, Float[Array, " ..."], ObsType]
     func: Callable[[Float[Array, " ..."]], Float[Array, " ..."]]
@@ -144,7 +180,7 @@ class RescaleAction[StateType: AbstractEnvLikeState, ObsType](
     ):
         if not isinstance(env.action_space, Box):
             raise ValueError(
-                "RescaleActiononly supports `Box` action spaces"
+                "RescaleAction only supports `Box` action spaces"
                 f" not {type(env.action_space)}"
             )
 
