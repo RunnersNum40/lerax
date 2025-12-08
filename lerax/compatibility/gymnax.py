@@ -1,8 +1,15 @@
 from __future__ import annotations
 
-from flax import struct
-from gymnax.environments import environment as gym
-from gymnax.environments import spaces as gym_spaces
+try:
+    from flax import struct
+    from gymnax.environments import environment as gym
+    from gymnax.environments import spaces as gym_spaces
+except ModuleNotFoundError as e:
+    raise ImportError(
+        "Gymnax compatibility requires toptional dependencies. "
+        "Install with `pip install lerax[compatibility]` or install "
+        "`gymnax` and `flax` manually."
+    ) from e
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
