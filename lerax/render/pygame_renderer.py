@@ -1,19 +1,44 @@
 from __future__ import annotations
 
-# Disable pygame greeting message and pkg_resources warnings
 import contextlib
 import warnings
-
-with contextlib.redirect_stdout(None):
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=Warning)
-        import pygame
-        from pygame import gfxdraw
+from typing import Any
 
 from jax import numpy as jnp
 from jaxtyping import ArrayLike, Float
 
 from .base_renderer import WHITE, AbstractRenderer, Color, Transform
+
+pygame: Any | None = None
+gfxdraw: Any | None = None
+
+
+def _load_pygame() -> tuple[Any, Any]:
+    """
+    Import pygame and gfxdraw lazily.
+
+    Raises a clear ImportError if the optional dependency is missing.
+    """
+    global pygame, gfxdraw
+
+    if pygame is not None and gfxdraw is not None:
+        return pygame, gfxdraw
+
+    try:
+        with contextlib.redirect_stdout(None):
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=Warning)
+                import pygame as _pygame
+                from pygame import gfxdraw as _gfxdraw
+    except ImportError as exc:
+        raise ImportError(
+            "PygameRenderer requires the optional rendering dependencies. "
+            "Install them with: pip install lerax[render]"
+        ) from exc
+
+    pygame = _pygame
+    gfxdraw = _gfxdraw
+    return pygame, gfxdraw
 
 
 class PygameRenderer(AbstractRenderer):
@@ -39,7 +64,7 @@ class PygameRenderer(AbstractRenderer):
     width: int
     height: int
 
-    screen: pygame.Surface
+    screen: Any
     background_color: Color
 
     def __init__(
@@ -49,6 +74,8 @@ class PygameRenderer(AbstractRenderer):
         background_color: Color = WHITE,
         transform: Transform | None = None,
     ) -> None:
+        pg, _ = _load_pygame()
+
         self.width = width
         self.height = height
         self.background_color = background_color
@@ -63,8 +90,8 @@ class PygameRenderer(AbstractRenderer):
         else:
             self.transform = transform
 
-        pygame.init()
-        self.screen = pygame.display.set_mode((self.width, self.height))
+        pg.init()
+        self.screen = pg.display.set_mode((self.width, self.height))
 
     def is_open(self) -> bool:
         return True
@@ -73,23 +100,26 @@ class PygameRenderer(AbstractRenderer):
         pass
 
     def close(self):
-        pygame.display.quit()
-        pygame.quit()
+        pg, _ = _load_pygame()
+        pg.display.quit()
+        pg.quit()
 
     def draw(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        pg, _ = _load_pygame()
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
                 self.close()
                 return
-        pygame.display.flip()
+        pg.display.flip()
 
     def clear(self):
         self.screen.fill(self._pg_color(self.background_color))
 
     @staticmethod
-    def _pg_color(c: Color) -> pygame.Color:
+    def _pg_color(c: Color) -> Any:
+        pg, _ = _load_pygame()
         r, g, b = c.to_rgb255()
-        return pygame.Color(r, g, b)
+        return pg.Color(r, g, b)
 
     def _to_px(self, point: Float[ArrayLike, "2"]) -> tuple[int, int]:
         return self.transform.world_to_px(
@@ -102,13 +132,14 @@ class PygameRenderer(AbstractRenderer):
     def draw_circle(
         self, center: Float[ArrayLike, "2"], radius: Float[ArrayLike, ""], color: Color
     ):
-        gfxdraw.aacircle(
+        _, _gfx = _load_pygame()
+        _gfx.aacircle(
             self.screen,
             *self._to_px(center),
             self._scale_x(radius),
             self._pg_color(color),
         )
-        gfxdraw.filled_circle(
+        _gfx.filled_circle(
             self.screen,
             *self._to_px(center),
             self._scale_x(radius),
@@ -143,20 +174,24 @@ class PygameRenderer(AbstractRenderer):
         h: Float[ArrayLike, ""],
         color: Color,
     ):
+        _, _gfx = _load_pygame()
+        pg = pygame  # type: ignore[assignment]
+
         top_left = self._to_px(
             jnp.asarray(center) - jnp.array([w / 2, -h / 2])  # pyright: ignore
         )
-        width_hight = (self._scale_x(w), self._scale_x(h))
+        width_height = (self._scale_x(w), self._scale_x(h))
 
-        rect = pygame.Rect(top_left, width_hight)
+        rect = pg.Rect(top_left, width_height)
 
-        gfxdraw.box(self.screen, rect, self._pg_color(color))
+        _gfx.box(self.screen, rect, self._pg_color(color))
 
     def draw_polygon(self, points: Float[ArrayLike, "num 2"], color: Color):
+        _, _gfx = _load_pygame()
         pts = [self._to_px(point) for point in points]  # pyright: ignore
         if len(pts) >= 3:
-            gfxdraw.aapolygon(self.screen, pts, self._pg_color(color))
-            gfxdraw.filled_polygon(self.screen, pts, self._pg_color(color))
+            _gfx.aapolygon(self.screen, pts, self._pg_color(color))
+            _gfx.filled_polygon(self.screen, pts, self._pg_color(color))
         else:
             raise ValueError("Need at least 3 points to draw a polygon.")
 
@@ -167,9 +202,10 @@ class PygameRenderer(AbstractRenderer):
         color: Color,
         size: Float[ArrayLike, ""] = 12,
     ):
-        if not pygame.font.get_init():
-            pygame.font.init()
-        font = pygame.font.SysFont(None, int(size))  # pyright: ignore
+        pg, _ = _load_pygame()
+        if not pg.font.get_init():
+            pg.font.init()
+        font = pg.font.SysFont(None, int(size))  # pyright: ignore
         surf = font.render(text, True, self._pg_color(color))
         px, py = self._to_px(center)
         self.screen.blit(surf, (px, py))
@@ -179,12 +215,13 @@ class PygameRenderer(AbstractRenderer):
         points: Float[ArrayLike, "num 2"],
         color: Color,
     ):
+        pg, _ = _load_pygame()
         if len(points) >= 2:  # pyright: ignore
-            pygame.draw.aalines(
+            pg.draw.aalines(
                 self.screen,
-                points=[self._to_px(p) for p in points],  # pyright: ignore
-                color=self._pg_color(color),
-                closed=False,
+                self._pg_color(color),
+                False,
+                [self._to_px(p) for p in points],  # pyright: ignore
             )
         else:
             raise ValueError("Need at least 2 points to draw a polyline.")
@@ -196,12 +233,14 @@ class PygameRenderer(AbstractRenderer):
         h: Float[ArrayLike, ""],
         color: Color,
     ):
+        _, _gfx = _load_pygame()
         px, py = self._to_px(center)
         rx = max(1, int(self._scale_x(w) / 2))
         ry = max(1, int(self._scale_x(h) / 2))
 
-        gfxdraw.aaellipse(self.screen, px, py, rx, ry, color=self._pg_color(color))
+        _gfx.aaellipse(self.screen, px, py, rx, ry, color=self._pg_color(color))
 
     def as_array(self) -> Float[ArrayLike, "height width 3"]:
-        arr = pygame.surfarray.array3d(self.screen).transpose(1, 0, 2).copy()
+        pg, _ = _load_pygame()
+        arr = pg.surfarray.array3d(self.screen).transpose(1, 0, 2).copy()
         return arr

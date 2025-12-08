@@ -1,11 +1,29 @@
 from __future__ import annotations
 
-import imageio.v2 as imageio
+from typing import Any
+
 import numpy as np
 from jax import numpy as jnp
 from jaxtyping import ArrayLike, Float
 
 from .base_renderer import AbstractRenderer, Color, Transform
+
+imageio: Any | None = None
+
+
+def _load_imageio():
+    global imageio
+    if imageio is not None:
+        return imageio
+    try:
+        import imageio.v2 as _imageio
+    except ImportError as exc:
+        raise ImportError(
+            "VideoRenderer requires the optional rendering dependencies. "
+            "Install them with: pip install lerax[render]"
+        ) from exc
+    imageio = _imageio
+    return imageio
 
 
 class VideoRenderer(AbstractRenderer):
@@ -61,7 +79,7 @@ class VideoRenderer(AbstractRenderer):
 
     def close(self):
         if self.frames:
-            writer = imageio.get_writer(self.output_path, fps=self.fps)
+            writer = _load_imageio().get_writer(self.output_path, fps=self.fps)
             try:
                 for frame in self.frames:
                     arr = jnp.asarray(frame)
