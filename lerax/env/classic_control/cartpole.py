@@ -7,7 +7,13 @@ from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
-from lerax.render import AbstractRenderer, Color, PygameRenderer, Transform
+from lerax.render import (
+    Abstract2DRenderer,
+    AbstractRenderer,
+    Color,
+    PygameRenderer,
+    Transform,
+)
 from lerax.space import Box, Discrete
 
 from .base_classic_control import (
@@ -194,6 +200,9 @@ class CartPole(
         return ~(within_x & within_theta)
 
     def render(self, state: CartPoleState, renderer: AbstractRenderer):
+        if not isinstance(renderer, Abstract2DRenderer):
+            raise TypeError("CartPole environment requires a 2D renderer.")
+
         x, theta = state.y[0], state.y[2]
 
         renderer.clear()
@@ -223,7 +232,7 @@ class CartPole(
 
         renderer.draw()
 
-    def default_renderer(self) -> AbstractRenderer:
+    def default_renderer(self) -> Abstract2DRenderer:
         width, height = 800, 450
         transform = Transform(
             scale=200.0,

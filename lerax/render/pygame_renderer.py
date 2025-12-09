@@ -7,10 +7,10 @@ from typing import Any
 from jax import numpy as jnp
 from jaxtyping import ArrayLike, Float
 
-from .base_renderer import WHITE, AbstractRenderer, Color, Transform
+from .base_renderer import WHITE, Abstract2DRenderer, Color, Transform
 
-pygame: Any | None = None
-gfxdraw: Any | None = None
+pygame: Any
+gfxdraw: Any
 
 
 def _load_pygame() -> tuple[Any, Any]:
@@ -41,7 +41,7 @@ def _load_pygame() -> tuple[Any, Any]:
     return pygame, gfxdraw
 
 
-class PygameRenderer(AbstractRenderer):
+class PygameRenderer(Abstract2DRenderer):
     """
     PyGame renderer implementation.
 
@@ -92,9 +92,6 @@ class PygameRenderer(AbstractRenderer):
 
         pg.init()
         self.screen = pg.display.set_mode((self.width, self.height))
-
-    def is_open(self) -> bool:
-        return True
 
     def open(self):
         pass
@@ -175,7 +172,7 @@ class PygameRenderer(AbstractRenderer):
         color: Color,
     ):
         _, _gfx = _load_pygame()
-        pg = pygame  # type: ignore[assignment]
+        pg = pygame
 
         top_left = self._to_px(
             jnp.asarray(center) - jnp.array([w / 2, -h / 2])  # pyright: ignore

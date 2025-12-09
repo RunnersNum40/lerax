@@ -7,7 +7,13 @@ from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Key
 
-from lerax.render import AbstractRenderer, Color, PygameRenderer, Transform
+from lerax.render import (
+    Abstract2DRenderer,
+    AbstractRenderer,
+    Color,
+    PygameRenderer,
+    Transform,
+)
 from lerax.space import Box
 
 from .base_classic_control import (
@@ -118,6 +124,9 @@ class Pendulum(
         return jnp.array(False)
 
     def render(self, state: PendulumState, renderer: AbstractRenderer):
+        if not isinstance(renderer, Abstract2DRenderer):
+            raise TypeError("Pendulum environment requires a 2D renderer.")
+
         theta = state.y[0]
 
         renderer.clear()
@@ -135,7 +144,7 @@ class Pendulum(
 
         renderer.draw()
 
-    def default_renderer(self) -> AbstractRenderer:
+    def default_renderer(self) -> Abstract2DRenderer:
         width, height = 500, 500
         transform = Transform(
             scale=200.0,

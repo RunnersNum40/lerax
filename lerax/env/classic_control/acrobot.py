@@ -7,7 +7,13 @@ from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
-from lerax.render import AbstractRenderer, Color, PygameRenderer, Transform
+from lerax.render import (
+    Abstract2DRenderer,
+    AbstractRenderer,
+    Color,
+    PygameRenderer,
+    Transform,
+)
 from lerax.space import Box, Discrete
 
 from .base_classic_control import (
@@ -268,6 +274,9 @@ class Acrobot(
         return done_angle
 
     def render(self, state: AcrobotState, renderer: AbstractRenderer):
+        if not isinstance(renderer, Abstract2DRenderer):
+            raise TypeError("Acrobot environment requires an Abstract2DRenderer.")
+
         th1, th2 = state.y[0], state.y[1]
 
         base = jnp.array([0.0, 0.0])
@@ -305,7 +314,7 @@ class Acrobot(
 
         renderer.draw()
 
-    def default_renderer(self) -> AbstractRenderer:
+    def default_renderer(self) -> Abstract2DRenderer:
         width, height = 800, 600
         transform = Transform(
             width=width,

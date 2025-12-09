@@ -136,32 +136,49 @@ class Transform(eqx.Module):
 
 class AbstractRenderer(eqx.Module):
     """
-    Renderer interface.
+    Base class for renderers.
+    """
 
-    Note:
-        Renderers are not necessarily thread-safe or safe for JIT compilation.
+    @abstractmethod
+    def open(self):
+        """Open the rendering window."""
+
+    @abstractmethod
+    def close(self):
+        """Close the rendering window."""
+
+    @abstractmethod
+    def draw(self):
+        """Render the current scene to the window."""
+
+    @abstractmethod
+    def as_array(self) -> Float[ArrayLike, "H W 3"]:
+        """Return the current frame as an RGB array."""
+
+
+class Abstract2DRenderer(AbstractRenderer):
+    """
+    Base class for 2D renderers with vector drawing primitives.
 
     Attributes:
-        transform: Transform from world space to pixel space.
+        transform: The transform from world coordinates to screen pixels.
     """
 
     transform: eqx.AbstractVar[Transform]
 
     @abstractmethod
-    def is_open(self) -> bool: ...
-    @abstractmethod
-    def open(self): ...
-    @abstractmethod
-    def close(self): ...
-    @abstractmethod
-    def draw(self): ...
-    @abstractmethod
-    def clear(self): ...
-
-    @abstractmethod
     def draw_circle(
         self, center: Float[ArrayLike, "2"], radius: Float[ArrayLike, ""], color: Color
-    ): ...
+    ):
+        """
+        Draw a filled circle.
+
+        Args:
+            center: Center of the circle in world coordinates.
+            radius: Radius of the circle in world units.
+            color: Color of the circle.
+        """
+
     @abstractmethod
     def draw_line(
         self,
@@ -169,7 +186,17 @@ class AbstractRenderer(eqx.Module):
         end: Float[ArrayLike, "2"],
         color: Color,
         width: Float[ArrayLike, ""] = 1,
-    ): ...
+    ):
+        """
+        Draw a line segment.
+
+        Args:
+            start: Start point of the line in world coordinates.
+            end: End point of the line in world coordinates.
+            color: Color of the line.
+            width: Width of the line in pixels.
+        """
+
     @abstractmethod
     def draw_rect(
         self,
@@ -177,9 +204,27 @@ class AbstractRenderer(eqx.Module):
         w: Float[ArrayLike, ""],
         h: Float[ArrayLike, ""],
         color: Color,
-    ): ...
+    ):
+        """
+        Draw a filled rectangle.
+
+        Args:
+            center: Center of the rectangle in world coordinates.
+            w: Width of the rectangle in world units.
+            h: Height of the rectangle in world units.
+            color: Color of the rectangle.
+        """
+
     @abstractmethod
-    def draw_polygon(self, points: Float[ArrayLike, "num 2"], color: Color): ...
+    def draw_polygon(self, points: Float[ArrayLike, "num 2"], color: Color):
+        """
+        Draw a filled polygon.
+
+        Args:
+            points: Vertices of the polygon in world coordinates.
+            color: Color of the polygon.
+        """
+
     @abstractmethod
     def draw_text(
         self,
@@ -187,13 +232,31 @@ class AbstractRenderer(eqx.Module):
         text: str,
         color: Color,
         size: Float[ArrayLike, ""] = 12,
-    ): ...
+    ):
+        """
+        Draw text at a given position.
+
+        Args:
+            center: Center of the text in world coordinates.
+            text: The text string to draw.
+            color: Color of the text.
+            size: Font size in points.
+        """
+
     @abstractmethod
     def draw_polyline(
         self,
         points: Float[ArrayLike, "num 2"],
         color: Color,
-    ): ...
+    ):
+        """
+        Draw a polyline connecting a series of points.
+
+        Args:
+            points: Sequence of points in world coordinates.
+            color: Color of the polyline.
+        """
+
     @abstractmethod
     def draw_ellipse(
         self,
@@ -201,6 +264,27 @@ class AbstractRenderer(eqx.Module):
         w: Float[ArrayLike, ""],
         h: Float[ArrayLike, ""],
         color: Color,
-    ): ...
+    ):
+        """
+        Draw a filled ellipse.
+
+        Args:
+            center: Center of the ellipse in world coordinates.
+            w: Width of the ellipse in world units.
+            h: Height of the ellipse in world units.
+            color: Color of the ellipse.
+        """
+
     @abstractmethod
-    def as_array(self) -> Float[ArrayLike, "H W 3"]: ...
+    def clear(self):
+        """
+        Clear the screen to a solid color.
+        """
+
+
+class Abstract3DRenderer(AbstractRenderer):
+    """
+    Base class for 3D renderers.
+    """
+
+    pass

@@ -6,7 +6,7 @@ import numpy as np
 from jax import numpy as jnp
 from jaxtyping import ArrayLike, Float
 
-from .base_renderer import AbstractRenderer, Color, Transform
+from .base_renderer import Abstract2DRenderer, Color, Transform
 
 imageio: Any | None = None
 
@@ -26,7 +26,7 @@ def _load_imageio():
     return imageio
 
 
-class VideoRenderer(AbstractRenderer):
+class VideoRenderer(Abstract2DRenderer):
     """
     Renderer wrapper that records frames to a video file.
 
@@ -53,7 +53,7 @@ class VideoRenderer(AbstractRenderer):
 
     transform: Transform
 
-    inner: AbstractRenderer
+    inner: Abstract2DRenderer
     output_path: str
     fps: float
 
@@ -61,7 +61,7 @@ class VideoRenderer(AbstractRenderer):
 
     def __init__(
         self,
-        inner: AbstractRenderer,
+        inner: Abstract2DRenderer,
         output_path: str,
         fps: float = 60.0,
     ) -> None:
@@ -70,9 +70,6 @@ class VideoRenderer(AbstractRenderer):
         self.output_path = output_path
         self.fps = fps
         self.frames = []
-
-    def is_open(self) -> bool:
-        return self.inner.is_open()
 
     def open(self):
         self.inner.open()

@@ -7,7 +7,13 @@ from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
-from lerax.render import AbstractRenderer, Color, PygameRenderer, Transform
+from lerax.render import (
+    Abstract2DRenderer,
+    AbstractRenderer,
+    Color,
+    PygameRenderer,
+    Transform,
+)
 from lerax.space import Box, Discrete
 
 from .base_classic_control import (
@@ -175,6 +181,9 @@ class MountainCar(
         return (x >= self.goal_position) & (v >= self.goal_velocity)
 
     def render(self, state: MountainCarState, renderer: AbstractRenderer):
+        if not isinstance(renderer, Abstract2DRenderer):
+            raise TypeError("MountainCar environment requires a 2D renderer.")
+
         x = state.y[0]
 
         renderer.clear()
@@ -245,7 +254,7 @@ class MountainCar(
 
         renderer.draw()
 
-    def default_renderer(self) -> AbstractRenderer:
+    def default_renderer(self) -> Abstract2DRenderer:
         width, height = 800, 450
         transform = Transform(
             scale=350.0,
