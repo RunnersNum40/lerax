@@ -13,10 +13,11 @@ dependencies = [
   "equinox",
   "jax",
   "jaxtyping",
+  "mujoco-mjx",
   "optax",
   "rich",
   "tensorboard",
-  "tensorboardX",
+  "tensorboardX"
 ]
 
 [project.urls]
@@ -53,12 +54,17 @@ include = ["lerax", "README.md", "LICENSE", "pyproject.toml"]
 
 [tool.pyright]
 reportIncompatibleMethodOverride = true
-reportIncompatibleVariableOverride = false # Incompatible with eqx.AbstractVar
+reportIncompatibleVariableOverride = false  # Incompatible with eqx.AbstractVar
 reportFunctionMemberAccess = false
+stubPath = "stubs"
+include = ["lerax/**", "examples/**", "tests/**"]
 
 [tool.pytest]
 addopts = ["--cov=lerax", "--import-mode=importlib", "-Werror"]
 testpaths = ["tests"]
+
+[tool.ruff]
+exclude = ["stubs"]
 
 [tool.ruff.lint]
 fixable = ["I001", "F401"]
