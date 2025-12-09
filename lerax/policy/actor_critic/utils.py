@@ -5,7 +5,7 @@ from abc import abstractmethod
 import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Float, Int, Key
+from jaxtyping import Array, ArrayLike, Float, Int, Key
 
 from lerax.distribution import (
     AbstractDistribution,
@@ -35,11 +35,21 @@ class BoxActionLayer(AbstractActionLayer[Float[Array, " action_dim"]]):
 
     scalar: bool
     mapping: eqx.nn.Linear
-    log_std: Float[Array, " action_dim"]
+    log_std: Float[Array, " *action_dim"]
+    high: Float[Array, " *action_dim"]
+    low: Float[Array, " *action_dim"]
 
     def __init__(
-        self, latent_dim: int, action_space: Box, *, key: Key, log_std_init: float = 0.0
+        self,
+        latent_dim: int,
+        action_space: Box,
+        *,
+        key: Key,
+        log_std_init: Float[ArrayLike, ""] = jnp.array(0.0),
     ):
+        self.high = action_space.high
+        self.low = action_space.low
+
         if action_space.shape:
             self.scalar = False
             self.mapping = eqx.nn.Linear(
@@ -55,10 +65,18 @@ class BoxActionLayer(AbstractActionLayer[Float[Array, " action_dim"]]):
         self, inputs: Float[Array, " latent_dim"]
     ) -> SquashedNormal | SquashedMultivariateNormalDiag:
         if self.scalar:
-            return SquashedNormal(loc=self.mapping(inputs), scale=jnp.exp(self.log_std))
+            return SquashedNormal(
+                loc=self.mapping(inputs),
+                scale=jnp.exp(self.log_std),
+                high=self.high,
+                low=self.low,
+            )
         else:
             return SquashedMultivariateNormalDiag(
-                loc=self.mapping(inputs), scale_diag=jnp.exp(self.log_std)
+                loc=self.mapping(inputs),
+                scale_diag=jnp.exp(self.log_std),
+                high=self.high,
+                low=self.low,
             )
 
 

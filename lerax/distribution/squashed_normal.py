@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import equinox as eqx
 from distreqx import bijectors, distributions
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Float
@@ -11,50 +12,45 @@ class SquashedNormal(AbstractTransformedDistribution[Float[Array, " dims"]]):
     """
     Normal distribution with squashing bijector for bounded outputs.
 
-    Note:
-        Either both `high` and `low` must be provided for bounded squashing,
-        or neither should be provided for tanh squashing.
-
     Attributes:
         distribution: The underlying distreqx Transformed distribution.
 
     Args:
         loc: The mean of the normal distribution.
         scale: The standard deviation of the normal distribution.
-        high: The upper bound for bounded squashing. If None, uses tanh squashing.
-        low: The lower bound for bounded squashing. If None, uses tanh squashing.
+        high: The upper bound for bounded squashing.
+        low: The lower bound for bounded squashing.
     """
 
     distribution: distributions.Transformed
 
     def __init__(
         self,
-        loc: Float[ArrayLike, " dims"],
-        scale: Float[ArrayLike, " dims"],
-        high: Float[ArrayLike, " dims"] | None = None,
-        low: Float[ArrayLike, " dims"] | None = None,
+        loc: Float[ArrayLike, ""],
+        scale: Float[ArrayLike, ""],
+        high: Float[ArrayLike, ""] = jnp.array(1.0),
+        low: Float[ArrayLike, ""] = jnp.array(-1.0),
     ):
         loc = jnp.asarray(loc)
         scale = jnp.asarray(scale)
-        high = jnp.asarray(high) if high is not None else None
-        low = jnp.asarray(low) if low is not None else None
 
-        if loc.shape != scale.shape:
-            raise ValueError("loc and scale must have the same shape.")
+        (high, low) = eqx.error_if(
+            (high, low),
+            ~(jnp.isfinite(high) & jnp.isfinite(low)),
+            "SquashedNormal requires finite low/high for all "
+            "dimensions. Got non-finite bounds.",
+        )
+
+        high = jnp.asarray(high)
+        low = jnp.asarray(low)
 
         normal = distributions.Normal(loc=loc, scale=scale)
 
-        if high is not None or low is not None:
-            assert (
-                high is not None and low is not None
-            ), "Both high and low must be provided for bounded squashing."
-            sigmoid = bijectors.Sigmoid()
-            affine = bijectors.ScalarAffine(scale=high - low, shift=low)
-            chain = bijectors.Chain((sigmoid, affine))
-            self.distribution = distributions.Transformed(normal, chain)
-        else:
-            tanh = bijectors.Tanh()
-            self.distribution = distributions.Transformed(normal, tanh)
+        sigmoid = bijectors.Sigmoid()
+        affine = bijectors.ScalarAffine(scale=(high - low), shift=low)
+        bijector = bijectors.Chain((affine, sigmoid))
+
+        self.distribution = distributions.Transformed(normal, bijector)
 
     @property
     def loc(self) -> Float[Array, " dims"]:

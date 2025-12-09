@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import equinox as eqx
 from distreqx import bijectors, distributions
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Float
@@ -13,18 +14,14 @@ class SquashedMultivariateNormalDiag(
     """
     Multivariate Normal with squashing bijector for bounded outputs.
 
-    Note:
-        Either both `high` and `low` must be provided for bounded squashing,
-        or neither should be provided for tanh squashing.
-
     Attributes:
         distribution: The underlying distreqx Transformed distribution.
 
     Args:
         loc: The mean of the multivariate normal distribution.
         scale_diag: The diagonal of the covariance matrix.
-        high: The upper bound for bounded squashing. If None, uses tanh squashing.
-        low: The lower bound for bounded squashing. If None, uses tanh squashing.
+        high: The upper bound for bounded squashing..
+        low: The lower bound for bounded squashing..
     """
 
     distribution: distributions.Transformed
@@ -33,36 +30,30 @@ class SquashedMultivariateNormalDiag(
         self,
         loc: Float[ArrayLike, " dims"],
         scale_diag: Float[ArrayLike, " dims"],
-        high: Float[ArrayLike, " dims"] | None = None,
-        low: Float[ArrayLike, " dims"] | None = None,
+        high: Float[ArrayLike, " dims"] = jnp.array(1.0),
+        low: Float[ArrayLike, " dims"] = jnp.array(-1.0),
     ):
-        """
-        Initialize a SquashedMultivariateNormalDiag distribution.
-
-        Either both high and low must be provided for bounded squashing or neither.
-        If neither are provided, the distribution will use a Tanh bijector for squashing
-        between -1 and 1.
-        """
         loc = jnp.asarray(loc)
         scale_diag = jnp.asarray(scale_diag)
-        high = jnp.asarray(high) if high is not None else None
-        low = jnp.asarray(low) if low is not None else None
+
+        (high, low) = eqx.error_if(
+            (high, low),
+            ~(jnp.isfinite(high) & jnp.isfinite(low)),
+            "SquashedMultivariateNormalDiag requires finite low/high for all "
+            "dimensions. Got non-finite bounds.",
+        )
+
+        high = jnp.broadcast_to(jnp.asarray(high), loc.shape)
+        low = jnp.broadcast_to(jnp.asarray(low), loc.shape)
 
         mvn = distributions.MultivariateNormalDiag(loc=loc, scale_diag=scale_diag)
 
-        if high is not None or low is not None:
-            assert (
-                high is not None and low is not None
-            ), "Both high and low must be provided for bounded squashing."
+        sigmoid = bijectors.Sigmoid()
+        affine = bijectors.ScalarAffine(scale=(high - low), shift=low)
+        chain = bijectors.Chain((affine, sigmoid))
+        bijector = bijectors.Block(chain, ndims=1)
 
-            sigmoid = bijectors.Sigmoid()
-            scale = bijectors.DiagLinear(high - low)
-            shift = bijectors.Shift(low)
-            chain = bijectors.Chain((sigmoid, scale, shift))
-            self.distribution = distributions.Transformed(mvn, chain)
-        else:
-            tanh = bijectors.Tanh()
-            self.distribution = distributions.Transformed(mvn, tanh)
+        self.distribution = distributions.Transformed(mvn, bijector)
 
     @property
     def loc(self) -> Float[Array, " dims"]:
