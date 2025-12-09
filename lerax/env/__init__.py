@@ -11,6 +11,7 @@ from .classic_control import (
     MountainCar,
     Pendulum,
 )
+from .mujoco import Humanoid
 
 __all__ = [
     "AbstractEnvLike",
@@ -22,4 +23,5 @@ __all__ = [
     "MountainCar",
     "ContinuousMountainCar",
     "Pendulum",
+    "Humanoid",
 ]
