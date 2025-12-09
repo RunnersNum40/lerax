@@ -11,10 +11,6 @@ Built on top of [Jax](https://docs.jax.dev/en/latest/index.html), [Equinox](http
 pip install lerax
 ```
 
-## Documentation
-
-Check out: [lerax.tedpinkerton.ca](https://lerax.tedpinkerton.ca)
-
 ## Training Example
 
 ```py
@@ -31,21 +27,6 @@ algo = PPO()
 policy = algo.learn(env, policy, total_timesteps=2**16, key=jr.key(1))
 ```
 
-## TODO
+## Documentation
 
-- Optimise for performance under JIT compilation
-  - Sharding support for distributed training
-- Documentation
-  - Standardize docstring formats
-  - Write documentation for all public APIs
-  - Add API to docs when Zensical supports it
-- Testing
-  - Unit testing
-  - Integration testing
-  - Full Jaxtyping
-    - Ensure all functions and classes have proper type annotations
-- Round out features
-  - Expand RL variants to include more algorithms
-    - Any off-policy algorithms
-  - Create a more comprehensive set of environments
-    - Brax based environments
+Check out: [lerax.tedpinkerton.ca](https://lerax.tedpinkerton.ca)
