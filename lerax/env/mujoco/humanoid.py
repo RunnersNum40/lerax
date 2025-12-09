@@ -57,7 +57,7 @@ class Humanoid(AbstractMujocoEnv[Float[Array, "..."], Float[Array, "..."]]):
     def __init__(
         self,
         *,
-        xml_file: str = "humanoid.xml",
+        xml_file: str | Path = "humanoid.xml",
         frame_skip: int = 5,
         forward_reward_weight: float = 1.25,
         ctrl_cost_weight: float = 0.1,
@@ -209,25 +209,26 @@ class Humanoid(AbstractMujocoEnv[Float[Array, "..."], Float[Array, "..."]]):
         *,
         key: Key,
     ) -> Float[Array, ""]:
-        xy_before = self._mass_center(state.sim_state)
-        xy_after = self._mass_center(next_state.sim_state)
+        xy_before = self.mass_center(state.sim_state)
+        xy_after = self.mass_center(next_state.sim_state)
         xy_velocity = (xy_after - xy_before) / self.dt
         x_velocity = xy_velocity[0]
 
-        is_healthy = self._is_healthy(next_state.sim_state)
-        healthy_reward = jnp.where(is_healthy, self.healthy_reward, 0.0)
+        healthy_reward = (
+            self.is_healthy(next_state.sim_state).astype(float) * self.healthy_reward
+        )
         forward_reward = self.forward_reward_weight * x_velocity
 
-        ctrl_cost = self.ctrl_cost_weight * jnp.sum(jnp.square(action))
-        contact_cost = self._contact_cost(next_state.sim_state)
+        control_cost = self.ctrl_cost_weight * jnp.sum(jnp.square(action))
+        contact_cost = self.contact_cost(next_state.sim_state)
 
-        reward = forward_reward + healthy_reward - ctrl_cost - contact_cost
+        reward = forward_reward + healthy_reward - control_cost - contact_cost
         return reward
 
     def terminal(self, state: MujocoEnvState, *, key: Key) -> Bool[Array, ""]:
         if not self.terminate_when_unhealthy:
             return jnp.array(False)
-        return ~self._is_healthy(state.sim_state)
+        return ~self.is_healthy(state.sim_state)
 
     def state_info(self, state: MujocoEnvState) -> dict:
         data = state.sim_state
@@ -247,16 +248,17 @@ class Humanoid(AbstractMujocoEnv[Float[Array, "..."], Float[Array, "..."]]):
     ) -> dict:
         data = next_state.sim_state
 
-        xy_before = self._mass_center(state.sim_state)
-        xy_after = self._mass_center(next_state.sim_state)
+        xy_before = self.mass_center(state.sim_state)
+        xy_after = self.mass_center(next_state.sim_state)
         xy_velocity = (xy_after - xy_before) / self.dt
         x_velocity, y_velocity = xy_velocity[0], xy_velocity[1]
 
-        is_healthy = self._is_healthy(data)
-        healthy_reward = jnp.where(is_healthy, self.healthy_reward, 0.0)
+        healthy_reward = (
+            self.is_healthy(next_state.sim_state).astype(float) * self.healthy_reward
+        )
         forward_reward = self.forward_reward_weight * x_velocity
         ctrl_cost = self.ctrl_cost_weight * jnp.sum(jnp.square(action))
-        contact_cost = self._contact_cost(data)
+        contact_cost = self.contact_cost(data)
 
         return {
             "x_position": data.qpos[0],
@@ -272,18 +274,18 @@ class Humanoid(AbstractMujocoEnv[Float[Array, "..."], Float[Array, "..."]]):
             "reward_contact": -contact_cost,
         }
 
-    def _mass_center(self, data: mjx.Data) -> Float[Array, "2"]:
+    def mass_center(self, data: mjx.Data) -> Float[Array, "2"]:
         num = jnp.einsum("b,bj->j", self.model.body_mass, data.xipos)
         denom = jnp.sum(self.model.body_mass)
         com = num / denom
         return com[0:2]
 
-    def _is_healthy(self, data: mjx.Data) -> Bool[Array, ""]:
+    def is_healthy(self, data: mjx.Data) -> Bool[Array, ""]:
         min_z, max_z = self.healthy_z_range
         z = data.qpos[2]
         return (z > min_z) & (z < max_z)
 
-    def _contact_cost(self, data: mjx.Data) -> Float[Array, ""]:
+    def contact_cost(self, data: mjx.Data) -> Float[Array, ""]:
         contact_forces = data.cfrc_ext
         raw_cost = jnp.sum(jnp.square(contact_forces))
         min_cost, max_cost = self.contact_cost_range
