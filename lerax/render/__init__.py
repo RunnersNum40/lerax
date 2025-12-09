@@ -11,7 +11,6 @@ from .base_renderer import (
     Color,
     Transform,
 )
-from .mujoco_renderer import MujocoRenderer
 from .pygame_renderer import PygameRenderer
 from .video import VideoRenderer
 
@@ -29,5 +28,4 @@ __all__ = [
     "BLUE",
     "PygameRenderer",
     "VideoRenderer",
-    "MujocoRenderer",
 ]
