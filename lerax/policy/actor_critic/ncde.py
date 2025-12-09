@@ -149,6 +149,8 @@ class NCDEActorCriticPolicy[
         self, state: NCDEPolicyState, observation: ObsType, *, key: Key | None = None
     ) -> tuple[NCDEPolicyState, ActType]:
         state, features = self._step_encoder(state, observation)
+        features = jnp.tanh(features)
+
         action_dist = self.action_head(features)
 
         if key is None:
@@ -162,11 +164,12 @@ class NCDEActorCriticPolicy[
         self, state: NCDEPolicyState, observation: ObsType, *, key: Key
     ) -> tuple[NCDEPolicyState, ActType, Float[Array, ""], Float[Array, ""]]:
         state, features = self._step_encoder(state, observation)
+        features = jnp.tanh(features)
 
         value = self.value_head(features)
 
-        dist = self.action_head(features)
-        action, log_prob = dist.sample_and_log_prob(key)
+        action_dist = self.action_head(features)
+        action, log_prob = action_dist.sample_and_log_prob(key)
 
         return state, action, value, log_prob.sum().squeeze()
 
@@ -174,12 +177,16 @@ class NCDEActorCriticPolicy[
         self, state: NCDEPolicyState, observation: ObsType, action: ActType
     ) -> tuple[NCDEPolicyState, Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
         state, features = self._step_encoder(state, observation)
-        dist = self.action_head(features)
+        features = jnp.tanh(features)
+
+        action_dist = self.action_head(features)
         value = self.value_head(features)
-        log_prob = dist.log_prob(action)
+        log_prob = action_dist.log_prob(action)
+
+        eqx.debug.breakpoint_if(~jnp.isfinite(log_prob))
 
         try:
-            entropy = dist.entropy().squeeze()
+            entropy = action_dist.entropy().squeeze()
         except NotImplementedError:
             entropy = -log_prob.mean().squeeze()
 
