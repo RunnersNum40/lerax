@@ -14,17 +14,15 @@ description: A list of tasks and features to be implemented in Lerax.
 - Learning Rate Schedules
 - Early Stopping
 - Sharding support for distributed training
+- Clean up rendering API
 
 ## Features
 
-- Console Rendering of Environments
 - More Environments
-    - Brax-based environments
-    - Pgx environments
-- Masked actions
+    - Memory gym
 - Multi-agent environments and algorithms
     - MADDPG, MAPPO
-    - Memory gym
+    - Pgx environments
 
 ## Development
 
