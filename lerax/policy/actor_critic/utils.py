@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 
 import equinox as eqx
+from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Float, Int, Key
@@ -64,19 +65,21 @@ class BoxActionLayer(AbstractActionLayer[Float[Array, " action_dim"]]):
     def __call__(
         self, inputs: Float[Array, " latent_dim"]
     ) -> SquashedNormal | SquashedMultivariateNormalDiag:
+        high, low = lax.stop_gradient(self.high), lax.stop_gradient(self.low)
+
         if self.scalar:
             return SquashedNormal(
                 loc=self.mapping(inputs),
                 scale=jnp.exp(self.log_std),
-                high=self.high,
-                low=self.low,
+                high=high,
+                low=low,
             )
         else:
             return SquashedMultivariateNormalDiag(
                 loc=self.mapping(inputs),
                 scale_diag=jnp.exp(self.log_std),
-                high=self.high,
-                low=self.low,
+                high=high,
+                low=low,
             )
 
 
