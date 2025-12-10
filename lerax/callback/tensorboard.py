@@ -229,7 +229,10 @@ class TensorBoardCallback(
         opt_state = ctx.opt_state
 
         log["learning_rate"] = optax.tree_utils.tree_get(
-            opt_state, "learning_rate", jnp.nan
+            opt_state,
+            "learning_rate",
+            jnp.nan,
+            filtering=lambda _, value: isinstance(value, jnp.ndarray),
         )
 
         step_state = ctx.step_state

@@ -102,7 +102,7 @@ class PPO[PolicyType: AbstractStatefulActorCriticPolicy](
         value_loss_coefficient: float = 0.5,
         max_grad_norm: float = 0.5,
         normalize_advantages: bool = True,
-        learning_rate: float = 3e-4,
+        learning_rate: optax.ScalarOrSchedule = 3e-4,
     ):
         self.gae_lambda = gae_lambda
         self.gamma = gamma

@@ -90,7 +90,7 @@ class DQN[PolicyType: AbstractStatefulDQNPolicy](
         gradient_steps: int = 1,
         batch_size: int = 32,
         buffer_size: int = 2**20,
-        learning_rate: float = 1e-4,
+        learning_rate: optax.ScalarOrSchedule = 3e-4,
     ):
         self.gamma = gamma
         self.tau = tau
