@@ -25,6 +25,7 @@ from lerax.policy import (
     AbstractStatefulActorCriticPolicy,
     AbstractStatefulPolicy,
 )
+from lerax.space import Box
 from lerax.utils import filter_scan
 
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
@@ -160,9 +161,22 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
             state.policy_state, observation, key=action_key
         )
 
-        next_env_state = env.transition(state.env_state, action, key=transition_key)
+        if isinstance(env.action_space, Box):
+            clipped_action = jnp.clip(
+                action,
+                env.action_space.low,
+                env.action_space.high,
+            )
+        else:
+            clipped_action = action
 
-        reward = env.reward(state.env_state, action, next_env_state, key=reward_key)
+        next_env_state = env.transition(
+            state.env_state, clipped_action, key=transition_key
+        )
+
+        reward = env.reward(
+            state.env_state, clipped_action, next_env_state, key=reward_key
+        )
         termination = env.terminal(next_env_state, key=terminal_key)
         truncation = env.truncate(next_env_state)
         done = termination | truncation
@@ -200,7 +214,7 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
             OnPolicyStepState(next_env_state, next_policy_state, callback_state),
             RolloutBuffer(
                 observations=observation,
-                actions=action,
+                actions=clipped_action,
                 rewards=bootstrapped_reward,
                 dones=done,
                 log_probs=log_prob,

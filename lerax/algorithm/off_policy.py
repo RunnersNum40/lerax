@@ -21,6 +21,7 @@ from lerax.callback import (
 )
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.policy import AbstractPolicyState, AbstractStatefulPolicy
+from lerax.space import Box
 from lerax.utils import filter_scan
 
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
@@ -163,7 +164,18 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractStatefulPolicy](
         observation = env.observation(state.env_state, key=observation_key)
         policy_state, action = policy(state.policy_state, observation, key=action_key)
 
-        next_env_state = env.transition(state.env_state, action, key=transition_key)
+        if isinstance(env.action_space, Box):
+            clipped_action = jnp.clip(
+                action,
+                env.action_space.low,
+                env.action_space.high,
+            )
+        else:
+            clipped_action = action
+
+        next_env_state = env.transition(
+            state.env_state, clipped_action, key=transition_key
+        )
 
         reward = env.reward(state.env_state, action, next_env_state, key=reward_key)
         termination = env.terminal(next_env_state, key=terminal_key)
