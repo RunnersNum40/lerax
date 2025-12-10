@@ -27,7 +27,11 @@ from lerax.policy import (
 )
 from lerax.utils import filter_scan
 
-from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
+from .base_algorithm import (
+    AbstractAlgorithmRunner,
+    AbstractAlgorithmState,
+    AbstractStepState,
+)
 
 
 class OnPolicyStepState[PolicyType: AbstractStatefulPolicy](AbstractStepState):
@@ -70,9 +74,12 @@ class OnPolicyStepState[PolicyType: AbstractStatefulPolicy](AbstractStepState):
         env_state = env.initial(key=env_key)
         policy_state = policy.reset(key=policy_key)
 
-        callback_states = callback.step_reset(ResetContext(locals()), key=key)
+        callback_state = callback.step_reset(
+            ResetContext(locals()),
+            key=key,
+        )
 
-        return cls(env_state, policy_state, callback_states)
+        return cls(env_state, policy_state, callback_state)
 
 
 class OnPolicyState[PolicyType: AbstractStatefulPolicy](
@@ -84,7 +91,6 @@ class OnPolicyState[PolicyType: AbstractStatefulPolicy](
     Attributes:
         iteration_count: The current iteration count.
         step_state: The state for the current step.
-        env: The environment being used.
         policy: The policy being trained.
         opt_state: The optimizer state.
         callback_state: The state of the callback for this iteration.
@@ -92,158 +98,45 @@ class OnPolicyState[PolicyType: AbstractStatefulPolicy](
 
     iteration_count: Int[Array, ""]
     step_state: OnPolicyStepState[PolicyType]
-    env: AbstractEnvLike
     policy: PolicyType
     opt_state: optax.OptState
     callback_state: AbstractCallbackState
 
 
 class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
-    AbstractAlgorithm[PolicyType, OnPolicyState[PolicyType]]
+    AbstractAlgorithmRunner[PolicyType, OnPolicyState[PolicyType]]
 ):
     """
-    Base class for on-policy algorithms.
+    Base class for on-policy algorithm runners.
 
     Generates rollouts using the current policy and estimates advantages and
     returns using GAE. Trains the policy using the collected rollouts.
-
-    Attributes:
-        optimizer: The optimizer used for training the policy.
-        gae_lambda: The GAE lambda parameter.
-        gamma: The discount factor.
-        num_envs: The number of parallel environments.
-        num_steps: The number of steps to collect per environment.
-        batch_size: The batch size for training.
     """
 
+    env: eqx.AbstractVar[AbstractEnvLike]
+    callback: eqx.AbstractVar[AbstractCallback]
     optimizer: eqx.AbstractVar[optax.GradientTransformation]
+
+    num_envs: eqx.AbstractVar[int]
+    num_steps: eqx.AbstractVar[int]
+    total_timesteps: eqx.AbstractVar[int]
+    num_iterations: eqx.AbstractVar[int]
 
     gae_lambda: eqx.AbstractVar[float]
     gamma: eqx.AbstractVar[float]
 
-    num_envs: eqx.AbstractVar[int]
-    num_steps: eqx.AbstractVar[int]
     batch_size: eqx.AbstractVar[int]
-
-    def num_iterations(self, total_timesteps: int) -> int:
-        return total_timesteps // (self.num_envs * self.num_steps)
 
     @abstractmethod
     def per_step(
-        self, step_state: OnPolicyStepState[PolicyType]
-    ) -> OnPolicyStepState[PolicyType]:
-        """Process the step carry after each step."""
-
-    def step(
         self,
-        env: AbstractEnvLike,
-        policy: PolicyType,
-        state: OnPolicyStepState[PolicyType],
-        *,
-        key: Key,
-        callback: AbstractCallback,
-    ) -> tuple[OnPolicyStepState[PolicyType], RolloutBuffer]:
-        (
-            action_key,
-            transition_key,
-            observation_key,
-            reward_key,
-            terminal_key,
-            bootstrap_key,
-            env_reset_key,
-            policy_reset_key,
-            callback_key,
-        ) = jr.split(key, 9)
-
-        observation = env.observation(state.env_state, key=observation_key)
-        next_policy_state, action, value, log_prob = policy.action_and_value(
-            state.policy_state, observation, key=action_key
-        )
-
-        next_env_state = env.transition(state.env_state, action, key=transition_key)
-
-        reward = env.reward(state.env_state, action, next_env_state, key=reward_key)
-        termination = env.terminal(next_env_state, key=terminal_key)
-        truncation = env.truncate(next_env_state)
-        done = termination | truncation
-
-        # Bootstrap reward if truncated
-        # TODO: Check if a non-branched approach is faster
-        bootstrapped_reward = lax.cond(
-            truncation,
-            lambda: reward
-            + self.gamma
-            * policy.value(
-                next_policy_state, env.observation(next_env_state, key=bootstrap_key)
-            )[1],
-            lambda: reward,
-        )
-
-        # Reset environment if done
-        next_env_state = lax.cond(
-            done, lambda: env.initial(key=env_reset_key), lambda: next_env_state
-        )
-
-        # Reset policy state if done
-        next_policy_state = lax.cond(
-            done, lambda: policy.reset(key=policy_reset_key), lambda: next_policy_state
-        )
-
-        callback_state = callback.on_step(
-            StepContext(
-                state.callback_state, env, policy, done, bootstrapped_reward, locals()
-            ),
-            key=callback_key,
-        )
-
-        return (
-            OnPolicyStepState(next_env_state, next_policy_state, callback_state),
-            RolloutBuffer(
-                observations=observation,
-                actions=action,
-                rewards=bootstrapped_reward,
-                dones=done,
-                log_probs=log_prob,
-                values=value,
-                states=state.policy_state,
-            ),
-        )
-
-    def collect_rollout(
-        self,
-        env: AbstractEnvLike,
-        policy: PolicyType,
         step_state: OnPolicyStepState[PolicyType],
-        callback: AbstractCallback,
-        key: Key,
-    ) -> tuple[OnPolicyStepState[PolicyType], RolloutBuffer]:
-        """Collect a rollout using the current policy."""
-        key, observation_key = jr.split(key, 2)
+    ) -> OnPolicyStepState[PolicyType]:
+        """
+        Process the step state after each environment step.
 
-        def scan_step(
-            carry: OnPolicyStepState[PolicyType], key: Key
-        ) -> tuple[OnPolicyStepState[PolicyType], RolloutBuffer]:
-            carry, rollout = self.step(
-                env,
-                policy,
-                carry,
-                key=key,
-                callback=callback,
-            )
-            return self.per_step(carry), rollout
-
-        step_state, rollout_buffer = filter_scan(
-            scan_step, step_state, jr.split(key, self.num_steps)
-        )
-
-        _, next_value = policy.value(
-            step_state.policy_state,
-            env.observation(step_state.env_state, key=observation_key),
-        )
-        rollout_buffer = rollout_buffer.compute_returns_and_advantages(
-            next_value, self.gae_lambda, self.gamma
-        )
-        return step_state, rollout_buffer
+        Used for algorithm-specific bookkeeping or shaping.
+        """
 
     @abstractmethod
     def train(
@@ -268,31 +161,198 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
             and a log dictionary.
         """
 
-    def reset(
+    def step(
         self,
         env: AbstractEnvLike,
         policy: PolicyType,
+        state: OnPolicyStepState[PolicyType],
+        *,
+        callback: AbstractCallback,
+        key: Key,
+    ) -> tuple[OnPolicyStepState[PolicyType], RolloutBuffer]:
+        (
+            action_key,
+            transition_key,
+            observation_key,
+            reward_key,
+            terminal_key,
+            bootstrap_key,
+            env_reset_key,
+            policy_reset_key,
+            callback_key,
+        ) = jr.split(key, 9)
+
+        observation = env.observation(state.env_state, key=observation_key)
+        next_policy_state, action, value, log_prob = policy.action_and_value(
+            state.policy_state,
+            observation,
+            key=action_key,
+        )
+
+        next_env_state = env.transition(state.env_state, action, key=transition_key)
+
+        reward = env.reward(
+            state.env_state,
+            action,
+            next_env_state,
+            key=reward_key,
+        )
+        termination = env.terminal(next_env_state, key=terminal_key)
+        truncation = env.truncate(next_env_state)
+        done = termination | truncation
+
+        # Bootstrap reward if truncated
+        bootstrapped_reward = lax.cond(
+            truncation,
+            lambda: reward
+            + self.gamma
+            * policy.value(
+                next_policy_state,
+                env.observation(next_env_state, key=bootstrap_key),
+            )[1],
+            lambda: reward,
+        )
+
+        # Reset environment if done
+        next_env_state = lax.cond(
+            done,
+            lambda: env.initial(key=env_reset_key),
+            lambda: next_env_state,
+        )
+
+        # Reset policy state if done
+        next_policy_state = lax.cond(
+            done,
+            lambda: policy.reset(key=policy_reset_key),
+            lambda: next_policy_state,
+        )
+
+        callback_state = callback.on_step(
+            StepContext(
+                state.callback_state,
+                env,
+                policy,
+                done,
+                bootstrapped_reward,
+                locals(),
+            ),
+            key=callback_key,
+        )
+
+        next_step_state = OnPolicyStepState(
+            next_env_state,
+            next_policy_state,
+            callback_state,
+        )
+
+        rollout_buffer = RolloutBuffer(
+            observations=observation,
+            actions=action,
+            rewards=bootstrapped_reward,
+            dones=done,
+            log_probs=log_prob,
+            values=value,
+            states=state.policy_state,
+        )
+
+        return next_step_state, rollout_buffer
+
+    def collect_rollout(
+        self,
+        env: AbstractEnvLike,
+        policy: PolicyType,
+        step_state: OnPolicyStepState[PolicyType],
+        callback: AbstractCallback,
+        key: Key,
+    ) -> tuple[OnPolicyStepState[PolicyType], RolloutBuffer]:
+        """
+        Collect a rollout using the current policy.
+
+        Returns:
+            A tuple containing:
+              - the updated step state
+              - a RolloutBuffer with computed returns and advantages
+        """
+        key, observation_key = jr.split(key, 2)
+
+        def scan_step(
+            carry: OnPolicyStepState[PolicyType],
+            step_key: Key,
+        ) -> tuple[OnPolicyStepState[PolicyType], RolloutBuffer]:
+            next_state, rollout = self.step(
+                env,
+                policy,
+                carry,
+                callback=callback,
+                key=step_key,
+            )
+            return self.per_step(next_state), rollout
+
+        step_state, rollout_buffer = filter_scan(
+            scan_step,
+            step_state,
+            jr.split(key, self.num_steps),
+        )
+
+        _, next_value = policy.value(
+            step_state.policy_state,
+            env.observation(step_state.env_state, key=observation_key),
+        )
+        rollout_buffer = rollout_buffer.compute_returns_and_advantages(
+            next_value,
+            self.gae_lambda,
+            self.gamma,
+        )
+        return step_state, rollout_buffer
+
+    def reset(
+        self,
+        policy: PolicyType,
         *,
         key: Key,
-        callback: AbstractCallback,
     ) -> OnPolicyState[PolicyType]:
+        """
+        Initialize the on-policy algorithm state.
+
+        Resets the environment(s), policy, callback state, and optimizer state.
+        """
+        env = self.env
+        callback = self.callback
+
         step_key, callback_key = jr.split(key, 2)
 
         if self.num_envs == 1:
-            step_state = OnPolicyStepState.initial(env, policy, callback, step_key)
+            step_state = OnPolicyStepState.initial(
+                env,
+                policy,
+                callback,
+                step_key,
+            )
         else:
             step_state = jax.vmap(
-                OnPolicyStepState.initial, in_axes=(None, None, None, 0)
-            )(env, policy, callback, jr.split(step_key, self.num_envs))
+                OnPolicyStepState.initial,
+                in_axes=(None, None, None, 0),
+            )(
+                env,
+                policy,
+                callback,
+                jr.split(step_key, self.num_envs),
+            )
 
-        callback_state = callback.reset(ResetContext(locals()), key=callback_key)
+        callback_state = callback.reset(
+            ResetContext(locals()),
+            key=callback_key,
+        )
+
+        opt_state = self.optimizer.init(
+            eqx.filter(policy, eqx.is_inexact_array),
+        )
 
         return OnPolicyState(
             jnp.array(0, dtype=int),
             step_state,
-            env,
             policy,
-            self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array)),
+            opt_state,
             callback_state,
         )
 
@@ -301,13 +361,21 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
         state: OnPolicyState[PolicyType],
         *,
         key: Key,
-        callback: AbstractCallback,
     ) -> OnPolicyState[PolicyType]:
+        """
+        Perform a single on-policy training iteration.
+
+        Collects a rollout, updates the policy using `train`, updates the
+        algorithm state, and fires iteration callbacks.
+        """
+        env = self.env
+        callback = self.callback
+
         rollout_key, train_key, callback_key = jr.split(key, 3)
 
         if self.num_envs == 1:
             step_state, rollout_buffer = self.collect_rollout(
-                state.env,
+                env,
                 state.policy,
                 state.step_state,
                 callback,
@@ -315,9 +383,10 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
             )
         else:
             step_state, rollout_buffer = eqx.filter_vmap(
-                self.collect_rollout, in_axes=(None, None, 0, None, 0)
+                self.collect_rollout,
+                in_axes=(None, None, 0, None, 0),
             )(
-                state.env,
+                env,
                 state.policy,
                 state.step_state,
                 callback,
@@ -325,25 +394,27 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
             )
 
         policy, opt_state, log = self.train(
-            state.policy, state.opt_state, rollout_buffer, key=train_key
+            state.policy,
+            state.opt_state,
+            rollout_buffer,
+            key=train_key,
         )
 
         state = state.next(step_state, policy, opt_state)
 
-        state = state.with_callback_states(
-            callback.on_iteration(
-                IterationContext(
-                    state.callback_state,
-                    state.step_state.callback_state,
-                    state.env,
-                    state.policy,
-                    state.iteration_count,
-                    state.opt_state,
-                    log,
-                    locals(),
-                ),
-                key=callback_key,
-            )
+        callback_state = callback.on_iteration(
+            IterationContext(
+                state.callback_state,
+                state.step_state.callback_state,
+                env,
+                state.policy,
+                state.iteration_count,
+                state.opt_state,
+                log,
+                locals(),
+            ),
+            key=callback_key,
         )
+        state = state.with_callback_state(callback_state)
 
         return self.per_iteration(state)

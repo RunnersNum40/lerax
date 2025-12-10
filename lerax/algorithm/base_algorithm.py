@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Sequence, cast
+from typing import Self, Sequence, cast
 
 import equinox as eqx
 import optax
@@ -34,18 +34,22 @@ class AbstractStepState(eqx.Module):
     policy_state: eqx.AbstractVar[AbstractPolicyState]
     callback_state: eqx.AbstractVar[AbstractCallbackStepState]
 
-    def with_callback_state[A: AbstractStepState](
-        self: A, callback_state: AbstractCallbackStepState | None
-    ) -> A:
+    def with_callback_state(
+        self, callback_state: AbstractCallbackStepState | None
+    ) -> Self:
         """
         Return a new step state with the given callback state.
 
+        If callback_state is None, the existing state is kept.
+
         Args:
-            callback_state: The new callback state. If None, the existing state is used.
+            callback_state: The new callback state, or None to keep existing.
 
         Returns:
             A new step state with the updated callback state.
         """
+        if callback_state is None:
+            return self
         return eqx.tree_at(lambda s: s.callback_state, self, callback_state)
 
 
@@ -56,7 +60,6 @@ class AbstractAlgorithmState[PolicyType: AbstractStatefulPolicy](eqx.Module):
     Attributes:
         iteration_count: The current iteration count.
         step_state: The state for the current step.
-        env: The environment being used.
         policy: The policy being trained.
         opt_state: The optimizer state.
         callback_state: The state of the callback for this iteration.
@@ -64,30 +67,21 @@ class AbstractAlgorithmState[PolicyType: AbstractStatefulPolicy](eqx.Module):
 
     iteration_count: eqx.AbstractVar[Int[Array, ""]]
     step_state: eqx.AbstractVar[AbstractStepState]
-    env: eqx.AbstractVar[AbstractEnvLike]
     policy: eqx.AbstractVar[PolicyType]
     opt_state: eqx.AbstractVar[optax.OptState]
     callback_state: eqx.AbstractVar[AbstractCallbackState]
 
-    def next[A: AbstractAlgorithmState](
-        self: A,
+    def next(
+        self,
         step_state: AbstractStepState,
         policy: PolicyType,
         opt_state: optax.OptState,
-    ) -> A:
+    ) -> Self:
         """
         Return a new algorithm state for the next iteration.
 
         Increments the iteration count and updates the step state, policy, and
         optimizer state.
-
-        Args:
-            step_state: The new step state.
-            policy: The new policy.
-            opt_state: The new optimizer state.
-
-        Returns:
-            A new algorithm state with the updated fields.
         """
         return eqx.tree_at(
             lambda s: (s.iteration_count, s.step_state, s.policy, s.opt_state),
@@ -95,74 +89,45 @@ class AbstractAlgorithmState[PolicyType: AbstractStatefulPolicy](eqx.Module):
             (self.iteration_count + 1, step_state, policy, opt_state),
         )
 
-    def with_callback_states[A: AbstractAlgorithmState](
-        self: A, callback_state: AbstractCallbackState
-    ) -> A:
+    def with_callback_state(self, callback_state: AbstractCallbackState) -> Self:
         """
         Return a new algorithm state with the given callback state.
-
-        Args:
-            callback_state: The new callback state.
-
-        Returns:
-            A new algorithm state with the updated callback state.
         """
         return eqx.tree_at(lambda s: s.callback_state, self, callback_state)
 
 
-class AbstractAlgorithm[
-    PolicyType: AbstractStatefulPolicy, StateType: AbstractAlgorithmState
+class AbstractAlgorithmRunner[
+    PolicyType: AbstractStatefulPolicy,
+    StateType: AbstractAlgorithmState,
 ](eqx.Module):
     """
-    Base class for RL algorithms.
+    Base class for fully configured RL algorithm runners.
 
-    Provides the main training loop and abstract methods for algorithm-specific behavior.
-
-    Attributes:
-        optimizer: The optimizer used for training.
-        num_envs: The number of parallel environments.
-        num_steps: The number of steps per environment per iteration.
+    A runner has all runtime parameters bound (environment, callbacks, optimizer,
+    horizon) and exposes a `__call__` method taking only a policy and a key.
     """
 
+    env: eqx.AbstractVar[AbstractEnvLike]
+    callback: eqx.AbstractVar[AbstractCallback]
     optimizer: eqx.AbstractVar[optax.GradientTransformation]
 
     num_envs: eqx.AbstractVar[int]
     num_steps: eqx.AbstractVar[int]
+    total_timesteps: eqx.AbstractVar[int]
+    num_iterations: eqx.AbstractVar[int]
 
     @abstractmethod
     def reset(
         self,
-        env: AbstractEnvLike,
         policy: PolicyType,
         *,
         key: Key,
-        callback: AbstractCallback,
     ) -> StateType:
         """
-        Return the initial carry for the training iteration.
+        Return the initial algorithm state.
 
-        Args:
-            env: The environment to train on.
-            policy: The policy to train.
-            key: A JAX PRNG key.
-            callback: A callback or list of callbacks to use during training.
-
-        Returns:
-            The initial algorithm state.
-        """
-
-    @abstractmethod
-    def per_iteration(self, state: StateType) -> StateType:
-        """
-        Process the algorithm state after each iteration.
-
-        Used for algorithm-specific bookkeeping.
-
-        Args:
-            state: The current algorithm state.
-
-        Returns:
-            The updated algorithm state.
+        Responsible for resetting environment, policy, callback state, and
+        initializing the optimizer state.
         """
 
     @abstractmethod
@@ -171,63 +136,70 @@ class AbstractAlgorithm[
         state: StateType,
         *,
         key: Key,
-        callback: AbstractCallback,
     ) -> StateType:
         """
-        Perform a single iteration of training.
+        Perform a single training iteration.
 
-        Args:
-            state: The current algorithm state.
-            key: A JAX PRNG key.
-            callback: A callback or list of callbacks to use during training.
-
-        Returns:
-            The updated algorithm state.
+        Typically:
+          - collect rollout / samples
+          - optimize policy
+          - update state (including iteration_count)
+          - fire iteration callbacks
         """
 
     @abstractmethod
-    def num_iterations(self, total_timesteps: int) -> int:
-        """Number of iterations per training session."""
-
-    @eqx.filter_jit
-    def learn[A: AbstractPolicy](
-        self,
-        env: AbstractEnvLike,
-        policy: A,
-        total_timesteps: int,
-        *,
-        key: Key,
-        callback: Sequence[AbstractCallback] | AbstractCallback | None = None,
-    ) -> A:
+    def per_iteration(self, state: StateType) -> StateType:
         """
-        Train the policy on the environment for a given number of timesteps.
+        Optional hook to process state after each iteration.
 
-        Args:
-            env: The environment to train on.
-            policy: The policy to train.
-            total_timesteps: The total number of timesteps to train for.
-            key: A JAX PRNG key.
-            callback: A callback or list of callbacks to use during training.
+        Concrete runners can use this for algorithm-specific bookkeeping
+        (e.g. target network updates). The base implementation is never called.
+        """
+
+    def init_stateful_policy(
+        self,
+        policy: AbstractPolicy,
+    ) -> tuple[PolicyType, bool]:
+        """
+        Convert a policy to a stateful policy if needed.
 
         Returns:
-            policy: The trained policy.
+            (stateful_policy, was_stateless)
         """
+        if isinstance(policy, AbstractStatefulPolicy):
+            stateful_policy = cast(PolicyType, policy)
+            return stateful_policy, False
+        stateful_policy = cast(PolicyType, policy.into_stateful())
+        return stateful_policy, True
+
+    @eqx.filter_jit
+    def __call__[P: AbstractPolicy](
+        self,
+        policy: P,
+        *,
+        key: Key,
+    ) -> P:
+        """
+        Run training.
+
+        Args:
+            policy: The initial policy.
+            key: A JAX PRNG key.
+
+        Returns:
+            The trained policy.
+        """
+        callback = self.callback
+        env = self.env
+        total_timesteps = self.total_timesteps
+
         callback_start_key, reset_key, learn_key, callback_end_key = jr.split(key, 4)
 
-        if callback is None:
-            callback = []
-        if not isinstance(callback, AbstractCallback):
-            callbacks = list(callback)
-            callback = CallbackList(callbacks=callbacks)
+        stateful_policy, was_stateless = self.init_stateful_policy(policy)
 
-        if isinstance(policy, AbstractStatefulPolicy):
-            _policy = cast(PolicyType, policy)
-        else:
-            _policy = cast(PolicyType, policy.into_stateful())
+        state = self.reset(stateful_policy, key=reset_key)
 
-        state = self.reset(env, _policy, key=reset_key, callback=callback)
-
-        state = state.with_callback_states(
+        state = state.with_callback_state(
             callback.on_training_start(
                 ctx=TrainingContext(
                     state.callback_state,
@@ -243,13 +215,20 @@ class AbstractAlgorithm[
             )
         )
 
+        def scan_body(
+            carry: StateType,
+            iter_key: Key,
+        ) -> tuple[StateType, None]:
+            new_state = self.iteration(carry, key=iter_key)
+            return new_state, None
+
         state, _ = filter_scan(
-            lambda s, k: (self.iteration(s, key=k, callback=callback), None),
+            scan_body,
             state,
-            jr.split(learn_key, self.num_iterations(total_timesteps)),
+            jr.split(learn_key, self.num_iterations),
         )
 
-        state = state.with_callback_states(
+        state = state.with_callback_state(
             callback.on_training_end(
                 ctx=TrainingContext(
                     state.callback_state,
@@ -265,7 +244,118 @@ class AbstractAlgorithm[
             )
         )
 
-        if isinstance(policy, AbstractStatefulPolicy):
-            return state.policy
-        else:
+        if was_stateless:
             return state.policy.into_stateless()
+        else:
+            return state.policy
+
+
+class AbstractAlgorithm[RunnerType: AbstractAlgorithmRunner](eqx.Module):
+    """
+    Base class for RL algorithm builders.
+
+    A builder is an immutable configuration object with fluent `with_*` methods.
+    It binds:
+      - hyperparameters (in concrete subclasses)
+      - num_envs
+      - env
+      - total_timesteps
+      - callback
+
+    and produces a fully configured runner via `build()`. The convenience
+    method `learn` delegates to the runner.
+    """
+
+    num_envs: eqx.AbstractVar[int]
+    env: eqx.AbstractVar[AbstractEnvLike]
+    total_timesteps: eqx.AbstractVar[int]
+    callback: eqx.AbstractVar[AbstractCallback]
+
+    def with_num_envs(self, num_envs: int) -> Self:
+        """
+        Return a new builder with the given number of environments.
+        """
+        return eqx.tree_at(lambda a: a.num_envs, self, num_envs)
+
+    def with_env(self, env: AbstractEnvLike) -> Self:
+        """
+        Return a new builder with the given environment bound.
+        """
+        return eqx.tree_at(lambda a: a.env, self, env)
+
+    def with_total_timesteps(self, total_timesteps: int) -> Self:
+        """
+        Return a new builder with the given total timesteps bound.
+        """
+        return eqx.tree_at(lambda a: a.total_timesteps, self, total_timesteps)
+
+    def with_callbacks(
+        self,
+        callback: AbstractCallback | Sequence[AbstractCallback] | None,
+    ) -> Self:
+        """
+        Return a new builder with the given callback(s) bound.
+
+        Normalizes:
+          - None -> empty CallbackList
+          - single AbstractCallback -> as-is
+          - sequence of callbacks -> CallbackList
+        """
+        if callback is None:
+            callback = CallbackList(callbacks=[])
+        elif isinstance(callback, AbstractCallback):
+            callback = callback
+        else:
+            callback = CallbackList(callbacks=list(callback))
+
+        return eqx.tree_at(lambda a: a.callback, self, callback)
+
+    def build(self) -> RunnerType:
+        """
+        Build a fully configured algorithm runner.
+
+        Raises:
+            ValueError: if env or total_timesteps are not set.
+        """
+        if self.env is None:
+            raise ValueError("Environment must be set on the builder before build().")
+        if self.total_timesteps is None:
+            raise ValueError(
+                "total_timesteps must be set on the builder before build()."
+            )
+
+        return self.build_runner(self.env, self.total_timesteps, self.callback)
+
+    @abstractmethod
+    def build_runner(
+        self,
+        env: AbstractEnvLike,
+        total_timesteps: int,
+        callback: AbstractCallback,
+    ) -> RunnerType:
+        """
+        Construct the concrete runner.
+
+        Concrete subclasses are responsible for:
+          - computing derived quantities (num_iterations, batch sizes, etc.)
+          - constructing the optimizer (including schedules)
+          - populating all fields on the runner
+        """
+
+    def learn(
+        self,
+        policy: AbstractPolicy,
+        key: Key,
+    ) -> AbstractPolicy:
+        """
+        Train a policy using the provided algorithm configuration.
+
+        Args:
+            policy: The initial policy.
+            key: A JAX PRNG key.
+
+        Returns:
+            A trained policy.
+        """
+        runner = self.build()
+        return runner(policy, key=key)
