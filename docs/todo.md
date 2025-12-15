@@ -23,6 +23,15 @@ description: A list of tasks and features to be implemented in Lerax.
 - Multi-agent environments and algorithms
     - MADDPG, MAPPO
     - Pgx environments
+- Masked Actions
+    - Masked discrete action spaces
+    - Masked continuous action spaces
+- More complex space support
+    - Composite spaces
+    - Convex spaces
+        - Ellipsoid
+        - Polytope
+- Robustness verification
 
 ## Development
 
