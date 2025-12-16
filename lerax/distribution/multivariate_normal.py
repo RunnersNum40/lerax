@@ -4,10 +4,10 @@ from distreqx import distributions
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Float
 
-from .base_distribution import AbstractDistribution
+from .base_distribution import AbstractDistreqxWrapper
 
 
-class MultivariateNormalDiag(AbstractDistribution[Float[Array, " dims"]]):
+class MultivariateNormalDiag(AbstractDistreqxWrapper[Float[Array, " dims"]]):
     """
     Multivariate Normal distribution with diagonal covariance.
 

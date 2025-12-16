@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import warnings
 from abc import abstractmethod
+from typing import Self
 
 import equinox as eqx
 from distreqx import bijectors, distributions
@@ -11,9 +12,40 @@ from jaxtyping import Array, Bool, Float, Key
 class AbstractDistribution[SampleType](eqx.Module):
     """
     Base class for all distributions in Lerax.
+    """
 
-    Lerax distributions wrap around `distreqx` distributions to provide a
-    convenient interface for reinforcement learning.
+    @abstractmethod
+    def log_prob(self, value: SampleType) -> Float[Array, ""]:
+        """Compute the log probability of a sample."""
+
+    @abstractmethod
+    def prob(self, value: SampleType) -> Float[Array, ""]:
+        """Compute the probability of a sample."""
+
+    @abstractmethod
+    def sample(self, key: Key) -> SampleType:
+        """Return a sample from the distribution."""
+
+    @abstractmethod
+    def entropy(self) -> Float[Array, ""]:
+        """Compute the entropy of the distribution."""
+
+    @abstractmethod
+    def mean(self) -> SampleType:
+        """Compute the mean of the distribution."""
+
+    @abstractmethod
+    def mode(self) -> SampleType:
+        """Compute the mode of the distribution."""
+
+    @abstractmethod
+    def sample_and_log_prob(self, key: Key) -> tuple[SampleType, Float[Array, ""]]:
+        """Return a sample and its log probability."""
+
+
+class AbstractDistreqxWrapper[SampleType](AbstractDistribution):
+    """
+    Base class for distributions that wrap distreqx distributions in Lerax.
 
     Attributes:
         distribution: The underlying distreqx distribution.
@@ -22,31 +54,24 @@ class AbstractDistribution[SampleType](eqx.Module):
     distribution: eqx.AbstractVar[distributions.AbstractDistribution]
 
     def log_prob(self, value: SampleType) -> Float[Array, ""]:
-        """Compute the log probability of a sample."""
         return self.distribution.log_prob(value)
 
     def prob(self, value: SampleType) -> Float[Array, ""]:
-        """Compute the probability of a sample."""
         return self.distribution.prob(value)
 
     def sample(self, key: Key) -> SampleType:
-        """Return a sample from the distribution."""
         return self.distribution.sample(key)
 
     def entropy(self) -> Float[Array, ""]:
-        """Compute the entropy of the distribution."""
         return self.distribution.entropy()
 
     def mean(self) -> SampleType:
-        """Compute the mean of the distribution."""
         return self.distribution.mean()
 
     def mode(self) -> SampleType:
-        """Compute the mode of the distribution."""
         return self.distribution.mode()
 
     def sample_and_log_prob(self, key: Key) -> tuple[SampleType, Float[Array, ""]]:
-        """Return a sample and its log probability."""
         return self.distribution.sample_and_log_prob(key)
 
 
@@ -60,10 +85,8 @@ class AbstractMaskableDistribution[SampleType](AbstractDistribution[SampleType])
         distribution: The underlying distreqx distribution.
     """
 
-    distribution: eqx.AbstractVar[distributions.AbstractDistribution]
-
     @abstractmethod
-    def mask[SelfType](self: SelfType, mask: Bool[Array, "..."]) -> SelfType:
+    def mask(self, mask: Bool[Array, "..."]) -> Self:
         """
         Return a masked version of the distribution.
 
@@ -77,7 +100,7 @@ class AbstractMaskableDistribution[SampleType](AbstractDistribution[SampleType])
         """
 
 
-class AbstractTransformedDistribution[SampleType](AbstractDistribution[SampleType]):
+class AbstractTransformedDistribution[SampleType](AbstractDistreqxWrapper[SampleType]):
     """
     Base class for all transformed distributions in Lerax.
 

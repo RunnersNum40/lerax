@@ -4,10 +4,10 @@ from distreqx import distributions
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Float
 
-from .base_distribution import AbstractDistribution
+from .base_distribution import AbstractDistreqxWrapper
 
 
-class Normal(AbstractDistribution[Float[Array, " dims"]]):
+class Normal(AbstractDistreqxWrapper[Float[Array, " dims"]]):
     """
     Normal distribution.
 

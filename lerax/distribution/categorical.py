@@ -4,10 +4,13 @@ from distreqx import distributions
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Bool, Float, Integer
 
-from .base_distribution import AbstractMaskableDistribution
+from .base_distribution import AbstractDistreqxWrapper, AbstractMaskableDistribution
 
 
-class Categorical(AbstractMaskableDistribution[Integer[Array, ""]]):
+class Categorical(
+    AbstractMaskableDistribution[Integer[Array, ""]],
+    AbstractDistreqxWrapper[Integer[Array, ""]],
+):
     """
     Categorical distribution.
 

@@ -4,10 +4,13 @@ from distreqx import distributions
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Bool, Float
 
-from .base_distribution import AbstractMaskableDistribution
+from .base_distribution import AbstractDistreqxWrapper, AbstractMaskableDistribution
 
 
-class Bernoulli(AbstractMaskableDistribution[Bool[Array, " dims"]]):
+class Bernoulli(
+    AbstractMaskableDistribution[Bool[Array, " dims"]],
+    AbstractDistreqxWrapper[Bool[Array, " dims"]],
+):
     """
     Bernoulli distribution.
 

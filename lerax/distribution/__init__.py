@@ -6,6 +6,7 @@ future expansion.
 """
 
 from .base_distribution import (
+    AbstractDistreqxWrapper,
     AbstractDistribution,
     AbstractMaskableDistribution,
     AbstractTransformedDistribution,
@@ -19,6 +20,7 @@ from .squashed_normal import SquashedNormal
 
 __all__ = [
     "AbstractDistribution",
+    "AbstractDistreqxWrapper",
     "AbstractMaskableDistribution",
     "AbstractTransformedDistribution",
     "Bernoulli",
