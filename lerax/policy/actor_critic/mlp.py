@@ -6,11 +6,10 @@ from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
 
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
-from lerax.model import MLP
+from lerax.model import MLP, ActionLayer
 from lerax.space import AbstractSpace
 
 from .base_actor_critic import AbstractStatelessActorCriticPolicy
-from .utils import ActionHead
 
 
 class MLPActorCriticPolicy[
@@ -54,7 +53,7 @@ class MLPActorCriticPolicy[
 
     encoder: MLP
     value_head: MLP
-    action_head: ActionHead
+    action_head: ActionLayer
 
     def __init__[StateType: AbstractEnvLikeState](
         self,
@@ -91,7 +90,7 @@ class MLPActorCriticPolicy[
             key=val_key,
         )
 
-        self.action_head = ActionHead(
+        self.action_head = ActionLayer(
             self.action_space,
             feature_size,
             action_width,

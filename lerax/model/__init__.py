@@ -4,6 +4,7 @@ Lerax models
 Models take inputs and produce outputs, and may have state.
 """
 
+from .actor import AbstractActionDistribution, ActionLayer, make_action_layer
 from .base_model import (
     AbstractModel,
     AbstractModelState,
@@ -40,4 +41,7 @@ __all__ = [
     "MLPNCDETerm",
     "NCDEState",
     "MLP",
+    "AbstractActionDistribution",
+    "make_action_layer",
+    "ActionLayer",
 ]

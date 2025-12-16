@@ -11,14 +11,16 @@ from lerax.distribution import (
     AbstractDistribution,
     Bernoulli,
     Categorical,
+    MultiCategorical,
     MultivariateNormalDiag,
     Normal,
 )
-from lerax.model import AbstractModel
-from lerax.space import AbstractSpace, Box, Discrete, MultiBinary
+from lerax.space import AbstractSpace, Box, Discrete, MultiBinary, MultiDiscrete
+
+from .base_model import AbstractModel
 
 
-class AbstractActionLayer[ActType](AbstractModel):
+class AbstractActionDistribution[ActType](AbstractModel):
     """Layer that produces action distributions given inputs."""
 
     mapping: eqx.AbstractVar[eqx.nn.Linear]
@@ -31,7 +33,7 @@ class AbstractActionLayer[ActType](AbstractModel):
         """Produce an action distribution given inputs."""
 
 
-class BoxActionLayer(AbstractActionLayer[Float[Array, " action_dim"]]):
+class BoxAction(AbstractActionDistribution[Float[Array, " action_dim"]]):
 
     scalar: bool
     mapping: eqx.nn.Linear
@@ -71,7 +73,7 @@ class BoxActionLayer(AbstractActionLayer[Float[Array, " action_dim"]]):
             )
 
 
-class CategoricalActionLayer(AbstractActionLayer[Int[Array, ""]]):
+class DiscreteAction(AbstractActionDistribution[Int[Array, ""]]):
 
     mapping: eqx.nn.Linear
 
@@ -82,7 +84,7 @@ class CategoricalActionLayer(AbstractActionLayer[Int[Array, ""]]):
         return Categorical(logits=self.mapping(inputs))
 
 
-class BernoulliActionLayer(AbstractActionLayer[Int[Array, ""]]):
+class MultiBinaryAction(AbstractActionDistribution[Int[Array, ""]]):
 
     mapping: eqx.nn.Linear
     shape: tuple[int, ...]
@@ -95,26 +97,60 @@ class BernoulliActionLayer(AbstractActionLayer[Int[Array, ""]]):
         return Bernoulli(logits=self.mapping(inputs).reshape(self.shape))
 
 
+class MultiDiscreteAction(AbstractActionDistribution[Int[Array, ""]]):
+
+    ns: tuple[int, ...]
+    mappings: eqx.nn.Linear
+    shape: tuple[int, ...]
+
+    def __init__(self, latent_dim: int, action_space: MultiDiscrete, *, key: Key):
+        self.ns = action_space.ns
+        self.mappings = eqx.nn.Linear(latent_dim, sum(action_space.ns), key=key)
+        self.shape = action_space.shape
+
+    def __call__(self, inputs: Float[Array, " latent_dim"]) -> MultiCategorical:
+        return MultiCategorical(self.mappings(inputs), action_dims=self.ns)
+
+
 def make_action_layer(
     latent_dim: int, action_space: AbstractSpace, *, key: Key, log_std_init: float = 0.0
-) -> AbstractActionLayer:
+) -> AbstractActionDistribution:
     """Create an action layer based on the action space."""
 
     if isinstance(action_space, Box):
-        return BoxActionLayer(
-            latent_dim, action_space, key=key, log_std_init=log_std_init
-        )
+        return BoxAction(latent_dim, action_space, key=key, log_std_init=log_std_init)
     elif isinstance(action_space, Discrete):
-        return CategoricalActionLayer(latent_dim, action_space, key=key)
+        return DiscreteAction(latent_dim, action_space, key=key)
     elif isinstance(action_space, MultiBinary):
-        return BernoulliActionLayer(latent_dim, action_space, key=key)
+        return MultiBinaryAction(latent_dim, action_space, key=key)
+    elif isinstance(action_space, MultiDiscrete):
+        return MultiDiscreteAction(latent_dim, action_space, key=key)
     else:
         raise NotImplementedError(f"Action space {type(action_space)} not supported.")
 
 
-class ActionHead[ActType](AbstractModel):
+class ActionLayer[ActType](AbstractModel):
+    """
+    Model that produces action distributions from features.
+
+    An optional MLP processes the features before passing them to the action distribution layer.
+    If depth is set to 1, no MLP is used and the features are affine-mapped directly to the action parameters.
+
+    Attributes:
+        mlp: Optional MLP to process features before action distribution.
+        action_dist: Action distribution layer.
+
+    Args:
+        action_space: The action space defining the type of actions.
+        latent_dim: Dimension of the input features.
+        width_size: Width of the hidden layers in the MLP.
+        depth: Depth of the MLP. If set to 1, no MLP is
+        log_std_init: Initial log standard deviation for continuous action spaces.
+        key: JAX PRNG key for parameter initialization.
+    """
+
     mlp: eqx.nn.MLP | None
-    action_layer: AbstractActionLayer[ActType]
+    action_dist: AbstractActionDistribution[ActType]
 
     def __init__(
         self,
@@ -139,7 +175,7 @@ class ActionHead[ActType](AbstractModel):
                 depth=depth,
                 key=mlp_key,
             )
-        self.action_layer = make_action_layer(
+        self.action_dist = make_action_layer(
             latent_dim, action_space, key=action_key, log_std_init=log_std_init
         )
 
@@ -148,4 +184,4 @@ class ActionHead[ActType](AbstractModel):
     ) -> AbstractDistribution[ActType]:
         if self.mlp is not None:
             features = self.mlp(features)
-        return self.action_layer(features)
+        return self.action_dist(features)

@@ -9,14 +9,13 @@ from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
 
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
-from lerax.model import MLP, MLPNeuralCDE, NCDEState
+from lerax.model import MLP, ActionLayer, MLPNeuralCDE, NCDEState
 from lerax.space import AbstractSpace
 
 from .base_actor_critic import (
     AbstractPolicyState,
     AbstractStatefulActorCriticPolicy,
 )
-from .utils import ActionHead
 
 
 class NCDEPolicyState(AbstractPolicyState):
@@ -73,7 +72,7 @@ class NCDEActorCriticPolicy[
 
     encoder: MLPNeuralCDE
     value_head: MLP
-    action_head: ActionHead
+    action_head: ActionLayer
 
     dt: float = eqx.field(static=True)
 
@@ -124,7 +123,7 @@ class NCDEActorCriticPolicy[
             key=val_key,
         )
 
-        self.action_head = ActionHead(
+        self.action_head = ActionLayer(
             self.action_space,
             feature_size,
             action_width,
