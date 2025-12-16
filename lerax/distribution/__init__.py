@@ -13,6 +13,7 @@ from .base_distribution import (
 )
 from .bernoulli import Bernoulli
 from .categorical import Categorical
+from .multi_categorical import MultiCategorical
 from .multivariate_normal import MultivariateNormalDiag
 from .normal import Normal
 from .squashed_multivariate_normal import SquashedMultivariateNormalDiag
@@ -29,4 +30,5 @@ __all__ = [
     "MultivariateNormalDiag",
     "SquashedMultivariateNormalDiag",
     "SquashedNormal",
+    "MultiCategorical",
 ]
