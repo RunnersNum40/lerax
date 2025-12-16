@@ -32,11 +32,16 @@ render = ["pygame", "imageio", "imageio-ffmpeg"]
 
 [dependency-groups]
 dev = [
+  "gymnasium",
+  "gymnax",
   "mkdocstrings-python",
+  "mujoco-mjx",
+  "pygame",
   "pyright",
   "pytest",
   "pytest-cov",
   "ruff",
+  "stable-baselines3",
   "zensical",
 ]
 

@@ -664,11 +664,16 @@ render = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "gymnasium" },
+    { name = "gymnax" },
     { name = "mkdocstrings-python" },
+    { name = "mujoco-mjx" },
+    { name = "pygame" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
+    { name = "stable-baselines3" },
     { name = "zensical" },
 ]
 
@@ -696,11 +701,16 @@ provides-extras = ["compatibility", "mujoco", "render"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "gymnasium", specifier = ">=1.2.2" },
+    { name = "gymnax", specifier = ">=0.0.9" },
     { name = "mkdocstrings-python" },
+    { name = "mujoco-mjx", specifier = ">=3.4.0" },
+    { name = "pygame", specifier = ">=2.6.1" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
+    { name = "stable-baselines3", specifier = ">=2.7.1" },
     { name = "zensical" },
 ]
 
