@@ -642,7 +642,7 @@ wheels = [
 [[package]]
 name = "lerax"
 version = "0.0.4"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "diffrax" },
     { name = "distreqx" },
