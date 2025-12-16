@@ -27,6 +27,7 @@ source = "https://github.com/RunnersNum40/lerax.git"
 
 [project.optional-dependencies]
 compatibility = ["gymnasium", "stable-baselines3", "gymnax", "flax"]
+docs = ["zensical", "mkdocstrings-python"]
 mujoco = ["mujoco-mjx"]
 render = ["pygame", "imageio", "imageio-ffmpeg"]
 
@@ -40,6 +41,7 @@ dev = [
   "pyright",
   "pytest",
   "pytest-cov",
+  "pytest-xdist",
   "ruff",
   "stable-baselines3",
   "zensical",
@@ -73,3 +75,9 @@ exclude = ["stubs"]
 fixable = ["I001", "F401"]
 ignore = ["E402", "E721", "E731", "E741", "F722", "E501"]
 select = ["E", "F", "I001"]
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true

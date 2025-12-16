@@ -17,12 +17,19 @@ jobs:
     steps:
       - uses: actions/configure-pages@v5
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
-          python-version: 3.x
-      - run: pip install '.[docs]'
-      - run: zensical build --clean
-      - uses: actions/upload-pages-artifact@v4
+          enable-cache: true
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+      - name: Build Docs
+        run: uv run zensical build --clean
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v4
         with:
           path: site
-      - uses: actions/deploy-pages@v4
+      - name: Deploy Docs
+        uses: actions/deploy-pages@v4
