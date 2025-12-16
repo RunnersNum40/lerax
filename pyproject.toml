@@ -20,8 +20,8 @@ dependencies = [
 ]
 
 [project.urls]
-documentation = "https://docs.tedpinkerton.ca/lerax"
-homepage = "https://github.com/RunnersNum40/lerax"
+documentation = "https://lerax.tedpinkerton.ca/"
+homepage = "https://lerax.tedpinkerton.ca/"
 issues = "https://github.com/RunnersNum40/lerax/issues"
 source = "https://github.com/RunnersNum40/lerax.git"
 
@@ -46,16 +46,6 @@ dev = [
   "stable-baselines3",
   "zensical",
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["lerax"]
-
-[tool.hatch.build.targets.sdist]
-include = ["lerax", "README.md", "LICENSE", "pyproject.toml"]
 
 [tool.pyright]
 reportIncompatibleMethodOverride = true
