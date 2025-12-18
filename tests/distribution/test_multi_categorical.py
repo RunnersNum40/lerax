@@ -70,7 +70,7 @@ def test_sample_shape_and_value_ranges_with_batch():
     logits_b = jnp.zeros((batch, 5), dtype=jnp.float32)
     mc = MultiCategorical(logits=[logits_a, logits_b])
 
-    key = jax.random.PRNGKey(0)
+    key = jax.random.key(0)
     sample = mc.sample(key)
 
     assert sample.shape == (batch, 2)
@@ -85,7 +85,7 @@ def test_sample_and_log_prob_consistent():
     ]
     mc = MultiCategorical(logits=logits_seq)
 
-    key = jax.random.PRNGKey(123)
+    key = jax.random.key(123)
     sample, lp = mc.sample_and_log_prob(key)
 
     assert sample.shape == (2,)
