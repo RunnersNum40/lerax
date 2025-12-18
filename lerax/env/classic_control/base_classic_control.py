@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from dataclasses import replace
+from typing import Any
 
 import diffrax
 import equinox as eqx
@@ -20,16 +21,19 @@ class AbstractClassicControlEnvState(AbstractEnvState):
 
 class AbstractClassicControlEnv[
     StateType: AbstractClassicControlEnvState, ActType, ObsType
-](AbstractEnv[StateType, ActType, ObsType]):
+](AbstractEnv[StateType, ActType, ObsType, None]):
     name: eqx.AbstractClassVar[str]
 
-    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
-    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+    action_space: eqx.AbstractVar[AbstractSpace[ActType, Any]]
+    observation_space: eqx.AbstractVar[AbstractSpace[ObsType, Any]]
 
     dt: eqx.AbstractVar[float]
     solver: eqx.AbstractVar[diffrax.AbstractSolver]
     dt0: eqx.AbstractVar[float | None]
     stepsize_controller: eqx.AbstractVar[diffrax.AbstractStepSizeController]
+
+    def action_mask(self, state: StateType, *, key: Key) -> None:
+        return None
 
     @abstractmethod
     def dynamics(

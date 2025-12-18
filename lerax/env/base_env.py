@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from abc import abstractmethod
-from typing import Literal, Sequence
+from typing import Any, Literal, Self, Sequence
 
 import equinox as eqx
 from jax import lax
@@ -22,13 +22,15 @@ class AbstractEnvLikeState(eqx.Module):
         """Return the unwrapped environment state"""
 
 
-class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType](eqx.Module):
+class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType, MaskType](
+    eqx.Module
+):
     """Base class for RL environments or wrappers that behave like environments"""
 
     name: eqx.AbstractVar[str]
 
-    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
-    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+    action_space: eqx.AbstractVar[AbstractSpace[ActType, MaskType]]
+    observation_space: eqx.AbstractVar[AbstractSpace[ObsType, Any]]
 
     @abstractmethod
     def initial(self, *, key: Key) -> StateType:
@@ -40,6 +42,19 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType](eqx.Mod
 
         Returns:
             An initial environment state.
+        """
+
+    @abstractmethod
+    def action_mask(self, state: StateType, *, key: Key) -> MaskType | None:
+        """
+        Generate an action mask from the environment state.
+
+        Args:
+            state: The current environment state.
+            key: A JAX PRNG key for any stochasticity in the action mask.
+
+        Returns:
+            A mask indicating valid and invalid actions for the environment state.
         """
 
     @abstractmethod
@@ -270,8 +285,8 @@ class AbstractEnvState(AbstractEnvLikeState):
         return self
 
 
-class AbstractEnv[StateType: AbstractEnvState, ActType, ObsType](
-    AbstractEnvLike[StateType, ActType, ObsType]
+class AbstractEnv[StateType: AbstractEnvState, ActType, ObsType, MaskType](
+    AbstractEnvLike[StateType, ActType, ObsType, MaskType]
 ):
     """
     Base class for RL environments.
@@ -284,10 +299,10 @@ class AbstractEnv[StateType: AbstractEnvState, ActType, ObsType](
 
     name: eqx.AbstractVar[str]
 
-    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
-    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+    action_space: eqx.AbstractVar[AbstractSpace[ActType, MaskType]]
+    observation_space: eqx.AbstractVar[AbstractSpace[ObsType, Any]]
 
     @property
-    def unwrapped(self) -> AbstractEnv[StateType, ActType, ObsType]:
+    def unwrapped(self) -> Self:
         """Return the unwrapped environment"""
         return self

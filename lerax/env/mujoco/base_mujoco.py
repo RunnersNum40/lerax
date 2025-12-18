@@ -53,7 +53,7 @@ class MujocoEnvState(AbstractEnvState):
 class AbstractMujocoEnv[
     ActType: Float[Array, "..."],
     ObsType: Float[Array, "..."],
-](AbstractEnv[MujocoEnvState, ActType, ObsType]):
+](AbstractEnv[MujocoEnvState, ActType, ObsType, None]):
     name: eqx.AbstractVar[str]
 
     action_space: eqx.AbstractVar[Box]
@@ -63,6 +63,9 @@ class AbstractMujocoEnv[
     mujoco_model: eqx.AbstractVar[mujoco.MjModel]
     frame_skip: eqx.AbstractVar[int]
     dt: eqx.AbstractVar[float]
+
+    def action_mask(self, state: MujocoEnvState, *, key: Key) -> None:
+        return None
 
     def transition(
         self, state: MujocoEnvState, action: ActType, *, key: Key

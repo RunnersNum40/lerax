@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import ClassVar, Literal
+from typing import Any, ClassVar, Literal
 
 try:
     import gymnasium as gym
@@ -112,7 +112,7 @@ class GymEnvState(AbstractEnvState):
     truncated: Bool[Array, ""]
 
 
-class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array]):
+class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
     """
     Wrapper of a Gymnasium environment to make it compatible with Lerax.
 
@@ -187,6 +187,9 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array]):
             terminal=jnp.array(False, dtype=bool),
             truncated=jnp.array(False, dtype=bool),
         )
+
+    def action_mask(self, state: GymEnvState, *, key: Key) -> None:
+        return None
 
     def transition(self, state: GymEnvState, action: Array, *, key: Key) -> GymEnvState:
         """
@@ -365,13 +368,13 @@ class LeraxToGymEnv[StateType: AbstractEnvState](gym.Env):
 
     render_mode: str | None = None
 
-    env: AbstractEnv[StateType, Array, Array]
+    env: AbstractEnv[StateType, Array, Array, Any]
     state: StateType
     key: Key
 
     def __init__(
         self,
-        env: AbstractEnv[StateType, Array, Array],
+        env: AbstractEnv[StateType, Array, Array, Any],
         render_mode: Literal["human"] | None = None,
     ):
         self.key = jr.key(0)

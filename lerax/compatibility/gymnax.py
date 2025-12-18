@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 try:
     from flax import struct
     from gymnax.environments import environment as gym
@@ -75,7 +77,7 @@ class GymnaxEnvState(AbstractEnvState):
     transition_info: dict
 
 
-class GymnaxToLeraxEnv(AbstractEnv[GymnaxEnvState, Array, Array]):
+class GymnaxToLeraxEnv(AbstractEnv[GymnaxEnvState, Array, Array, None]):
     """
     Wrapper of a Gymnax environment to make it compatible with Lerax.
 
@@ -118,6 +120,9 @@ class GymnaxToLeraxEnv(AbstractEnv[GymnaxEnvState, Array, Array]):
             terminal=jnp.array(False, dtype=bool),
             transition_info={},
         )
+
+    def action_mask(self, state: GymnaxEnvState, *, key: Key) -> None:
+        return None
 
     def transition(
         self, state: GymnaxEnvState, action: Array, *, key: Key
@@ -202,10 +207,10 @@ class LeraxToGymnaxEnv[StateType: AbstractEnvState](
         env: Lerax environment to wrap.
     """
 
-    env: AbstractEnv[StateType, Array, Array]
+    env: AbstractEnv[StateType, Array, Array, Any]
     state: StateType
 
-    def __init__(self, env: AbstractEnv[StateType, Array, Array]):
+    def __init__(self, env: AbstractEnv[StateType, Array, Array, Any]):
         self.env = env
 
     def step_env(
