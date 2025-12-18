@@ -56,7 +56,7 @@ def gym_space_to_lerax_space(space: gym.Space) -> AbstractSpace:
     elif isinstance(space, gym.spaces.MultiBinary):
         return MultiBinary(n=space.n)
     elif isinstance(space, gym.spaces.MultiDiscrete):
-        return MultiDiscrete(ns=tuple(int(n) for n in space.nvec))
+        return MultiDiscrete(nvec=tuple(int(n) for n in space.nvec))
     else:
         raise NotImplementedError(f"Space type {type(space)} not supported")
 
@@ -90,7 +90,7 @@ def lerax_to_gym_space(space: AbstractSpace) -> gym.Space:
             n=int(space.n[0]) if len(space.n) == 1 else space.n
         )
     elif isinstance(space, MultiDiscrete):
-        return gym.spaces.MultiDiscrete(nvec=list(space.ns))
+        return gym.spaces.MultiDiscrete(nvec=list(space.nvec))
     else:
         raise NotImplementedError(f"Space type {type(space)} not supported")
 

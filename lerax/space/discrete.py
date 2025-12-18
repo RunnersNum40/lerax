@@ -4,13 +4,13 @@ from typing import Any
 
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Bool, Float, Int, Key
+from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
 from .base_space import AbstractSpace
 from .utils import try_cast
 
 
-class Discrete(AbstractSpace[Int[Array, ""]]):
+class Discrete(AbstractSpace[Int[Array, ""], Bool[Array, " n"]]):
     """
     A space of finite discrete values.
 
@@ -35,8 +35,13 @@ class Discrete(AbstractSpace[Int[Array, ""]]):
     def canonical(self) -> Int[Array, ""]:
         return jnp.array(0, dtype=int)
 
-    def sample(self, key: Key) -> Int[Array, ""]:
-        return jr.randint(key, shape=(), minval=0, maxval=self.n)
+    def sample(
+        self, *, mask: Bool[ArrayLike, " n"] | None = None, key: Key
+    ) -> Int[Array, ""]:
+        mask = (
+            jnp.asarray(mask) if mask is not None else jnp.ones((self.n,), dtype=bool)
+        )
+        return jr.choice(key, self.n, p=mask / jnp.sum(mask))
 
     def contains(self, x: Any) -> Bool[Array, ""]:
         x = try_cast(x)

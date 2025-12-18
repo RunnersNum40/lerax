@@ -9,7 +9,7 @@ env = CartPole()
 def step(env_state, key):
     action_key, transition_key, terminal_key, reset_key = jr.split(key, 4)
 
-    action = env.action_space.sample(action_key)
+    action = env.action_space.sample(key=action_key)
     env_state = env.transition(env_state, action, key=transition_key)
     done = env.terminal(env_state, key=terminal_key) | env.truncate(env_state)
 

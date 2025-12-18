@@ -9,7 +9,7 @@ from jaxtyping import Array, Bool, Float, Key
 from .base_space import AbstractSpace
 
 
-class Tuple(AbstractSpace[tuple[Any, ...]]):
+class Tuple(AbstractSpace[tuple[Any, ...], None]):
     """
     A cartesian product of spaces.
 
@@ -38,7 +38,7 @@ class Tuple(AbstractSpace[tuple[Any, ...]]):
     def canonical(self) -> tuple[Any, ...]:
         return tuple(space.canonical() for space in self.spaces)
 
-    def sample(self, key: Key) -> tuple[Any, ...]:
+    def sample(self, *, key: Key, mask: None = None) -> tuple[Any, ...]:
         """
         Returns a random sample from the space.
 
@@ -49,7 +49,7 @@ class Tuple(AbstractSpace[tuple[Any, ...]]):
             A tuple containing a random sample from each component space.
         """
         return tuple(
-            space.sample(key)
+            space.sample(key=key)
             for space, key in zip(self.spaces, jr.split(key, len(self.spaces)))
         )
 

@@ -104,8 +104,8 @@ class MultiDiscreteAction(AbstractActionDistribution[Int[Array, ""]]):
     shape: tuple[int, ...]
 
     def __init__(self, latent_dim: int, action_space: MultiDiscrete, *, key: Key):
-        self.ns = action_space.ns
-        self.mappings = eqx.nn.Linear(latent_dim, sum(action_space.ns), key=key)
+        self.ns = action_space.nvec
+        self.mappings = eqx.nn.Linear(latent_dim, sum(action_space.nvec), key=key)
         self.shape = action_space.shape
 
     def __call__(self, inputs: Float[Array, " latent_dim"]) -> MultiCategorical:

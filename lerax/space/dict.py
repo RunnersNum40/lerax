@@ -10,7 +10,7 @@ from jaxtyping import Array, Bool, Float, Key
 from .base_space import AbstractSpace
 
 
-class Dict(AbstractSpace[OrderedDict[str, Any]]):
+class Dict(AbstractSpace[OrderedDict[str, Any], None]):
     """
     A dictionary of spaces.
 
@@ -35,10 +35,10 @@ class Dict(AbstractSpace[OrderedDict[str, Any]]):
             {key: space.canonical() for key, space in self.spaces.items()}
         )
 
-    def sample(self, key: Key) -> OrderedDict[str, Any]:
+    def sample(self, *, key: Key, mask: None = None) -> OrderedDict[str, Any]:
         return OrderedDict(
             {
-                space_key: space.sample(subkey)
+                space_key: space.sample(key=subkey)
                 for space_key, space, subkey in zip(
                     self.spaces.keys(),
                     self.spaces.values(),

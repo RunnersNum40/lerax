@@ -7,7 +7,7 @@ import equinox as eqx
 from jaxtyping import Array, Bool, Float, Key
 
 
-class AbstractSpace[SampleType](eqx.Module):
+class AbstractSpace[SampleType, MaskType](eqx.Module):
     """
     Abstract base class for defining a space.
 
@@ -20,7 +20,7 @@ class AbstractSpace[SampleType](eqx.Module):
         """The shape of a sample of the space."""
 
     @abstractmethod
-    def sample(self, key: Key) -> SampleType:
+    def sample(self, *, key: Key, mask: MaskType | None = None) -> SampleType:
         """Returns a random sample from the space."""
 
     @abstractmethod

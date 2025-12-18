@@ -12,7 +12,7 @@ from .base_space import AbstractSpace
 from .utils import try_cast
 
 
-class Box(AbstractSpace[Float[Array, " ..."]]):
+class Box(AbstractSpace[Float[Array, " ..."], None]):
     """
     A space of continuous values.
 
@@ -64,7 +64,7 @@ class Box(AbstractSpace[Float[Array, " ..."]]):
     def canonical(self) -> Float[Array, " ..."]:
         return (self.low + self.high) / 2
 
-    def sample(self, key: Key) -> Float[Array, " ..."]:
+    def sample(self, *, key: Key, mask: None = None) -> Float[Array, " ..."]:
         bounded_key, unbounded_key, upper_bounded_key, lower_bounded_key = jr.split(
             key, 4
         )

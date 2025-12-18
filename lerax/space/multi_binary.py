@@ -12,7 +12,7 @@ from .base_space import AbstractSpace
 from .utils import try_cast
 
 
-class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
+class MultiBinary(AbstractSpace[Bool[Array, " n"], None]):
     """
     A space of binary values.
 
@@ -45,7 +45,7 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"]]):
     def canonical(self) -> Bool[Array, " n"]:
         return jnp.zeros(self.shape, dtype=bool)
 
-    def sample(self, key: Key) -> Bool[Array, " n"]:
+    def sample(self, *, key: Key, mask: None = None) -> Bool[Array, " n"]:
         return jr.bernoulli(key, shape=self.shape)
 
     def contains(self, x: Any) -> Bool[Array, ""]:
