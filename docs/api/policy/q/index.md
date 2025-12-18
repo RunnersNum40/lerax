@@ -4,16 +4,10 @@ title: Q
 
 # Abstract Q Policies
 
-::: lerax.policy.AbstractQPolicy
+::: lerax.policy.AbstractQPolic
+    options:
+        members: truey
 
 ::: lerax.policy.AbstractStatelessQPolicy
-    options:
-        members: true
-
-::: lerax.policy.AbstractStatefulQPolicy
-    options:
-        members: true
-
-::: lerax.policy.QStatefulWrapper
     options:
         members: true
