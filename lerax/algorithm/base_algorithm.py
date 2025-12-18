@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Sequence, cast
+from typing import Sequence
 
 import equinox as eqx
 import optax
@@ -16,7 +16,7 @@ from lerax.callback import (
     TrainingContext,
 )
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
-from lerax.policy import AbstractPolicy, AbstractPolicyState, AbstractStatefulPolicy
+from lerax.policy import AbstractPolicy, AbstractPolicyState
 from lerax.utils import filter_scan
 
 
@@ -49,7 +49,7 @@ class AbstractStepState(eqx.Module):
         return eqx.tree_at(lambda s: s.callback_state, self, callback_state)
 
 
-class AbstractAlgorithmState[PolicyType: AbstractStatefulPolicy](eqx.Module):
+class AbstractAlgorithmState[PolicyType: AbstractPolicy](eqx.Module):
     """
     Base class for algorithm states.
 
@@ -110,9 +110,9 @@ class AbstractAlgorithmState[PolicyType: AbstractStatefulPolicy](eqx.Module):
         return eqx.tree_at(lambda s: s.callback_state, self, callback_state)
 
 
-class AbstractAlgorithm[
-    PolicyType: AbstractStatefulPolicy, StateType: AbstractAlgorithmState
-](eqx.Module):
+class AbstractAlgorithm[PolicyType: AbstractPolicy, StateType: AbstractAlgorithmState](
+    eqx.Module
+):
     """
     Base class for RL algorithms.
 
@@ -190,15 +190,15 @@ class AbstractAlgorithm[
         """Number of iterations per training session."""
 
     @eqx.filter_jit
-    def learn[A: AbstractPolicy](
+    def learn(
         self,
         env: AbstractEnvLike,
-        policy: A,
+        policy: PolicyType,
         total_timesteps: int,
         *,
         key: Key,
         callback: Sequence[AbstractCallback] | AbstractCallback | None = None,
-    ) -> A:
+    ) -> PolicyType:
         """
         Train the policy on the environment for a given number of timesteps.
 
@@ -220,12 +220,7 @@ class AbstractAlgorithm[
             callbacks = list(callback)
             callback = CallbackList(callbacks=callbacks)
 
-        if isinstance(policy, AbstractStatefulPolicy):
-            _policy = cast(PolicyType, policy)
-        else:
-            _policy = cast(PolicyType, policy.into_stateful())
-
-        state = self.reset(env, _policy, key=reset_key, callback=callback)
+        state = self.reset(env, policy, key=reset_key, callback=callback)
 
         state = state.with_callback_states(
             callback.on_training_start(
@@ -265,7 +260,4 @@ class AbstractAlgorithm[
             )
         )
 
-        if isinstance(policy, AbstractStatefulPolicy):
-            return state.policy
-        else:
-            return state.policy.into_stateless()
+        return state.policy

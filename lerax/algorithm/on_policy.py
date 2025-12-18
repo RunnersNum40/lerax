@@ -22,8 +22,8 @@ from lerax.callback import (
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.policy import (
     AbstractPolicyState,
-    AbstractStatefulActorCriticPolicy,
-    AbstractStatefulPolicy,
+    AbstractActorCriticPolicy,
+    AbstractPolicy,
 )
 from lerax.space import Box
 from lerax.utils import filter_scan
@@ -31,7 +31,7 @@ from lerax.utils import filter_scan
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
 
 
-class OnPolicyStepState[PolicyType: AbstractStatefulPolicy](AbstractStepState):
+class OnPolicyStepState[PolicyType: AbstractPolicy](AbstractStepState):
     """
     State for on-policy algorithm steps.
 
@@ -76,9 +76,7 @@ class OnPolicyStepState[PolicyType: AbstractStatefulPolicy](AbstractStepState):
         return cls(env_state, policy_state, callback_states)
 
 
-class OnPolicyState[PolicyType: AbstractStatefulPolicy](
-    AbstractAlgorithmState[PolicyType]
-):
+class OnPolicyState[PolicyType: AbstractPolicy](AbstractAlgorithmState[PolicyType]):
     """
     State for on-policy algorithms.
 
@@ -99,7 +97,7 @@ class OnPolicyState[PolicyType: AbstractStatefulPolicy](
     callback_state: AbstractCallbackState
 
 
-class AbstractOnPolicyAlgorithm[PolicyType: AbstractStatefulActorCriticPolicy](
+class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
     AbstractAlgorithm[PolicyType, OnPolicyState[PolicyType]]
 ):
     """
