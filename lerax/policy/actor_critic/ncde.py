@@ -12,10 +12,7 @@ from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.model import MLP, ActionLayer, MLPNeuralCDE, NCDEState
 from lerax.space import AbstractSpace
 
-from .base_actor_critic import (
-    AbstractPolicyState,
-    AbstractStatefulActorCriticPolicy,
-)
+from .base_actor_critic import AbstractActorCriticPolicy, AbstractPolicyState
 
 
 class NCDEPolicyState(AbstractPolicyState):
@@ -28,9 +25,8 @@ class NCDEPolicyState(AbstractPolicyState):
 
 
 class NCDEActorCriticPolicy[
-    ActType: (Float[Array, " dims"], Integer[Array, ""]),
-    ObsType: Real[Array, "..."],
-](AbstractStatefulActorCriticPolicy[NCDEPolicyState, ActType, ObsType]):
+    ActType: (Float[Array, " dims"], Integer[Array, ""]), ObsType: Real[Array, "..."]
+](AbstractActorCriticPolicy[NCDEPolicyState, ActType, ObsType]):
     """
     Actor–critic with a shared MLPNeuralCDE encoder and MLP heads.
 
