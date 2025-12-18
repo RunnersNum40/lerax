@@ -1,5 +1,4 @@
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
-from .dqn import DQN
 from .off_policy import AbstractOffPolicyAlgorithm, OffPolicyState, OffPolicyStepState
 from .on_policy import AbstractOnPolicyAlgorithm, OnPolicyState, OnPolicyStepState
 from .ppo import PPO
@@ -15,5 +14,4 @@ __all__ = [
     "OnPolicyState",
     "OnPolicyStepState",
     "PPO",
-    "DQN",
 ]

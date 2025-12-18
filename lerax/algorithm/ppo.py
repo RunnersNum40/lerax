@@ -8,7 +8,7 @@ from jax import random as jr
 from jaxtyping import Array, Float, Key, Scalar
 
 from lerax.buffer import RolloutBuffer
-from lerax.policy import AbstractStatefulActorCriticPolicy
+from lerax.policy import AbstractActorCriticPolicy
 from lerax.utils import filter_scan
 
 from .on_policy import AbstractOnPolicyAlgorithm, OnPolicyState, OnPolicyStepState
@@ -33,9 +33,7 @@ class PPOStats(eqx.Module):
     entropy_loss: Float[Array, ""]
 
 
-class PPO[PolicyType: AbstractStatefulActorCriticPolicy](
-    AbstractOnPolicyAlgorithm[PolicyType]
-):
+class PPO[PolicyType: AbstractActorCriticPolicy](AbstractOnPolicyAlgorithm[PolicyType]):
     """
     Proximal Policy Optimization (PPO) algorithm.
 

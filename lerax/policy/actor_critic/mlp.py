@@ -13,8 +13,7 @@ from .base_actor_critic import AbstractStatelessActorCriticPolicy
 
 
 class MLPActorCriticPolicy[
-    ActType: (Float[Array, " dims"], Integer[Array, ""]),
-    ObsType: Real[Array, "..."],
+    ActType: (Float[Array, " dims"], Integer[Array, ""]), ObsType: Real[Array, "..."]
 ](AbstractStatelessActorCriticPolicy[ActType, ObsType]):
     """
     Actor–critic policy with MLP components.
@@ -99,7 +98,9 @@ class MLPActorCriticPolicy[
             log_std_init=log_std_init,
         )
 
-    def __call__(self, observation: ObsType, *, key: Key | None = None) -> ActType:
+    def stateless_call(
+        self, observation: ObsType, *, key: Key | None = None
+    ) -> ActType:
         features = self.encoder(self.observation_space.flatten_sample(observation))
         action_dist = self.action_head(features)
 
@@ -110,7 +111,7 @@ class MLPActorCriticPolicy[
 
         return action
 
-    def action_and_value(
+    def stateless_action_and_value(
         self, observation: ObsType, *, key: Key
     ) -> tuple[ActType, Float[Array, ""], Float[Array, ""]]:
         """
@@ -127,12 +128,12 @@ class MLPActorCriticPolicy[
 
         return action, value, log_prob.sum().squeeze()
 
-    def value(self, observation: ObsType) -> Float[Array, ""]:
+    def stateless_value(self, observation: ObsType) -> Float[Array, ""]:
         """Get the value of an observation."""
         features = self.encoder(self.observation_space.flatten_sample(observation))
         return self.value_head(features)
 
-    def evaluate_action(
+    def stateless_evaluate_action(
         self, observation: ObsType, action: ActType
     ) -> tuple[Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
         """Evaluate an action given an observation."""
