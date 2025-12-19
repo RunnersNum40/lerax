@@ -4,7 +4,7 @@ title: Actor Critic
 
 # Abstract Actor Critic Policies
 
-::: lerax.policy.AbstractActorCriticPolic
+::: lerax.policy.AbstractActorCriticPolicy
     options:
         members: truey
 

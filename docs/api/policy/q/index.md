@@ -4,7 +4,7 @@ title: Q
 
 # Abstract Q Policies
 
-::: lerax.policy.AbstractQPolic
+::: lerax.policy.AbstractQPolicy
     options:
         members: truey
 
