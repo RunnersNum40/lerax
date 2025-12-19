@@ -21,9 +21,9 @@ from lerax.callback import (
 )
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.policy import (
-    AbstractPolicyState,
     AbstractActorCriticPolicy,
     AbstractPolicy,
+    AbstractPolicyState,
 )
 from lerax.space import Box
 from lerax.utils import filter_scan
