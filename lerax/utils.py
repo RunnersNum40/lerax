@@ -26,36 +26,36 @@ def filter_scan(
 
     Args:
         f: a Python function to be scanned of type ``c -> a -> (c, b)``, meaning
-        that ``f`` accepts two arguments where the first is a value of the loop
-        carry and the second is a slice of ``xs`` along its leading axis, and that
-        ``f`` returns a pair where the first element represents a new value for
-        the loop carry and the second represents a slice of the output.
+            that ``f`` accepts two arguments where the first is a value of the loop
+            carry and the second is a slice of ``xs`` along its leading axis, and that
+            ``f`` returns a pair where the first element represents a new value for
+            the loop carry and the second represents a slice of the output.
         init: an initial loop carry value of type ``c``, which can be a scalar,
-        array, or any pytree (nested Python tuple/list/dict) thereof, representing
-        the initial loop carry value. This value must have the same structure as
-        the first element of the pair returned by ``f``.
+            array, or any pytree (nested Python tuple/list/dict) thereof, representing
+            the initial loop carry value. This value must have the same structure as
+            the first element of the pair returned by ``f``.
         xs: the value of type ``[a]`` over which to scan along the leading axis,
-        where ``[a]`` can be an array or any pytree (nested Python
-        tuple/list/dict) thereof with consistent leading axis sizes.
+            where ``[a]`` can be an array or any pytree (nested Python
+            tuple/list/dict) thereof with consistent leading axis sizes.
         length: optional integer specifying the number of loop iterations, which
-        must agree with the sizes of leading axes of the arrays in ``xs`` (but can
-        be used to perform scans where no input ``xs`` are needed).
+            must agree with the sizes of leading axes of the arrays in ``xs`` (but can
+            be used to perform scans where no input ``xs`` are needed).
         reverse: optional boolean specifying whether to run the scan iteration
-        forward (the default) or in reverse, equivalent to reversing the leading
-        axes of the arrays in both ``xs`` and in ``ys``.
+            forward (the default) or in reverse, equivalent to reversing the leading
+            axes of the arrays in both ``xs`` and in ``ys``.
         unroll: optional non-negative int or bool specifying, in the underlying
-        operation of the scan primitive, how many scan iterations to unroll within
-        a single iteration of a loop. If an integer is provided, it determines how
-        many unrolled loop iterations to run within a single rolled iteration of
-        the loop. `unroll=0` unrolls the entire loop.
-        If a boolean is provided, it will determine if the loop is
-        completely unrolled (i.e. `unroll=True`) or left completely rolled (i.e.
-        `unroll=False`).
+            operation of the scan primitive, how many scan iterations to unroll within
+            a single iteration of a loop. If an integer is provided, it determines how
+            many unrolled loop iterations to run within a single rolled iteration of
+            the loop. `unroll=0` unrolls the entire loop.
+            If a boolean is provided, it will determine if the loop is
+            completely unrolled (i.e. `unroll=True`) or left completely rolled (i.e.
+            `unroll=False`).
         _split_transpose: experimental optional bool specifying whether to further
-        split the transpose into a scan (computing activation gradients), and a
-        map (computing gradients corresponding to the array arguments). Enabling
-        this may increase memory requirements, and so is an experimental feature
-        that may evolve or even be rolled back.
+            split the transpose into a scan (computing activation gradients), and a
+            map (computing gradients corresponding to the array arguments). Enabling
+            this may increase memory requirements, and so is an experimental feature
+            that may evolve or even be rolled back.
 
     Returns:
         A pair of type ``(c, [b])`` where the first element represents the final
