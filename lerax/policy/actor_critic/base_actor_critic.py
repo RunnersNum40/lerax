@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from typing import Any
 
 import equinox as eqx
 from jaxtyping import Array, Float, Key
@@ -11,8 +12,8 @@ from ..base_policy import AbstractPolicy, AbstractPolicyState
 
 
 class AbstractActorCriticPolicy[
-    StateType: AbstractPolicyState | None, ActType, ObsType
-](AbstractPolicy[StateType, ActType, ObsType]):
+    StateType: AbstractPolicyState | None, ActType, ObsType, MaskType
+](AbstractPolicy[StateType, ActType, ObsType, MaskType]):
     """
     Base class for stateful actor-critic policies.
 
@@ -26,12 +27,17 @@ class AbstractActorCriticPolicy[
 
     name: eqx.AbstractClassVar[str]
 
-    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
-    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+    action_space: eqx.AbstractVar[AbstractSpace[ActType, MaskType]]
+    observation_space: eqx.AbstractVar[AbstractSpace[ObsType, Any]]
 
     @abstractmethod
     def action_and_value(
-        self, state: StateType, observation: ObsType, *, key: Key
+        self,
+        state: StateType,
+        observation: ObsType,
+        *,
+        key: Key,
+        action_mask: MaskType | None = None,
     ) -> tuple[StateType, ActType, Float[Array, ""], Float[Array, ""]]:
         """
         Get an action and value from an observation.
@@ -40,6 +46,7 @@ class AbstractActorCriticPolicy[
             state: The current policy state.
             observation: The observation to get the action and value for.
             key: A JAX PRNG key.
+            action_mask: An optional action mask.
 
         Returns:
             new_state: The new policy state.
@@ -50,7 +57,12 @@ class AbstractActorCriticPolicy[
 
     @abstractmethod
     def evaluate_action(
-        self, state: StateType, observation: ObsType, action: ActType
+        self,
+        state: StateType,
+        observation: ObsType,
+        action: ActType,
+        *,
+        action_mask: MaskType | None = None,
     ) -> tuple[StateType, Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
         """
         Evaluate an action given an observation.
@@ -59,6 +71,7 @@ class AbstractActorCriticPolicy[
             state: The current policy state.
             observation: The observation to evaluate the action for.
             action: The action to evaluate.
+            action_mask: An optional action mask.
 
         Returns:
             new_state: The new policy state.

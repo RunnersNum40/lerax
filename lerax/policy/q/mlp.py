@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import Any, ClassVar
 
-from jaxtyping import Array, Float, Integer, Key, Real
+from jaxtyping import Array, Bool, Float, Integer, Key, Real
 
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.model import MLP
@@ -36,14 +36,14 @@ class MLPQPolicy[ObsType: Real[Array, "..."]](AbstractQPolicy[None, ObsType]):
     name: ClassVar[str] = "MLPQPolicy"
 
     action_space: Discrete
-    observation_space: AbstractSpace[ObsType]
+    observation_space: AbstractSpace[ObsType, Any]
 
     epsilon: float
     q_network: MLP
 
     def __init__[StateType: AbstractEnvLikeState](
         self,
-        env: AbstractEnvLike[StateType, Integer[Array, ""], ObsType],
+        env: AbstractEnvLike[StateType, Integer[Array, ""], ObsType, Bool[Array, " n"]],
         *,
         epsilon: float = 0.1,
         width_size: int = 64,

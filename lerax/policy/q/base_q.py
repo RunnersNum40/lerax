@@ -1,19 +1,21 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from typing import Any
 
 import equinox as eqx
 from jax import lax
 from jax import random as jr
-from jaxtyping import Array, Float, Integer
+from jaxtyping import Array, Bool, Float, Integer
 
+from lerax.distribution import Categorical
 from lerax.space import AbstractSpace, Discrete
 
 from ..base_policy import AbstractPolicy, AbstractPolicyState
 
 
 class AbstractQPolicy[StateType: AbstractPolicyState | None, ObsType](
-    AbstractPolicy[StateType, Integer[Array, ""], ObsType]
+    AbstractPolicy[StateType, Integer[Array, ""], ObsType, Bool[Array, " actions"]],
 ):
     """
     Base class for stateful epsilon-greedy Q-learning policies.
@@ -30,7 +32,7 @@ class AbstractQPolicy[StateType: AbstractPolicyState | None, ObsType](
 
     name: eqx.AbstractClassVar[str]
     action_space: eqx.AbstractVar[Discrete]
-    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+    observation_space: eqx.AbstractVar[AbstractSpace[ObsType, Any]]
 
     epsilon: eqx.AbstractVar[float]
 
@@ -50,7 +52,12 @@ class AbstractQPolicy[StateType: AbstractPolicyState | None, ObsType](
         """
 
     def __call__(
-        self, state: StateType, observation: ObsType, *, key: Array | None = None
+        self,
+        state: StateType,
+        observation: ObsType,
+        *,
+        action_mask: Bool[Array, " actions"] | None = None,
+        key: Array | None = None,
     ) -> tuple[StateType, Integer[Array, ""]]:
         """
         Return the next state and action for a given observation and state.
@@ -67,16 +74,17 @@ class AbstractQPolicy[StateType: AbstractPolicyState | None, ObsType](
             A tuple of the next internal state and the selected action.
         """
         state, q_vals = self.q_values(state, observation)
+        dist = Categorical(logits=q_vals)
+        if action_mask is not None:
+            dist = dist.mask(action_mask)
 
         if key is None or self.epsilon <= 0.0:
-            return state, q_vals.argmax(axis=-1)
+            return state, dist.mode()
         else:
             epsilon_key, action_key = jr.split(key, 2)
             action = lax.cond(
                 jr.uniform(epsilon_key, shape=()) < self.epsilon,
-                lambda: jr.randint(
-                    action_key, shape=(), minval=0, maxval=self.action_space.n
-                ),
-                lambda: q_vals.argmax(axis=-1),
+                lambda: dist.sample(action_key),
+                lambda: dist.mode(),
             )
             return state, action

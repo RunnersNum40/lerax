@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from typing import Any
 
 import equinox as eqx
 from jaxtyping import Key
@@ -17,7 +18,7 @@ class AbstractPolicyState(eqx.Module):
     pass
 
 
-class AbstractPolicy[StateType: AbstractPolicyState | None, ActType, ObsType](
+class AbstractPolicy[StateType: AbstractPolicyState | None, ActType, ObsType, MaskType](
     Serializable
 ):
     """
@@ -32,12 +33,17 @@ class AbstractPolicy[StateType: AbstractPolicyState | None, ActType, ObsType](
     """
 
     name: eqx.AbstractClassVar[str]
-    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
-    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+    action_space: eqx.AbstractVar[AbstractSpace[ActType, MaskType]]
+    observation_space: eqx.AbstractVar[AbstractSpace[ObsType, Any]]
 
     @abstractmethod
     def __call__(
-        self, state: StateType, observation: ObsType, *, key: Key | None = None
+        self,
+        state: StateType,
+        observation: ObsType,
+        *,
+        key: Key | None = None,
+        action_mask: MaskType | None = None,
     ) -> tuple[StateType, ActType]:
         """
         Return the next action and new internal state given the current
@@ -50,6 +56,7 @@ class AbstractPolicy[StateType: AbstractPolicyState | None, ActType, ObsType](
             state: The current internal state of the policy.
             observation: The current observation.
             key: An optional JAX random key for stochastic policies.
+            action_mask: An optional action mask.
 
         Returns:
             The new internal state and the action to take.

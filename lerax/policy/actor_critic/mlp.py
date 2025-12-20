@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
 
+from lerax.distribution import AbstractMaskableDistribution
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.model import MLP, ActionLayer
 from lerax.space import AbstractSpace
@@ -13,8 +14,10 @@ from .base_actor_critic import AbstractActorCriticPolicy
 
 
 class MLPActorCriticPolicy[
-    ActType: (Float[Array, " dims"], Integer[Array, ""]), ObsType: Real[Array, "..."]
-](AbstractActorCriticPolicy[None, ActType, ObsType]):
+    ActType: (Float[Array, " dims"], Integer[Array, ""]),
+    ObsType: Real[Array, "..."],
+    MaskType,
+](AbstractActorCriticPolicy[None, ActType, ObsType, MaskType]):
     """
     Actor–critic policy with MLP components.
 
@@ -47,8 +50,8 @@ class MLPActorCriticPolicy[
 
     name: ClassVar[str] = "MLPActorCriticPolicy"
 
-    action_space: AbstractSpace[ActType]
-    observation_space: AbstractSpace[ObsType]
+    action_space: AbstractSpace[ActType, MaskType]
+    observation_space: AbstractSpace[ObsType, Any]
 
     encoder: MLP
     value_head: MLP
@@ -56,7 +59,7 @@ class MLPActorCriticPolicy[
 
     def __init__[S: AbstractEnvLikeState](
         self,
-        env: AbstractEnvLike[S, ActType, ObsType],
+        env: AbstractEnvLike[S, ActType, ObsType, MaskType],
         *,
         feature_size: int = 16,
         feature_width: int = 64,
@@ -102,10 +105,20 @@ class MLPActorCriticPolicy[
         return None
 
     def __call__(
-        self, state: None, observation: ObsType, *, key: Key | None = None
+        self,
+        state: None,
+        observation: ObsType,
+        *,
+        key: Key | None = None,
+        action_mask: MaskType | None = None,
     ) -> tuple[None, ActType]:
         features = self.encoder(self.observation_space.flatten_sample(observation))
+
         action_dist = self.action_head(features)
+        if action_mask is not None and isinstance(
+            action_dist, AbstractMaskableDistribution
+        ):
+            action_dist = action_dist.mask(action_mask)
 
         if key is None:
             action = action_dist.mode()
@@ -115,7 +128,12 @@ class MLPActorCriticPolicy[
         return None, action
 
     def action_and_value(
-        self, state: None, observation: ObsType, *, key: Key
+        self,
+        state: None,
+        observation: ObsType,
+        *,
+        key: Key,
+        action_mask: MaskType | None = None,
     ) -> tuple[None, ActType, Float[Array, ""], Float[Array, ""]]:
         """
         Get an action and value from an observation.
@@ -127,6 +145,11 @@ class MLPActorCriticPolicy[
         value = self.value_head(features)
 
         action_dist = self.action_head(features)
+        if action_mask is not None and isinstance(
+            action_dist, AbstractMaskableDistribution
+        ):
+            action_dist = action_dist.mask(action_mask)
+
         action, log_prob = action_dist.sample_and_log_prob(key)
 
         return None, action, value, log_prob.sum().squeeze()
@@ -137,11 +160,21 @@ class MLPActorCriticPolicy[
         return None, self.value_head(features)
 
     def evaluate_action(
-        self, state: None, observation: ObsType, action: ActType
+        self,
+        state: None,
+        observation: ObsType,
+        action: ActType,
+        *,
+        action_mask: MaskType | None = None,
     ) -> tuple[None, Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
         """Evaluate an action given an observation."""
         features = self.encoder(self.observation_space.flatten_sample(observation))
         action_dist = self.action_head(features)
+        if action_mask is not None and isinstance(
+            action_dist, AbstractMaskableDistribution
+        ):
+            action_dist = action_dist.mask(action_mask)
+
         value = self.value_head(features)
         log_prob = action_dist.log_prob(action)
 

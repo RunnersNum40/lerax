@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import diffrax
 import equinox as eqx
@@ -8,6 +8,7 @@ from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
 
+from lerax.distribution import AbstractMaskableDistribution
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.model import MLP, ActionLayer, MLPNeuralCDE, NCDEState
 from lerax.space import AbstractSpace
@@ -25,8 +26,10 @@ class NCDEPolicyState(AbstractPolicyState):
 
 
 class NCDEActorCriticPolicy[
-    ActType: (Float[Array, " dims"], Integer[Array, ""]), ObsType: Real[Array, "..."]
-](AbstractActorCriticPolicy[NCDEPolicyState, ActType, ObsType]):
+    ActType: (Float[Array, " dims"], Integer[Array, ""]),
+    ObsType: Real[Array, "..."],
+    MaskType,
+](AbstractActorCriticPolicy[NCDEPolicyState, ActType, ObsType, MaskType]):
     """
     Actor–critic with a shared MLPNeuralCDE encoder and MLP heads.
 
@@ -63,8 +66,8 @@ class NCDEActorCriticPolicy[
 
     name: ClassVar[str] = "NCDEActorCriticPolicy"
 
-    action_space: AbstractSpace[ActType]
-    observation_space: AbstractSpace[ObsType]
+    action_space: AbstractSpace[ActType, MaskType]
+    observation_space: AbstractSpace[ObsType, Any]
 
     encoder: MLPNeuralCDE
     value_head: MLP
@@ -74,7 +77,7 @@ class NCDEActorCriticPolicy[
 
     def __init__[StateType: AbstractEnvLikeState](
         self,
-        env: AbstractEnvLike[StateType, ActType, ObsType],
+        env: AbstractEnvLike[StateType, ActType, ObsType, MaskType],
         *,
         solver: diffrax.AbstractSolver | None = None,
         feature_size: int = 4,
@@ -141,12 +144,21 @@ class NCDEActorCriticPolicy[
         return NCDEPolicyState(t=jnp.array(0.0), cde=self.encoder.reset())
 
     def __call__(
-        self, state: NCDEPolicyState, observation: ObsType, *, key: Key | None = None
+        self,
+        state: NCDEPolicyState,
+        observation: ObsType,
+        *,
+        key: Key | None = None,
+        action_mask: MaskType | None = None,
     ) -> tuple[NCDEPolicyState, ActType]:
         state, features = self._step_encoder(state, observation)
         features = jnp.tanh(features)
 
         action_dist = self.action_head(features)
+        if action_mask is not None and isinstance(
+            action_dist, AbstractMaskableDistribution
+        ):
+            action_dist = action_dist.mask(action_mask)
 
         if key is None:
             action = action_dist.mode()
@@ -156,7 +168,12 @@ class NCDEActorCriticPolicy[
         return state, action
 
     def action_and_value(
-        self, state: NCDEPolicyState, observation: ObsType, *, key: Key
+        self,
+        state: NCDEPolicyState,
+        observation: ObsType,
+        *,
+        key: Key,
+        action_mask: MaskType | None = None,
     ) -> tuple[NCDEPolicyState, ActType, Float[Array, ""], Float[Array, ""]]:
         state, features = self._step_encoder(state, observation)
         features = jnp.tanh(features)
@@ -164,17 +181,32 @@ class NCDEActorCriticPolicy[
         value = self.value_head(features)
 
         action_dist = self.action_head(features)
+        if action_mask is not None and isinstance(
+            action_dist, AbstractMaskableDistribution
+        ):
+            action_dist = action_dist.mask(action_mask)
+
         action, log_prob = action_dist.sample_and_log_prob(key)
 
         return state, action, value, log_prob.sum().squeeze()
 
     def evaluate_action(
-        self, state: NCDEPolicyState, observation: ObsType, action: ActType
+        self,
+        state: NCDEPolicyState,
+        observation: ObsType,
+        action: ActType,
+        *,
+        action_mask: MaskType | None = None,
     ) -> tuple[NCDEPolicyState, Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
         state, features = self._step_encoder(state, observation)
         features = jnp.tanh(features)
 
         action_dist = self.action_head(features)
+        if action_mask is not None and isinstance(
+            action_dist, AbstractMaskableDistribution
+        ):
+            action_dist = action_dist.mask(action_mask)
+
         value = self.value_head(features)
         log_prob = action_dist.log_prob(action)
 
