@@ -6,16 +6,12 @@ from jax import random as jr
 from jaxtyping import Array, Bool, Float, Key
 
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
-from lerax.policy import (
-    AbstractPolicy,
-    AbstractPolicyState,
-    AbstractStatefulPolicy,
-)
+from lerax.policy import AbstractPolicy, AbstractPolicyState
 
 
 def rollout_while(
     env: AbstractEnvLike,
-    policy: AbstractStatefulPolicy,
+    policy: AbstractPolicy,
     *,
     key: Key,
     deterministic: bool = False,
@@ -58,7 +54,7 @@ def rollout_while(
 
 def rollout_scan(
     env: AbstractEnvLike,
-    policy: AbstractStatefulPolicy,
+    policy: AbstractPolicy,
     *,
     key: Key,
     deterministic: bool = False,
@@ -115,9 +111,6 @@ def average_reward(
     *,
     key: Key,
 ) -> Float[Array, ""]:
-    if not isinstance(policy, AbstractStatefulPolicy):
-        policy = policy.into_stateful()
-
     def episode_reward(key: Key) -> Float[Array, ""]:
         if max_steps is None:
             return rollout_while(env, policy, key=key, deterministic=deterministic)

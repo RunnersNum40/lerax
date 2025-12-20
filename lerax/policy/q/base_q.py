@@ -9,15 +9,10 @@ from jaxtyping import Array, Float, Integer
 
 from lerax.space import AbstractSpace, Discrete
 
-from ..base_policy import (
-    AbstractPolicy,
-    AbstractPolicyState,
-    AbstractStatelessPolicy,
-    NullPolicyState,
-)
+from ..base_policy import AbstractPolicy, AbstractPolicyState
 
 
-class AbstractQPolicy[StateType: AbstractPolicyState, ObsType](
+class AbstractQPolicy[StateType: AbstractPolicyState | None, ObsType](
     AbstractPolicy[StateType, Integer[Array, ""], ObsType]
 ):
     """
@@ -85,44 +80,3 @@ class AbstractQPolicy[StateType: AbstractPolicyState, ObsType](
                 lambda: q_vals.argmax(axis=-1),
             )
             return state, action
-
-
-class AbstractStatelessQPolicy[ObsType](
-    AbstractQPolicy[NullPolicyState, ObsType],
-    AbstractStatelessPolicy[Integer[Array, ""], ObsType],
-):
-    """
-    Base class for stateless Q-learning policies.
-
-    To implement a stateless Q-learning policy, implement the
-    `stateless_q_values` method instead of the `q_values` method.
-
-    Attributes:
-        name: Name of the policy class.
-        action_space: The action space of the environment.
-        observation_space: The observation space of the environment.
-        epsilon: The epsilon value for epsilon-greedy action selection.
-    """
-
-    name: eqx.AbstractClassVar[str]
-    action_space: eqx.AbstractVar[Discrete]
-    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
-
-    epsilon: eqx.AbstractVar[float]
-
-    @abstractmethod
-    def stateless_q_values(self, observation: ObsType) -> Float[Array, " actions"]:
-        """
-        Return Q-values for all actions given an observation.
-
-        Args:
-            observation: The current observation from the environment.
-
-        Returns:
-            Q-values for all actions.
-        """
-
-    def q_values(
-        self, state: NullPolicyState, observation: ObsType
-    ) -> tuple[NullPolicyState, Float[Array, " actions"]]:
-        return state, self.stateless_q_values(observation)

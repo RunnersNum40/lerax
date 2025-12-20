@@ -11,7 +11,3 @@ title: Policy
 ::: lerax.policy.AbstractPolicyState
     options:
         members: true
-
-::: lerax.policy.AbstractStatelessPolicy
-    options:
-        members: true

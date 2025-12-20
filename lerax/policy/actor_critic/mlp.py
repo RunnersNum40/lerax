@@ -9,12 +9,12 @@ from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.model import MLP, ActionLayer
 from lerax.space import AbstractSpace
 
-from .base_actor_critic import AbstractStatelessActorCriticPolicy
+from .base_actor_critic import AbstractActorCriticPolicy
 
 
 class MLPActorCriticPolicy[
     ActType: (Float[Array, " dims"], Integer[Array, ""]), ObsType: Real[Array, "..."]
-](AbstractStatelessActorCriticPolicy[ActType, ObsType]):
+](AbstractActorCriticPolicy[None, ActType, ObsType]):
     """
     Actor–critic policy with MLP components.
 
@@ -54,9 +54,9 @@ class MLPActorCriticPolicy[
     value_head: MLP
     action_head: ActionLayer
 
-    def __init__[StateType: AbstractEnvLikeState](
+    def __init__[S: AbstractEnvLikeState](
         self,
-        env: AbstractEnvLike[StateType, ActType, ObsType],
+        env: AbstractEnvLike[S, ActType, ObsType],
         *,
         feature_size: int = 16,
         feature_width: int = 64,
@@ -98,9 +98,12 @@ class MLPActorCriticPolicy[
             log_std_init=log_std_init,
         )
 
-    def stateless_call(
-        self, observation: ObsType, *, key: Key | None = None
-    ) -> ActType:
+    def reset(self, *, key: Key) -> None:
+        return None
+
+    def __call__(
+        self, state: None, observation: ObsType, *, key: Key | None = None
+    ) -> tuple[None, ActType]:
         features = self.encoder(self.observation_space.flatten_sample(observation))
         action_dist = self.action_head(features)
 
@@ -109,11 +112,11 @@ class MLPActorCriticPolicy[
         else:
             action = action_dist.sample(key)
 
-        return action
+        return None, action
 
-    def stateless_action_and_value(
-        self, observation: ObsType, *, key: Key
-    ) -> tuple[ActType, Float[Array, ""], Float[Array, ""]]:
+    def action_and_value(
+        self, state: None, observation: ObsType, *, key: Key
+    ) -> tuple[None, ActType, Float[Array, ""], Float[Array, ""]]:
         """
         Get an action and value from an observation.
 
@@ -126,16 +129,16 @@ class MLPActorCriticPolicy[
         action_dist = self.action_head(features)
         action, log_prob = action_dist.sample_and_log_prob(key)
 
-        return action, value, log_prob.sum().squeeze()
+        return None, action, value, log_prob.sum().squeeze()
 
-    def stateless_value(self, observation: ObsType) -> Float[Array, ""]:
+    def value(self, state: None, observation: ObsType) -> tuple[None, Float[Array, ""]]:
         """Get the value of an observation."""
         features = self.encoder(self.observation_space.flatten_sample(observation))
-        return self.value_head(features)
+        return None, self.value_head(features)
 
-    def stateless_evaluate_action(
-        self, observation: ObsType, action: ActType
-    ) -> tuple[Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
+    def evaluate_action(
+        self, state: None, observation: ObsType, action: ActType
+    ) -> tuple[None, Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
         """Evaluate an action given an observation."""
         features = self.encoder(self.observation_space.flatten_sample(observation))
         action_dist = self.action_head(features)
@@ -147,4 +150,4 @@ class MLPActorCriticPolicy[
         except NotImplementedError:
             entropy = -log_prob.mean().squeeze()  # Fallback to negative log prob mean
 
-        return value, log_prob.sum().squeeze(), entropy
+        return None, value, log_prob.sum().squeeze(), entropy

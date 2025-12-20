@@ -8,10 +8,10 @@ from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.model import MLP
 from lerax.space import AbstractSpace, Discrete
 
-from .base_q import AbstractStatelessQPolicy
+from .base_q import AbstractQPolicy
 
 
-class MLPQPolicy[ObsType: Real[Array, "..."]](AbstractStatelessQPolicy[ObsType]):
+class MLPQPolicy[ObsType: Real[Array, "..."]](AbstractQPolicy[None, ObsType]):
     """
     Q-learning policy with an MLP Q-network.
 
@@ -67,6 +67,11 @@ class MLPQPolicy[ObsType: Real[Array, "..."]](AbstractStatelessQPolicy[ObsType])
             key=key,
         )
 
-    def q_values(self, observation: ObsType) -> Float[Array, " actions"]:
+    def reset(self, *, key: Key) -> None:
+        return None
+
+    def q_values(
+        self, state: None, observation: ObsType
+    ) -> tuple[None, Float[Array, " actions"]]:
         flat_obs = self.observation_space.flatten_sample(observation)
-        return self.q_network(flat_obs)
+        return None, self.q_network(flat_obs)

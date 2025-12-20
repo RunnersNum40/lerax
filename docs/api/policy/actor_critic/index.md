@@ -6,8 +6,4 @@ title: Actor Critic
 
 ::: lerax.policy.AbstractActorCriticPolicy
     options:
-        members: truey
-
-::: lerax.policy.AbstractStatelessActorCriticPolicy
-    options:
         members: true

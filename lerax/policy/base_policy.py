@@ -5,7 +5,7 @@ from abc import abstractmethod
 import equinox as eqx
 from jaxtyping import Key
 
-from lerax.space.base_space import AbstractSpace
+from lerax.space import AbstractSpace
 from lerax.utils import Serializable
 
 
@@ -17,7 +17,9 @@ class AbstractPolicyState(eqx.Module):
     pass
 
 
-class AbstractPolicy[StateType: AbstractPolicyState, ActType, ObsType](Serializable):
+class AbstractPolicy[StateType: AbstractPolicyState | None, ActType, ObsType](
+    Serializable
+):
     """
     Base class for policies.
 
@@ -66,45 +68,3 @@ class AbstractPolicy[StateType: AbstractPolicyState, ActType, ObsType](Serializa
             An initial internal state for the policy.
         """
         pass
-
-
-class NullPolicyState(AbstractPolicyState):
-    pass
-
-
-class AbstractStatelessPolicy[ActType, ObsType](
-    AbstractPolicy[NullPolicyState, ActType, ObsType]
-):
-    """
-    Base class for stateless policies.
-
-    Wraps a stateless policy into the stateful policy interface by using a
-    placeholder.
-
-    To implement a stateless policy, implement the `stateless_call` method
-    instead of the `__call__` method.
-
-    Attributes:
-        name: The name of the policy.
-        action_space: The action space of the policy.
-        observation_space: The observation space of the policy.
-    """
-
-    name: eqx.AbstractClassVar[str]
-    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
-    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
-
-    @abstractmethod
-    def stateless_call(
-        self, observation: ObsType, *, key: Key | None = None
-    ) -> ActType:
-        pass
-
-    def __call__(
-        self, state: NullPolicyState, observation: ObsType, *, key: Key | None = None
-    ) -> tuple[NullPolicyState, ActType]:
-        action = self.stateless_call(observation, key=key)
-        return state, action
-
-    def reset(self, *, key: Key) -> NullPolicyState:
-        return NullPolicyState()

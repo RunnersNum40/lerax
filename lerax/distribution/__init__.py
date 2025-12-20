@@ -1,8 +1,9 @@
 """
 Lerax Distributions
 
-Wrapper around distreqx.distributions to allow for easier imports, extended typing, and
-future expansion.
+Distributions allow paramerizing and sampling from elements of a space.
+
+Mostly wrappers around distreqx distributions.
 """
 
 from .base_distribution import (
