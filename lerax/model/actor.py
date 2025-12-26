@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from typing import cast
 
 import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, ArrayLike, Float, Int, Key
+from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
 from lerax.distribution import (
     AbstractDistribution,
+    AbstractMaskableDistribution,
     Bernoulli,
     Categorical,
     MultiCategorical,
@@ -20,7 +22,7 @@ from lerax.space import AbstractSpace, Box, Discrete, MultiBinary, MultiDiscrete
 from .base_model import AbstractModel
 
 
-class AbstractActionDistribution[ActType](AbstractModel):
+class AbstractActionDistribution[ActType, MaskType](AbstractModel):
     """Layer that produces action distributions given inputs."""
 
     mapping: eqx.AbstractVar[eqx.nn.Linear]
@@ -29,11 +31,13 @@ class AbstractActionDistribution[ActType](AbstractModel):
     def __call__(
         self,
         inputs: Float[Array, " latent_dim"],
-    ) -> AbstractDistribution[ActType]:
+    ) -> (
+        AbstractDistribution[ActType] | AbstractMaskableDistribution[ActType, MaskType]
+    ):
         """Produce an action distribution given inputs."""
 
 
-class BoxAction(AbstractActionDistribution[Float[Array, " action_dim"]]):
+class BoxAction(AbstractActionDistribution[Float[Array, " action_dim"], None]):
 
     scalar: bool
     mapping: eqx.nn.Linear
@@ -73,7 +77,7 @@ class BoxAction(AbstractActionDistribution[Float[Array, " action_dim"]]):
             )
 
 
-class DiscreteAction(AbstractActionDistribution[Int[Array, ""]]):
+class DiscreteAction(AbstractActionDistribution[Int[Array, ""], Bool[Array, " n"]]):
 
     mapping: eqx.nn.Linear
 
@@ -84,7 +88,7 @@ class DiscreteAction(AbstractActionDistribution[Int[Array, ""]]):
         return Categorical(logits=self.mapping(inputs))
 
 
-class MultiBinaryAction(AbstractActionDistribution[Int[Array, ""]]):
+class MultiBinaryAction(AbstractActionDistribution[Int[Array, ""], None]):
 
     mapping: eqx.nn.Linear
     shape: tuple[int, ...]
@@ -97,7 +101,7 @@ class MultiBinaryAction(AbstractActionDistribution[Int[Array, ""]]):
         return Bernoulli(logits=self.mapping(inputs).reshape(self.shape))
 
 
-class MultiDiscreteAction(AbstractActionDistribution[Int[Array, ""]]):
+class MultiDiscreteAction(AbstractActionDistribution[Int[Array, ""], None]):
 
     ns: tuple[int, ...]
     mappings: eqx.nn.Linear
@@ -112,24 +116,40 @@ class MultiDiscreteAction(AbstractActionDistribution[Int[Array, ""]]):
         return MultiCategorical(self.mappings(inputs), action_dims=self.ns)
 
 
-def make_action_layer(
-    latent_dim: int, action_space: AbstractSpace, *, key: Key, log_std_init: float = 0.0
-) -> AbstractActionDistribution:
+def make_action_layer[ActType, MaskType](
+    latent_dim: int,
+    action_space: AbstractSpace[ActType, MaskType],
+    *,
+    key: Key,
+    log_std_init: float = 0.0,
+) -> AbstractActionDistribution[ActType, MaskType]:
     """Create an action layer based on the action space."""
 
     if isinstance(action_space, Box):
-        return BoxAction(latent_dim, action_space, key=key, log_std_init=log_std_init)
+        return cast(
+            AbstractActionDistribution[ActType, MaskType],
+            BoxAction(latent_dim, action_space, key=key, log_std_init=log_std_init),
+        )
     elif isinstance(action_space, Discrete):
-        return DiscreteAction(latent_dim, action_space, key=key)
+        return cast(
+            AbstractActionDistribution[ActType, MaskType],
+            DiscreteAction(latent_dim, action_space, key=key),
+        )
     elif isinstance(action_space, MultiBinary):
-        return MultiBinaryAction(latent_dim, action_space, key=key)
+        return cast(
+            AbstractActionDistribution[ActType, MaskType],
+            MultiBinaryAction(latent_dim, action_space, key=key),
+        )
     elif isinstance(action_space, MultiDiscrete):
-        return MultiDiscreteAction(latent_dim, action_space, key=key)
+        return cast(
+            AbstractActionDistribution[ActType, MaskType],
+            MultiDiscreteAction(latent_dim, action_space, key=key),
+        )
     else:
         raise NotImplementedError(f"Action space {type(action_space)} not supported.")
 
 
-class ActionLayer[ActType](AbstractModel):
+class ActionLayer[ActType, MaskType](AbstractModel):
     """
     Model that produces action distributions from features.
 
@@ -150,11 +170,11 @@ class ActionLayer[ActType](AbstractModel):
     """
 
     mlp: eqx.nn.MLP | None
-    action_dist: AbstractActionDistribution[ActType]
+    action_dist: AbstractActionDistribution[ActType, MaskType]
 
     def __init__(
         self,
-        action_space: AbstractSpace,
+        action_space: AbstractSpace[ActType, MaskType],
         latent_dim: int,
         width_size: int,
         depth: int,
@@ -180,8 +200,14 @@ class ActionLayer[ActType](AbstractModel):
         )
 
     def __call__(
-        self, features: Float[Array, " latent_dim"]
+        self, features: Float[Array, " latent_dim"], action_mask: MaskType | None = None
     ) -> AbstractDistribution[ActType]:
         if self.mlp is not None:
             features = self.mlp(features)
-        return self.action_dist(features)
+
+        dist = self.action_dist(features)
+
+        if isinstance(dist, AbstractMaskableDistribution) and action_mask is not None:
+            dist = dist.mask(action_mask)
+
+        return dist
