@@ -144,7 +144,10 @@ class PPO[PolicyType: AbstractActorCriticPolicy](AbstractOnPolicyAlgorithm[Polic
         entropy_loss_coefficient: float,
     ) -> tuple[Float[Array, ""], PPOStats]:
         _, values, log_probs, entropy = jax.vmap(policy.evaluate_action)(
-            rollout_buffer.states, rollout_buffer.observations, rollout_buffer.actions
+            rollout_buffer.states,
+            rollout_buffer.observations,
+            rollout_buffer.actions,
+            action_mask=rollout_buffer.action_masks,
         )
 
         values = eqx.error_if(values, ~jnp.isfinite(values), "Non-finite values.")

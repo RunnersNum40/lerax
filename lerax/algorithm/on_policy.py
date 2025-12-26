@@ -20,11 +20,7 @@ from lerax.callback import (
     StepContext,
 )
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
-from lerax.policy import (
-    AbstractActorCriticPolicy,
-    AbstractPolicy,
-    AbstractPolicyState,
-)
+from lerax.policy import AbstractActorCriticPolicy, AbstractPolicy, AbstractPolicyState
 from lerax.space import Box
 from lerax.utils import filter_scan
 
@@ -155,8 +151,10 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
         ) = jr.split(key, 9)
 
         observation = env.observation(state.env_state, key=observation_key)
+
+        action_mask = env.action_mask(state.env_state, key=observation_key)
         next_policy_state, action, value, log_prob = policy.action_and_value(
-            state.policy_state, observation, key=action_key
+            state.policy_state, observation, key=action_key, action_mask=action_mask
         )
 
         if isinstance(env.action_space, Box):
@@ -218,6 +216,7 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
                 log_probs=log_prob,
                 values=value,
                 states=state.policy_state,
+                action_masks=action_mask,
             ),
         )
 
