@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+from typing import Self
 
 import jax
 from jax import lax
@@ -13,7 +14,9 @@ from lerax.policy import AbstractPolicyState
 from .base_buffer import AbstractBuffer
 
 
-class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuffer):
+class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
+    AbstractBuffer
+):
     observations: PyTree[ObsType]
     actions: PyTree[ActType]
     rewards: Float[Array, " *size"]
@@ -23,6 +26,7 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBu
     returns: Float[Array, " *size"]
     advantages: Float[Array, " *size"]
     states: StateType
+    action_masks: MaskType
 
     def __init__(
         self,
@@ -33,6 +37,7 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBu
         log_probs: Float[ArrayLike, " *size"],
         values: Float[ArrayLike, " *size"],
         states: StateType,
+        action_masks: MaskType = None,
         returns: Float[ArrayLike, " *size"] | None = None,
         advantages: Float[ArrayLike, " *size"] | None = None,
     ):
@@ -43,6 +48,7 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBu
         self.log_probs = jnp.asarray(log_probs, dtype=float)
         self.values = jnp.asarray(values, dtype=float)
         self.states = states
+        self.action_masks = action_masks
         self.returns = (
             jnp.asarray(returns, dtype=float)
             if returns is not None
@@ -59,7 +65,7 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBu
         last_value: Float[ArrayLike, ""],
         gae_lambda: Float[ArrayLike, ""],
         gamma: Float[ArrayLike, ""],
-    ) -> RolloutBuffer[StateType, ActType, ObsType]:
+    ) -> Self:
         last_value = jnp.asarray(last_value)
         gamma = jnp.asarray(gamma)
         gae_lambda = jnp.asarray(gae_lambda)
@@ -89,7 +95,7 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBu
         *,
         key: Key | None = None,
         batch_axes: tuple[int, ...] | int | None = None,
-    ) -> RolloutBuffer[StateType, ActType, ObsType]:
+    ) -> Self:
         flat_self = self.flatten_axes(batch_axes)
 
         total = flat_self.rewards.shape[0]
@@ -109,7 +115,7 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBu
         *,
         key: Key,
         batch_axes: tuple[int, ...] | int | None = None,
-    ) -> RolloutBuffer[StateType, ActType, ObsType]:
+    ) -> Self:
         flat_self = self.flatten_axes(batch_axes)
 
         total = flat_self.rewards.shape[0]

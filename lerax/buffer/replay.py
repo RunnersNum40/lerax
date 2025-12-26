@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, Self
+
 import equinox as eqx
 import jax
 from jax import numpy as jnp
@@ -12,7 +14,9 @@ from lerax.space import AbstractSpace
 from .base_buffer import AbstractBuffer
 
 
-class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuffer):
+class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
+    AbstractBuffer
+):
     size: int = eqx.field(static=True)
     position: Integer[Array, ""]
 
@@ -24,12 +28,13 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuf
     timeouts: Bool[Array, " capacity"]
     states: StateType
     next_states: StateType
+    action_masks: MaskType
 
     def __init__(
         self,
         size: int,
-        observation_space: AbstractSpace[ObsType],
-        action_space: AbstractSpace[ActType],
+        observation_space: AbstractSpace[ObsType, Any],
+        action_space: AbstractSpace[ActType, MaskType],
         state: StateType,
     ):
         self.size = size
@@ -68,7 +73,8 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuf
         timeout: Bool[ArrayLike, ""],
         state: StateType,
         next_state: StateType,
-    ) -> ReplayBuffer[StateType, ActType, ObsType]:
+        action_mask: PyTree = None,
+    ) -> Self:
         reward = jnp.asarray(reward, dtype=float)
         done = jnp.asarray(done, dtype=bool)
         timeout = jnp.asarray(timeout, dtype=bool)
@@ -123,7 +129,7 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuf
         *,
         key: Key | None = None,
         batch_axes: tuple[int, ...] | int | None = None,
-    ) -> ReplayBuffer[StateType, ActType, ObsType]:
+    ) -> Self:
         _ = eqx.error_if(
             self.current_size,
             self.current_size < self.size,
@@ -153,7 +159,7 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType](AbstractBuf
         batch_size: int,
         *,
         key: Key,
-    ) -> ReplayBuffer[StateType, ActType, ObsType]:
+    ) -> Self:
         flat_self = self.flatten_axes(None)
         total = flat_self.rewards.shape[0]
 
