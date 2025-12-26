@@ -9,8 +9,8 @@ from jaxtyping import ArrayLike, Float
 
 from .base_renderer import WHITE, Abstract2DRenderer, Color, Transform
 
-pygame: Any
-gfxdraw: Any
+pygame: Any = None
+gfxdraw: Any = None
 
 
 def _load_pygame() -> tuple[Any, Any]:
