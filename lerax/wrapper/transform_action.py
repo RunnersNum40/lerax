@@ -1,21 +1,43 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import Any, Callable
 
 import equinox as eqx
 from jax import numpy as jnp
-from jaxtyping import Array, Float, Key
+from jaxtyping import Array, Bool, Float, Key
 
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.space import AbstractSpace, Box
 
-from .base_wrapper import AbstractWrapper
+from .base_wrapper import AbstractWrapper, AbstractWrapperState
 from .utils import rescale_box
 
 
+class TransformActionState[StateType: AbstractEnvLikeState](
+    AbstractWrapperState[StateType]
+):
+    env_state: StateType
+
+
 class AbstractPureTransformActionWrapper[
-    WrapperActType, StateType: AbstractEnvLikeState, ActType, ObsType
-](AbstractWrapper[StateType, WrapperActType, ObsType, StateType, ActType, ObsType]):
+    WrapperActType,
+    WrapperMaskType,
+    StateType: AbstractEnvLikeState,
+    ActType,
+    ObsType,
+    MaskType,
+](
+    AbstractWrapper[
+        TransformActionState[StateType],
+        WrapperActType,
+        ObsType,
+        WrapperMaskType,
+        StateType,
+        ActType,
+        ObsType,
+        MaskType,
+    ]
+):
     """
     Base class for wrappers that apply a pure function to the action before passing it to
     the environment.
@@ -26,53 +48,90 @@ class AbstractPureTransformActionWrapper[
         action_space: The action space of the wrapper.
     """
 
-    env: eqx.AbstractVar[AbstractEnvLike[StateType, ActType, ObsType]]
+    env: eqx.AbstractVar[AbstractEnvLike[StateType, ActType, ObsType, MaskType]]
     func: eqx.AbstractVar[Callable[[WrapperActType], ActType]]
-    action_space: eqx.AbstractVar[AbstractSpace[WrapperActType]]
+    mask_func: eqx.AbstractVar[Callable[[MaskType], WrapperMaskType]]
+    action_space: eqx.AbstractVar[AbstractSpace[WrapperActType, WrapperMaskType]]
 
     @property
-    def observation_space(self) -> AbstractSpace[ObsType]:
+    def observation_space(self) -> AbstractSpace[ObsType, Any]:
         return self.env.observation_space
 
-    def initial(self, *, key: Key) -> StateType:
-        return self.env.initial(key=key)
+    def initial(self, *, key: Key) -> TransformActionState[StateType]:
+        return TransformActionState(self.env.initial(key=key))
+
+    def action_mask(
+        self, state: TransformActionState[StateType], *, key: Key
+    ) -> WrapperMaskType | None:
+        env_mask = self.env.action_mask(state.env_state, key=key)
+
+        if env_mask is None:
+            return None
+        else:
+            return self.mask_func(env_mask)
 
     def transition(
-        self, state: StateType, action: WrapperActType, *, key: Key
-    ) -> StateType:
-        return self.env.transition(state, self.func(action), key=key)
+        self,
+        state: TransformActionState[StateType],
+        action: WrapperActType,
+        *,
+        key: Key,
+    ) -> TransformActionState[StateType]:
+        return TransformActionState(
+            self.env.transition(state.env_state, self.func(action), key=key)
+        )
 
-    def observation(self, state: StateType, *, key: Key) -> ObsType:
-        return self.env.observation(state, key=key)
+    def observation(
+        self, state: TransformActionState[StateType], *, key: Key
+    ) -> ObsType:
+        return self.env.observation(state.env_state, key=key)
 
     def reward(
         self,
-        state: StateType,
+        state: TransformActionState[StateType],
         action: WrapperActType,
-        next_state: StateType,
+        next_state: TransformActionState[StateType],
         *,
         key: Key,
     ) -> Float[Array, ""]:
-        return self.env.reward(state, self.func(action), next_state, key=key)
+        return self.env.reward(
+            state.env_state, self.func(action), next_state.env_state, key=key
+        )
 
-    def terminal(self, state: StateType, *, key: Key) -> jnp.ndarray:
-        return self.env.terminal(state, key=key)
+    def terminal(
+        self, state: TransformActionState[StateType], *, key: Key
+    ) -> Bool[Array, ""]:
+        return self.env.terminal(state.env_state, key=key)
 
-    def truncate(self, state: StateType) -> jnp.ndarray:
-        return self.env.truncate(state)
+    def truncate(self, state: TransformActionState[StateType]) -> Bool[Array, ""]:
+        return self.env.truncate(state.env_state)
 
-    def state_info(self, state: StateType) -> dict:
-        return self.env.state_info(state)
+    def state_info(self, state: TransformActionState[StateType]) -> dict:
+        return self.env.state_info(state.env_state)
 
     def transition_info(
-        self, state: StateType, action: WrapperActType, next_state: StateType
+        self,
+        state: TransformActionState[StateType],
+        action: WrapperActType,
+        next_state: TransformActionState[StateType],
     ) -> dict:
-        return self.env.transition_info(state, self.func(action), next_state)
+        return self.env.transition_info(
+            state.env_state, self.func(action), next_state.env_state
+        )
 
 
 class TransformAction[
-    WrapperActType, StateType: AbstractEnvLikeState, ActType, ObsType
-](AbstractPureTransformActionWrapper[WrapperActType, StateType, ActType, ObsType]):
+    WrapperActType,
+    WrapperMaskType,
+    StateType: AbstractEnvLikeState,
+    ActType,
+    ObsType,
+    MaskType,
+](
+    AbstractPureTransformActionWrapper[
+        WrapperActType, WrapperMaskType, StateType, ActType, ObsType, MaskType
+    ]
+):
     """
     Apply a function to the action before passing it to the environment.
 
@@ -87,24 +146,32 @@ class TransformAction[
         action_space: The action space of the wrapper.
     """
 
-    env: AbstractEnvLike[StateType, ActType, ObsType]
+    env: AbstractEnvLike[StateType, ActType, ObsType, MaskType]
     func: Callable[[WrapperActType], ActType]
-    action_space: AbstractSpace[WrapperActType]
+    mask_func: Callable[[MaskType], WrapperMaskType]
+    action_space: AbstractSpace[WrapperActType, WrapperMaskType]
 
     def __init__(
         self,
-        env: AbstractEnvLike[StateType, ActType, ObsType],
+        env: AbstractEnvLike[StateType, ActType, ObsType, MaskType],
         func: Callable[[WrapperActType], ActType],
-        action_space: AbstractSpace[WrapperActType],
+        action_space: AbstractSpace[WrapperActType, WrapperMaskType],
+        mask_func: Callable[[MaskType], WrapperMaskType] = lambda x: x,
     ):
         self.env = env
         self.func = func
+        self.mask_func = mask_func
         self.action_space = action_space
 
 
-class ClipAction[StateType: AbstractEnvLikeState, ObsType](
+class ClipAction[StateType: AbstractEnvLikeState, ObsType, MaskType](
     AbstractPureTransformActionWrapper[
-        Float[Array, " ..."], StateType, Float[Array, " ..."], ObsType
+        Float[Array, " ..."],
+        MaskType,
+        StateType,
+        Float[Array, " ..."],
+        ObsType,
+        MaskType,
     ]
 ):
     """
@@ -124,11 +191,14 @@ class ClipAction[StateType: AbstractEnvLikeState, ObsType](
         ValueError: If the environment's action space is not a `Box`.
     """
 
-    env: AbstractEnvLike[StateType, Float[Array, " ..."], ObsType]
+    env: AbstractEnvLike[StateType, Float[Array, " ..."], ObsType, MaskType]
     func: Callable[[Float[Array, " ..."]], Float[Array, " ..."]]
+    mask_func: Callable[[MaskType], MaskType]
     action_space: Box
 
-    def __init__(self, env: AbstractEnvLike[StateType, Float[Array, " ..."], ObsType]):
+    def __init__(
+        self, env: AbstractEnvLike[StateType, Float[Array, " ..."], ObsType, MaskType]
+    ):
         if not isinstance(env.action_space, Box):
             raise ValueError(
                 "ClipAction only supports `Box` action spaces "
@@ -143,12 +213,18 @@ class ClipAction[StateType: AbstractEnvLikeState, ObsType](
 
         self.env = env
         self.func = clip
+        self.mask_func = lambda x: x
         self.action_space = action_space
 
 
-class RescaleAction[StateType: AbstractEnvLikeState, ObsType](
+class RescaleAction[StateType: AbstractEnvLikeState, ObsType, MaskType](
     AbstractPureTransformActionWrapper[
-        Float[Array, " ..."], StateType, Float[Array, " ..."], ObsType
+        Float[Array, " ..."],
+        MaskType,
+        StateType,
+        Float[Array, " ..."],
+        ObsType,
+        MaskType,
     ]
 ):
     """
@@ -168,13 +244,14 @@ class RescaleAction[StateType: AbstractEnvLikeState, ObsType](
         ValueError: If the environment's action space is not a `Box`.
     """
 
-    env: AbstractEnvLike[StateType, Float[Array, " ..."], ObsType]
+    env: AbstractEnvLike[StateType, Float[Array, " ..."], ObsType, MaskType]
     func: Callable[[Float[Array, " ..."]], Float[Array, " ..."]]
+    mask_func: Callable[[MaskType], MaskType]
     action_space: Box
 
     def __init__(
         self,
-        env: AbstractEnvLike[StateType, Float[Array, " ..."], ObsType],
+        env: AbstractEnvLike[StateType, Float[Array, " ..."], ObsType, MaskType],
         min: Float[Array, " ..."] = jnp.array(-1.0),
         max: Float[Array, " ..."] = jnp.array(1.0),
     ):
@@ -188,4 +265,5 @@ class RescaleAction[StateType: AbstractEnvLikeState, ObsType](
 
         self.env = env
         self.func = rescale
+        self.mask_func = lambda x: x
         self.action_space = action_space

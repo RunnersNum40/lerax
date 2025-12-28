@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
@@ -12,8 +14,21 @@ from .base_wrapper import (
 )
 
 
-class Identity[StateType: AbstractEnvLikeState, ActType, ObsType](
-    AbstractWrapper[StateType, ActType, ObsType, StateType, ActType, ObsType]
+class IdentityState[StateType: AbstractEnvLikeState](AbstractWrapperState[StateType]):
+    env_state: StateType
+
+
+class Identity[StateType: AbstractEnvLikeState, ActType, ObsType, MaskType](
+    AbstractWrapper[
+        IdentityState[StateType],
+        ActType,
+        ObsType,
+        MaskType,
+        StateType,
+        ActType,
+        ObsType,
+        MaskType,
+    ]
 ):
     """
     An wrapper that does nothing.
@@ -25,46 +40,61 @@ class Identity[StateType: AbstractEnvLikeState, ActType, ObsType](
         env: The environment to wrap.
     """
 
-    env: AbstractEnvLike[StateType, ActType, ObsType]
+    env: AbstractEnvLike[StateType, ActType, ObsType, MaskType]
 
-    def __init__(self, env: AbstractEnvLike[StateType, ActType, ObsType]):
+    def __init__(self, env: AbstractEnvLike[StateType, ActType, ObsType, MaskType]):
         self.env = env
 
     @property
-    def action_space(self) -> AbstractSpace[ActType]:
+    def action_space(self) -> AbstractSpace[ActType, MaskType]:
         return self.env.action_space
 
     @property
-    def observation_space(self) -> AbstractSpace[ObsType]:
+    def observation_space(self) -> AbstractSpace[ObsType, Any]:
         return self.env.observation_space
 
-    def initial(self, *, key: Key) -> StateType:
-        return self.env.initial(key=key)
+    def initial(self, *, key: Key) -> IdentityState[StateType]:
+        return IdentityState(self.env.initial(key=key))
 
-    def transition(self, state: StateType, action: ActType, *, key: Key) -> StateType:
-        return self.env.transition(state, action, key=key)
+    def action_mask(
+        self, state: IdentityState[StateType], *, key: Key
+    ) -> MaskType | None:
+        return self.env.action_mask(state.env_state, key=key)
 
-    def observation(self, state: StateType, *, key: Key) -> ObsType:
-        return self.env.observation(state, key=key)
+    def transition(
+        self, state: IdentityState[StateType], action: ActType, *, key: Key
+    ) -> IdentityState[StateType]:
+        return IdentityState(self.env.transition(state.env_state, action, key=key))
+
+    def observation(self, state: IdentityState[StateType], *, key: Key) -> ObsType:
+        return self.env.observation(state.env_state, key=key)
 
     def reward(
-        self, state: StateType, action: ActType, next_state: StateType, *, key: Key
+        self,
+        state: IdentityState[StateType],
+        action: ActType,
+        next_state: IdentityState[StateType],
+        *,
+        key: Key,
     ) -> Float[Array, ""]:
-        return self.env.reward(state, action, next_state, key=key)
+        return self.env.reward(state.env_state, action, next_state.env_state, key=key)
 
-    def terminal(self, state: StateType, *, key: Key) -> Bool[Array, ""]:
-        return self.env.terminal(state, key=key)
+    def terminal(self, state: IdentityState[StateType], *, key: Key) -> Bool[Array, ""]:
+        return self.env.terminal(state.env_state, key=key)
 
-    def truncate(self, state: StateType) -> Bool[Array, ""]:
-        return self.env.truncate(state)
+    def truncate(self, state: IdentityState[StateType]) -> Bool[Array, ""]:
+        return self.env.truncate(state.env_state)
 
-    def state_info(self, state: StateType) -> dict:
-        return self.env.state_info(state)
+    def state_info(self, state: IdentityState[StateType]) -> dict:
+        return self.env.state_info(state.env_state)
 
     def transition_info(
-        self, state: StateType, action: ActType, next_state: StateType
+        self,
+        state: IdentityState[StateType],
+        action: ActType,
+        next_state: IdentityState[StateType],
     ) -> dict:
-        return self.env.transition_info(state, action, next_state)
+        return self.env.transition_info(state.env_state, action, next_state.env_state)
 
 
 class TimeLimitState[StateType: AbstractEnvLikeState](AbstractWrapperState):
@@ -76,9 +106,16 @@ class TimeLimitState[StateType: AbstractEnvLikeState](AbstractWrapperState):
         self.env_state = env_state
 
 
-class TimeLimit[StateType: AbstractEnvLikeState, ActType, ObsType](
+class TimeLimit[StateType: AbstractEnvLikeState, ActType, ObsType, MaskType](
     AbstractWrapper[
-        TimeLimitState[StateType], ActType, ObsType, StateType, ActType, ObsType
+        TimeLimitState[StateType],
+        ActType,
+        ObsType,
+        MaskType,
+        StateType,
+        ActType,
+        ObsType,
+        MaskType,
     ]
 ):
     """
@@ -93,21 +130,23 @@ class TimeLimit[StateType: AbstractEnvLikeState, ActType, ObsType](
         max_episode_steps: The maximum number of steps per episode.
     """
 
-    env: AbstractEnvLike[StateType, ActType, ObsType]
+    env: AbstractEnvLike[StateType, ActType, ObsType, MaskType]
     max_episode_steps: Int[Array, ""]
 
     def __init__(
-        self, env: AbstractEnvLike[StateType, ActType, ObsType], max_episode_steps: int
+        self,
+        env: AbstractEnvLike[StateType, ActType, ObsType, MaskType],
+        max_episode_steps: int,
     ):
         self.env = env
         self.max_episode_steps = jnp.array(max_episode_steps, dtype=int)
 
     @property
-    def action_space(self) -> AbstractSpace[ActType]:
+    def action_space(self) -> AbstractSpace[ActType, MaskType]:
         return self.env.action_space
 
     @property
-    def observation_space(self) -> AbstractSpace[ObsType]:
+    def observation_space(self) -> AbstractSpace[ObsType, Any]:
         return self.env.observation_space
 
     def initial(self, *, key: Key) -> TimeLimitState[StateType]:

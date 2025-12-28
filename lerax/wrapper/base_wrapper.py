@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import equinox as eqx
 
 from lerax.env import (
@@ -22,13 +24,15 @@ class AbstractWrapperState[StateType: AbstractEnvLikeState](AbstractEnvLikeState
 
 
 class AbstractWrapper[
-    WrapperStateType: AbstractEnvLikeState,
+    WrapperStateType: AbstractWrapperState,
     WrapperActType,
     WrapperObsType,
+    WrapperMaskType,
     StateType: AbstractEnvLikeState,
     ActType,
     ObsType,
-](AbstractEnvLike[WrapperStateType, WrapperActType, WrapperObsType]):
+    MaskType,
+](AbstractEnvLike[WrapperStateType, WrapperActType, WrapperObsType, WrapperMaskType]):
     """
     Base class for environment wrappers.
 
@@ -40,10 +44,10 @@ class AbstractWrapper[
         observation_space: The observation space of the environment after wrapping
     """
 
-    env: eqx.AbstractVar[AbstractEnvLike[StateType, ActType, ObsType]]
+    env: eqx.AbstractVar[AbstractEnvLike[StateType, ActType, ObsType, MaskType]]
 
-    action_space: eqx.AbstractVar[AbstractSpace[ActType]]
-    observation_space: eqx.AbstractVar[AbstractSpace[ObsType]]
+    action_space: eqx.AbstractVar[AbstractSpace[ActType, WrapperMaskType]]
+    observation_space: eqx.AbstractVar[AbstractSpace[ObsType, Any]]
 
     @property
     def unwrapped(self) -> AbstractEnv:
