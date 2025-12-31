@@ -6,7 +6,7 @@ from typing import Self
 
 import equinox as eqx
 from distreqx import bijectors, distributions
-from jaxtyping import Array, Bool, Float, Key
+from jaxtyping import Array, Float, Key
 
 
 class AbstractDistribution[SampleType](eqx.Module):
@@ -75,7 +75,9 @@ class AbstractDistreqxWrapper[SampleType](AbstractDistribution):
         return self.distribution.sample_and_log_prob(key)
 
 
-class AbstractMaskableDistribution[SampleType](AbstractDistribution[SampleType]):
+class AbstractMaskableDistribution[SampleType, MaskType](
+    AbstractDistribution[SampleType]
+):
     """
     Base class for all maskable distributions in Lerax.
 
@@ -86,14 +88,14 @@ class AbstractMaskableDistribution[SampleType](AbstractDistribution[SampleType])
     """
 
     @abstractmethod
-    def mask(self, mask: Bool[Array, "..."]) -> Self:
+    def mask(self, mask: MaskType) -> Self:
         """
         Return a masked version of the distribution.
 
         A masked distribution only considers the elements where the mask is True.
 
         Args:
-            mask: A boolean array indicating which elements to keep.
+            mask: A mask indicating which elements to consider.
 
         Returns:
             A new masked distribution.

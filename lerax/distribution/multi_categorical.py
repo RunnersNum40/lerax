@@ -10,7 +10,12 @@ from jaxtyping import Array, ArrayLike, Bool, Float, Integer, Key
 from .base_distribution import AbstractMaskableDistribution
 
 
-class MultiCategorical(AbstractMaskableDistribution[Integer[Array, " dims"]]):
+class MultiCategorical(
+    AbstractMaskableDistribution[
+        Integer[Array, " dims"],
+        Bool[Array, "... sum_of_classes"] | Sequence[Bool[Array, "... classes"]],
+    ]
+):
     """
     Product of independent Categorical distributions.
 

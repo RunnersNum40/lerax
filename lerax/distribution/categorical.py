@@ -8,7 +8,7 @@ from .base_distribution import AbstractDistreqxWrapper, AbstractMaskableDistribu
 
 
 class Categorical(
-    AbstractMaskableDistribution[Integer[Array, ""]],
+    AbstractMaskableDistribution[Integer[Array, ""], Bool[Array, " dims"]],
     AbstractDistreqxWrapper[Integer[Array, ""]],
 ):
     """

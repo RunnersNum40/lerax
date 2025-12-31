@@ -8,7 +8,7 @@ from .base_distribution import AbstractDistreqxWrapper, AbstractMaskableDistribu
 
 
 class Bernoulli(
-    AbstractMaskableDistribution[Bool[Array, " dims"]],
+    AbstractMaskableDistribution[Bool[Array, " dims"], Bool[Array, " dims"]],
     AbstractDistreqxWrapper[Bool[Array, " dims"]],
 ):
     """
