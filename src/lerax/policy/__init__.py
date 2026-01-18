@@ -1,8 +1,4 @@
-from .actor_critic import (
-    AbstractActorCriticPolicy,
-    MLPActorCriticPolicy,
-    NCDEActorCriticPolicy,
-)
+from .actor_critic import AbstractActorCriticPolicy, MLPActorCriticPolicy
 from .base_policy import AbstractPolicy, AbstractPolicyState
 from .q import AbstractQPolicy, MLPQPolicy
 
@@ -11,7 +7,6 @@ __all__ = [
     "AbstractPolicyState",
     "AbstractActorCriticPolicy",
     "MLPActorCriticPolicy",
-    "NCDEActorCriticPolicy",
     "AbstractQPolicy",
     "MLPQPolicy",
 ]
