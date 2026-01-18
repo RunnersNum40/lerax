@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
+import equinox as eqx
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
 
 from lerax.distribution import AbstractMaskableDistribution
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
-from lerax.model import MLP, ActionLayer
 from lerax.space import AbstractSpace
 
+from ..actor import ActionLayer
 from .base_actor_critic import AbstractActorCriticPolicy
 
 
@@ -53,8 +54,8 @@ class MLPActorCriticPolicy[
     action_space: AbstractSpace[ActType, MaskType]
     observation_space: AbstractSpace[ObsType, Any]
 
-    encoder: MLP
-    value_head: MLP
+    encoder: eqx.nn.MLP
+    value_head: eqx.nn.MLP
     action_head: ActionLayer
 
     def __init__[S: AbstractEnvLikeState](
@@ -76,7 +77,7 @@ class MLPActorCriticPolicy[
 
         feat_key, val_key, act_key = jr.split(key, 3)
 
-        self.encoder = MLP(
+        self.encoder = eqx.nn.MLP(
             in_size=self.observation_space.flat_size,
             out_size=feature_size,
             width_size=feature_width,
@@ -84,7 +85,7 @@ class MLPActorCriticPolicy[
             key=feat_key,
         )
 
-        self.value_head = MLP(
+        self.value_head = eqx.nn.MLP(
             in_size=feature_size,
             out_size="scalar",
             width_size=value_width,

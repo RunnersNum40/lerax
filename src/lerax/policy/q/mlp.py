@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
+import equinox as eqx
 from jaxtyping import Array, Bool, Float, Integer, Key, Real
 
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
-from lerax.model import MLP
 from lerax.space import AbstractSpace, Discrete
 
 from .base_q import AbstractQPolicy
@@ -39,7 +39,7 @@ class MLPQPolicy[ObsType: Real[Array, "..."]](AbstractQPolicy[None, ObsType]):
     observation_space: AbstractSpace[ObsType, Any]
 
     epsilon: float
-    q_network: MLP
+    q_network: eqx.nn.MLP
 
     def __init__[StateType: AbstractEnvLikeState](
         self,
@@ -59,7 +59,7 @@ class MLPQPolicy[ObsType: Real[Array, "..."]](AbstractQPolicy[None, ObsType]):
         self.observation_space = env.observation_space
 
         self.epsilon = epsilon
-        self.q_network = MLP(
+        self.q_network = eqx.nn.MLP(
             in_size=self.observation_space.flat_size,
             out_size=self.action_space.n,
             width_size=width_size,

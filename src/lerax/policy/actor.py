@@ -19,10 +19,8 @@ from lerax.distribution import (
 )
 from lerax.space import AbstractSpace, Box, Discrete, MultiBinary, MultiDiscrete
 
-from .base_model import AbstractModel
 
-
-class AbstractActionDistribution[ActType, MaskType](AbstractModel):
+class AbstractActionDistribution[ActType, MaskType](eqx.Module):
     """Layer that produces action distributions given inputs."""
 
     mapping: eqx.AbstractVar[eqx.nn.Linear]
@@ -149,7 +147,7 @@ def make_action_layer[ActType, MaskType](
         raise NotImplementedError(f"Action space {type(action_space)} not supported.")
 
 
-class ActionLayer[ActType, MaskType](AbstractModel):
+class ActionLayer[ActType, MaskType](eqx.Module):
     """
     Model that produces action distributions from features.
 
