@@ -49,13 +49,14 @@ dev = [
 
 [tool.pyright]
 reportIncompatibleMethodOverride = true
-reportIncompatibleVariableOverride = false      # Incompatible with eqx.AbstractVar
+reportIncompatibleVariableOverride = false  # Incompatible with eqx.AbstractVar
 reportFunctionMemberAccess = false
 stubPath = "stubs"
 include = ["src/**", "examples/**", "tests/**"]
 
 [tool.pytest]
 addopts = ["--cov=lerax", "--import-mode=importlib", "-Werror"]
+strict = true
 testpaths = ["tests"]
 
 [tool.ruff]
