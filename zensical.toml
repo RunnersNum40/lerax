@@ -52,7 +52,7 @@ repo = "fontawesome/brands/github"
 
 [project.plugins.mkdocstrings.handlers.python]
 inventories = ["https://docs.python.org/3/objects.inv"]
-paths = [".", "examples"]
+paths = ["src", "examples"]
 
 [project.plugins.mkdocstrings.handlers.python.options]
 docstring_style = "google"
