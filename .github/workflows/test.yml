@@ -17,8 +17,6 @@ jobs:
           python-version: "3.13"
       - name: Install Project Dependencies
         run: uv sync --locked --all-extras --dev
-      - name: Install Project
-        run: uv pip install -e .
       - name: Lint
         run: uv run ruff check
       - name: Run Type Checking
