@@ -49,7 +49,7 @@ dev = [
 
 [tool.pyright]
 reportIncompatibleMethodOverride = true
-reportIncompatibleVariableOverride = false  # Incompatible with eqx.AbstractVar
+reportIncompatibleVariableOverride = false      # Incompatible with eqx.AbstractVar
 reportFunctionMemberAccess = false
 stubPath = "stubs"
 include = ["src/**", "examples/**", "tests/**"]
@@ -66,6 +66,9 @@ exclude = ["stubs"]
 fixable = ["I001", "F401"]
 ignore = ["E402", "E721", "E731", "E741", "F722", "E501"]
 select = ["E", "F", "I001"]
+
+[tool.uv]
+package = true
 
 [[tool.uv.index]]
 name = "testpypi"
