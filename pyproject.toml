@@ -9,7 +9,7 @@ license-files = ["LICENSE"]
 authors = [{ name = "Theodore Pinkerton", email = "ted@tedpinkerton.ca" }]
 dependencies = [
   "diffrax",
-  "distreqx",
+  "distreqx>=0.0.2",
   "equinox",
   "jax",
   "jaxtyping",

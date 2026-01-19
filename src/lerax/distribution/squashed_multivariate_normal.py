@@ -58,13 +58,13 @@ class SquashedMultivariateNormalDiag(
     @property
     def loc(self) -> Float[Array, " dims"]:
         assert isinstance(
-            self.distribution._distribution, distributions.MultivariateNormalDiag
+            self.distribution.distribution, distributions.MultivariateNormalDiag
         )
-        return self.distribution._distribution.loc
+        return self.distribution.distribution.loc
 
     @property
     def scale_diag(self) -> Float[Array, " dims"]:
         assert isinstance(
-            self.distribution._distribution, distributions.MultivariateNormalDiag
+            self.distribution.distribution, distributions.MultivariateNormalDiag
         )
-        return self.distribution._distribution.scale_diag
+        return self.distribution.distribution.scale_diag

@@ -125,8 +125,8 @@ class AbstractTransformedDistribution[SampleType](AbstractDistreqxWrapper[Sample
             warnings.warn(
                 "Mode not implemented for base distribution; using bijector to compute mode."
             )
-            return self.distribution._bijector.forward(
-                self.distribution._distribution.mode()
+            return self.distribution.bijector.forward(
+                self.distribution.distribution.mode()
             )
 
     @property

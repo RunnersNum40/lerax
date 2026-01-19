@@ -703,7 +703,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "diffrax" },
-    { name = "distreqx" },
+    { name = "distreqx", specifier = ">=0.0.2" },
     { name = "equinox" },
     { name = "flax", marker = "extra == 'compatibility'" },
     { name = "gymnasium", marker = "extra == 'compatibility'" },

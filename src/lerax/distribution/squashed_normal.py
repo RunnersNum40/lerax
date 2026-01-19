@@ -54,10 +54,10 @@ class SquashedNormal(AbstractTransformedDistribution[Float[Array, " dims"]]):
 
     @property
     def loc(self) -> Float[Array, " dims"]:
-        assert isinstance(self.distribution._distribution, distributions.Normal)
-        return self.distribution._distribution.loc
+        assert isinstance(self.distribution.distribution, distributions.Normal)
+        return self.distribution.distribution.loc
 
     @property
     def scale(self) -> Float[Array, " dims"]:
-        assert isinstance(self.distribution._distribution, distributions.Normal)
-        return self.distribution._distribution.scale
+        assert isinstance(self.distribution.distribution, distributions.Normal)
+        return self.distribution.distribution.scale
