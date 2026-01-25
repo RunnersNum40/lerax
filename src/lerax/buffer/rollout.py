@@ -26,7 +26,7 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
     returns: Float[Array, " *size"]
     advantages: Float[Array, " *size"]
     states: StateType
-    action_masks: MaskType
+    action_masks: MaskType | None
 
     def __init__(
         self,
@@ -37,7 +37,7 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
         log_probs: Float[ArrayLike, " *size"],
         values: Float[ArrayLike, " *size"],
         states: StateType,
-        action_masks: MaskType = None,
+        action_masks: MaskType | None = None,
         returns: Float[ArrayLike, " *size"] | None = None,
         advantages: Float[ArrayLike, " *size"] | None = None,
     ):
