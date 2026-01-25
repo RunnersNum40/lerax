@@ -119,12 +119,10 @@ class PygameRenderer(Abstract2DRenderer):
         return pg.Color(r, g, b)
 
     def _to_px(self, point: Float[ArrayLike, "2"]) -> tuple[int, int]:
-        return self.transform.world_to_px(
-            jnp.asarray(point)
-        ).tolist()  # pyright: ignore
+        return tuple(self.transform.world_to_px(jnp.asarray(point)).tolist())
 
     def _scale_x(self, length: Float[ArrayLike, ""]) -> int:
-        return int(self.transform.scale_length(length))  # pyright: ignore
+        return int(self.transform.scale_length(length))
 
     def draw_circle(
         self, center: Float[ArrayLike, "2"], radius: Float[ArrayLike, ""], color: Color
@@ -154,7 +152,7 @@ class PygameRenderer(Abstract2DRenderer):
         end = jnp.asarray(end)
 
         # Uses rectangle to work around lack of width in aaline
-        norm = jnp.array([start[1] - end[1], end[0] - start[0]])  # pyright: ignore
+        norm = jnp.array([start[1] - end[1], end[0] - start[0]])
         norm = norm / jnp.linalg.norm(norm) * (width / 2)
 
         p1 = start + norm
@@ -171,12 +169,13 @@ class PygameRenderer(Abstract2DRenderer):
         h: Float[ArrayLike, ""],
         color: Color,
     ):
+        w = jnp.asarray(w)
+        h = jnp.asarray(h)
+
         _, _gfx = _load_pygame()
         pg = pygame
 
-        top_left = self._to_px(
-            jnp.asarray(center) - jnp.array([w / 2, -h / 2])  # pyright: ignore
-        )
+        top_left = self._to_px(jnp.asarray(center) - jnp.array([w / 2, -h / 2]))
         width_height = (self._scale_x(w), self._scale_x(h))
 
         rect = pg.Rect(top_left, width_height)
@@ -185,7 +184,7 @@ class PygameRenderer(Abstract2DRenderer):
 
     def draw_polygon(self, points: Float[ArrayLike, "num 2"], color: Color):
         _, _gfx = _load_pygame()
-        pts = [self._to_px(point) for point in points]  # pyright: ignore
+        pts = [self._to_px(point) for point in jnp.asarray(points)]
         if len(pts) >= 3:
             _gfx.aapolygon(self.screen, pts, self._pg_color(color))
             _gfx.filled_polygon(self.screen, pts, self._pg_color(color))
@@ -202,7 +201,7 @@ class PygameRenderer(Abstract2DRenderer):
         pg, _ = _load_pygame()
         if not pg.font.get_init():
             pg.font.init()
-        font = pg.font.SysFont(None, int(size))  # pyright: ignore
+        font = pg.font.SysFont(None, int(jnp.asarray(size)))
         surf = font.render(text, True, self._pg_color(color))
         px, py = self._to_px(center)
         self.screen.blit(surf, (px, py))
@@ -212,13 +211,14 @@ class PygameRenderer(Abstract2DRenderer):
         points: Float[ArrayLike, "num 2"],
         color: Color,
     ):
+        points = jnp.asarray(points)
         pg, _ = _load_pygame()
-        if len(points) >= 2:  # pyright: ignore
+        if len(points) >= 2:
             pg.draw.aalines(
                 self.screen,
                 self._pg_color(color),
                 False,
-                [self._to_px(p) for p in points],  # pyright: ignore
+                [self._to_px(p) for p in points],
             )
         else:
             raise ValueError("Need at least 2 points to draw a polyline.")
