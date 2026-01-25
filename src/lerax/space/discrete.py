@@ -24,7 +24,7 @@ class Discrete(AbstractSpace[Int[Array, ""], Bool[Array, " n"]]):
     n: int
 
     def __init__(self, n: int):
-        assert n > 0, "n must be positive"  # pyright: ignore
+        assert n > 0, "n must be positive"
 
         self.n = n
 
