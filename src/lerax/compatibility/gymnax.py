@@ -96,6 +96,8 @@ class GymnaxToLeraxEnv(AbstractEnv[GymnaxEnvState, Array, Array, None]):
         params: Parameters for the Gymnax environment.
     """
 
+    name: str
+
     action_space: AbstractSpace
     observation_space: AbstractSpace
 
@@ -103,6 +105,7 @@ class GymnaxToLeraxEnv(AbstractEnv[GymnaxEnvState, Array, Array, None]):
     params: gym.EnvParams
 
     def __init__(self, env: gym.Environment, params: gym.EnvParams):
+        self.name = f"GymnaxToLeraxEnv({env.name})"
         self.env = env
         self.params = params
 
@@ -172,10 +175,6 @@ class GymnaxToLeraxEnv(AbstractEnv[GymnaxEnvState, Array, Array, None]):
         raise NotImplementedError(
             "Default renderer not implemented for GymnaxToLeraxEnv."
         )
-
-    @property
-    def name(self) -> str:
-        return f"GymnaxToLeraxEnv({self.env.name})"
 
 
 @struct.dataclass
