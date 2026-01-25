@@ -56,7 +56,7 @@ class MultiDiscrete(AbstractSpace[Int[Array, " n"], None]):
         if ~jnp.array_equal(x, jnp.floor(x)):
             return jnp.array(False)
 
-        return jnp.all(x < self.nvec)
+        return jnp.all(x < jnp.asarray(self.nvec))
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, MultiDiscrete):
