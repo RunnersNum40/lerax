@@ -22,4 +22,4 @@ jobs:
       - name: Run Type Checking
         run: uv run pyright
       - name: Run tests
-        run: uv run pytest -n auto
+        run: uv run pytest -n auto --no-cov
