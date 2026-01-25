@@ -73,9 +73,13 @@ class HeadlessMujocoRenderer:
         for i in range(3):
             self.camera.lookat[i] = jnp.median(data.geom_xpos[:, i])
 
+        mj_data = mjx.get_data(self.model, data)
+        if isinstance(mj_data, list):
+            mj_data = mj_data[0]
+
         mujoco.mjv_updateScene(
             self.model,
-            mjx.get_data(self.model, data),  # pyright: ignore
+            mj_data,
             self.visual_options,
             self.pert,
             self.camera,
@@ -192,9 +196,13 @@ class WindowMujocoRenderer:
             self.window
         )
 
+        mj_data = mjx.get_data(self.model, data)
+        if isinstance(mj_data, list):
+            mj_data = mj_data[0]
+
         mujoco.mjv_updateScene(
             self.model,
-            mjx.get_data(self.model, data),  # pyright: ignore
+            mj_data,
             self.visual_options,
             self.pert,
             self.camera,
