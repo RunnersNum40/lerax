@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, ClassVar, Literal
+from typing import Any, ClassVar, Literal, cast
 
 try:
     import gymnasium as gym
@@ -46,7 +46,7 @@ def gym_space_to_lerax_space(space: gym.Space) -> AbstractSpace:
             raise NotImplementedError(
                 "Gym Discrete space with non-zero start are not supported"
             )
-        return Discrete(n=int(space.n))
+        return Discrete(n=int(cast(int | np.integer[Any], space.n)))
     elif isinstance(space, gym.spaces.Box):
         return Box(low=space.low, high=space.high, shape=space.shape)
     elif isinstance(space, gym.spaces.Dict):
