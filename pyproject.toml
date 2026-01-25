@@ -71,6 +71,14 @@ fixable = ["I001", "F401"]
 ignore = ["E402", "E721", "E731", "E741", "F722", "E501"]
 select = ["E", "F", "I001"]
 
+[tool.ty.rules]
+
+[tool.ty.src]
+include = ["src", "examples", "tests"]
+
+[tool.ty.environment]
+extra-paths = ["stubs"]
+
 [tool.uv]
 package = true
 
