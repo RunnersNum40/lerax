@@ -247,12 +247,14 @@ class LeraxToGymnaxEnv[StateType: AbstractEnvState](
 
         return observation, LeraxEnvState(env_state=env_state, time=jnp.array(0))
 
-    def get_obs(  # pyright: ignore
+    # Gymnax has incompatible overloads for get_obs so we have to ignore type checking here
+    def get_obs(  # type: ignore
         self,
         state: LeraxEnvState[StateType],
-        key: Key[Array, ""],
-        params: LeraxEnvParams,
+        params: LeraxEnvParams | None = None,
+        key: Key[Array, ""] | None = None,
     ) -> Array:
+        key = key or jr.key(-1)
         return self.env.observation(state.env_state, key=key)
 
     def is_terminal(
