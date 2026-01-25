@@ -24,31 +24,9 @@ pip install lerax
 
 ## Train a policy
 
-```py
-from jax import random as jr
-
-from lerax.algorithm import PPO
-from lerax.callback import ProgressBarCallback, TensorBoardCallback
-from lerax.env import CartPole
-from lerax.policy import MLPActorCriticPolicy
-
-policy_key, learn_key = jr.split(jr.key(0), 2)
-
-env = CartPole() # (1)!
-policy = MLPActorCriticPolicy(env=env, key=policy_key) # (2)!
-algo = PPO() # (3)!
-callbacks = [ProgressBarCallback(2**16), TensorBoardCallback(env=env, policy=policy)] # (4)!
-
-policy = algo.learn( # (5)!
-    env, policy, total_timesteps=2**16, key=learn_key, callback=callbacks
-)
+```py title="examples/ppo.py"
+--8<-- "examples/ppo.py"
 ```
-
-1. Create the environment. Lerax includes environments and wrappers for several popular RL environments.
-2. Create the policy. Lerax includes several policy architectures and utilities to create custom policies.
-3. Create the training algorithm. Lerax includes several algorithms and utilities to create custom algorithms.
-4. Use callbacks to monitor training progress and log metrics.
-5. Train the policy using the specified algorithm, environment, and callbacks.
 
 ## Acknowledgements
 
