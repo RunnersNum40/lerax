@@ -86,7 +86,7 @@ def filter_scan(
 
 
 def callback_wrapper[**InType](
-    func: Callable[InType, Any], ordered: bool = False
+    func: Callable[InType, Any], ordered: bool = False, partitioned: bool = False
 ) -> Callable[InType, None]:
     """
     Return a JIT‑safe version of *func*.
@@ -97,6 +97,9 @@ def callback_wrapper[**InType](
     Args:
         func: The callback function to wrap.
         ordered: Whether to enforce ordered execution of callbacks.
+        partitioned: If True, then print local shards only; this option avoids an
+            all-gather of the operands. If False, print with logical operands; this
+            option requires an all-gather of operands first.
 
     Returns:
         A wrapped version of *func* that is JIT-safe.
@@ -107,13 +110,15 @@ def callback_wrapper[**InType](
 
     @wraps(func)
     def wrapped(*args: InType.args, **kwargs: InType.kwargs) -> None:
-        jax.debug.callback(_callback, *args, **kwargs, ordered=ordered)
+        jax.debug.callback(
+            _callback, *args, ordered=ordered, partitioned=partitioned, **kwargs
+        )
 
     return wrapped
 
 
 def callback_with_numpy_wrapper(
-    func: Callable[..., Any], ordered: bool = False
+    func: Callable[..., Any], ordered: bool = False, partitioned: bool = False
 ) -> Callable[..., None]:
     """
     Like `debug_wrapper` but converts every jax.Array/`jnp.ndarray` argument
@@ -125,13 +130,16 @@ def callback_with_numpy_wrapper(
     Args:
         func: The callback function to wrap.
         ordered: Whether to enforce ordered execution of callbacks.
+        partitioned: If True, then print local shards only; this option avoids an
+            all-gather of the operands. If False, print with logical operands; this
+            option requires an all-gather of operands first.
 
     Returns:
         A wrapped version of *func* that converts array arguments to numpy
         arrays and is JIT-safe.
     """
 
-    @partial(callback_wrapper, ordered=ordered)
+    @partial(callback_wrapper, ordered=ordered, partitioned=partitioned)
     @wraps(func)
     def wrapped(*args, **kwargs) -> None:
         args, kwargs = jax.tree.map(
@@ -143,7 +151,7 @@ def callback_with_numpy_wrapper(
 
 
 def callback_with_list_wrapper(
-    func: Callable[..., Any], ordered: bool = False
+    func: Callable[..., Any], ordered: bool = False, partitioned: bool = False
 ) -> Callable[..., None]:
     """
     Like `debug_wrapper` but converts every jax.Array/`jnp.ndarray` argument
@@ -155,13 +163,16 @@ def callback_with_list_wrapper(
     Args:
         func: The callback function to wrap.
         ordered: Whether to enforce ordered execution of callbacks.
+        partitioned: If True, then print local shards only; this option avoids an
+            all-gather of the operands. If False, print with logical operands; this
+            option requires an all-gather of operands first.
 
     Returns:
         A wrapped version of *func* that converts array arguments to lists and
         is JIT-safe.
     """
 
-    @partial(callback_wrapper, ordered=ordered)
+    @partial(callback_wrapper, ordered=ordered, partitioned=partitioned)
     @wraps(func)
     def wrapped(*args, **kwargs) -> None:
         args, kwargs = jax.tree.map(
