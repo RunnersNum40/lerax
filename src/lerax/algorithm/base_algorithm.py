@@ -215,10 +215,13 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy, StateType: AbstractAlgorithm
         callback_start_key, reset_key, learn_key, callback_end_key = jr.split(key, 4)
 
         if callback is None:
-            callback = []
-        if not isinstance(callback, AbstractCallback):
-            callbacks = list(callback)
-            callback = CallbackList(callbacks=callbacks)
+            callback = CallbackList(callbacks=[])
+        elif isinstance(callback, Sequence):
+            callback = CallbackList(callbacks=list(callback))
+        elif isinstance(callback, AbstractCallback):
+            callback = callback
+        else:
+            raise TypeError(f"Invalid callback type: {type(callback)}")
 
         state = self.reset(env, policy, key=reset_key, callback=callback)
 
