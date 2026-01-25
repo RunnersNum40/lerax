@@ -6,7 +6,6 @@ import equinox as eqx
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, Real
 
-from lerax.distribution import AbstractMaskableDistribution
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.space import AbstractSpace
 
@@ -114,12 +113,7 @@ class MLPActorCriticPolicy[
         action_mask: MaskType | None = None,
     ) -> tuple[None, ActType]:
         features = self.encoder(self.observation_space.flatten_sample(observation))
-
-        action_dist = self.action_head(features)
-        if action_mask is not None and isinstance(
-            action_dist, AbstractMaskableDistribution
-        ):
-            action_dist = action_dist.mask(action_mask)
+        action_dist = self.action_head(features, action_mask=action_mask)
 
         if key is None:
             action = action_dist.mode()
@@ -144,13 +138,7 @@ class MLPActorCriticPolicy[
         """
         features = self.encoder(self.observation_space.flatten_sample(observation))
         value = self.value_head(features)
-
-        action_dist = self.action_head(features)
-        if action_mask is not None and isinstance(
-            action_dist, AbstractMaskableDistribution
-        ):
-            action_dist = action_dist.mask(action_mask)
-
+        action_dist = self.action_head(features, action_mask=action_mask)
         action, log_prob = action_dist.sample_and_log_prob(key)
 
         return None, action, value, log_prob.sum().squeeze()
@@ -170,12 +158,7 @@ class MLPActorCriticPolicy[
     ) -> tuple[None, Float[Array, ""], Float[Array, ""], Float[Array, ""]]:
         """Evaluate an action given an observation."""
         features = self.encoder(self.observation_space.flatten_sample(observation))
-        action_dist = self.action_head(features)
-        if action_mask is not None and isinstance(
-            action_dist, AbstractMaskableDistribution
-        ):
-            action_dist = action_dist.mask(action_mask)
-
+        action_dist = self.action_head(features, action_mask=action_mask)
         value = self.value_head(features)
         log_prob = action_dist.log_prob(action)
 
