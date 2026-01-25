@@ -1,7 +1,7 @@
 """
 Lerax Distributions
 
-Distributions allow paramerizing and sampling from elements of a space.
+Distributions allow parameterizing and sampling from elements of a space.
 
 Mostly wrappers around distreqx distributions.
 """
