@@ -70,7 +70,7 @@ class MLPActorCriticPolicy[
         action_width: int = 64,
         action_depth: int = 2,
         log_std_init: float = 0.0,
-        key: Key,
+        key: Key[Array, ""],
     ):
         self.action_space = env.action_space
         self.observation_space = env.observation_space
@@ -102,7 +102,7 @@ class MLPActorCriticPolicy[
             log_std_init=log_std_init,
         )
 
-    def reset(self, *, key: Key) -> None:
+    def reset(self, *, key: Key[Array, ""]) -> None:
         return None
 
     def __call__(
@@ -110,7 +110,7 @@ class MLPActorCriticPolicy[
         state: None,
         observation: ObsType,
         *,
-        key: Key | None = None,
+        key: Key[Array, ""] | None = None,
         action_mask: MaskType | None = None,
     ) -> tuple[None, ActType]:
         features = self.encoder(self.observation_space.flatten_sample(observation))
@@ -133,7 +133,7 @@ class MLPActorCriticPolicy[
         state: None,
         observation: ObsType,
         *,
-        key: Key,
+        key: Key[Array, ""],
         action_mask: MaskType | None = None,
     ) -> tuple[None, ActType, Float[Array, ""], Float[Array, ""]]:
         """

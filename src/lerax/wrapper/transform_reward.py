@@ -19,7 +19,10 @@ class PureTransformRewardState[StateType: AbstractEnvLikeState](
 
 
 class AbstractPureTransformRewardWrapper[
-    StateType: AbstractEnvLikeState, ActType, ObsType, MaskType
+    StateType: AbstractEnvLikeState,
+    ActType,
+    ObsType,
+    MaskType,
 ](
     AbstractWrapper[
         PureTransformRewardState[StateType],
@@ -40,23 +43,27 @@ class AbstractPureTransformRewardWrapper[
     env: eqx.AbstractVar[AbstractEnvLike[StateType, ActType, ObsType, MaskType]]
     func: eqx.AbstractVar[Callable[[Float[Array, ""]], Float[Array, ""]]]
 
-    def initial(self, *, key: Key) -> PureTransformRewardState[StateType]:
+    def initial(self, *, key: Key[Array, ""]) -> PureTransformRewardState[StateType]:
         return PureTransformRewardState(self.env.initial(key=key))
 
     def action_mask(
-        self, state: PureTransformRewardState[StateType], *, key: Key
+        self, state: PureTransformRewardState[StateType], *, key: Key[Array, ""]
     ) -> MaskType | None:
         return self.env.action_mask(state.env_state, key=key)
 
     def transition(
-        self, state: PureTransformRewardState[StateType], action: ActType, *, key: Key
+        self,
+        state: PureTransformRewardState[StateType],
+        action: ActType,
+        *,
+        key: Key[Array, ""],
     ) -> PureTransformRewardState[StateType]:
         return PureTransformRewardState(
             self.env.transition(state.env_state, action, key=key)
         )
 
     def observation(
-        self, state: PureTransformRewardState[StateType], *, key: Key
+        self, state: PureTransformRewardState[StateType], *, key: Key[Array, ""]
     ) -> ObsType:
         return self.env.observation(state.env_state, key=key)
 
@@ -66,14 +73,14 @@ class AbstractPureTransformRewardWrapper[
         action: ActType,
         next_state: PureTransformRewardState[StateType],
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> Float[Array, ""]:
         return self.func(
             self.env.reward(state.env_state, action, next_state.env_state, key=key)
         )
 
     def terminal(
-        self, state: PureTransformRewardState[StateType], *, key: Key
+        self, state: PureTransformRewardState[StateType], *, key: Key[Array, ""]
     ) -> Bool[Array, ""]:
         return self.env.terminal(state.env_state, key=key)
 

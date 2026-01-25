@@ -53,20 +53,22 @@ class Identity[StateType: AbstractEnvLikeState, ActType, ObsType, MaskType](
     def observation_space(self) -> AbstractSpace[ObsType, Any]:
         return self.env.observation_space
 
-    def initial(self, *, key: Key) -> IdentityState[StateType]:
+    def initial(self, *, key: Key[Array, ""]) -> IdentityState[StateType]:
         return IdentityState(self.env.initial(key=key))
 
     def action_mask(
-        self, state: IdentityState[StateType], *, key: Key
+        self, state: IdentityState[StateType], *, key: Key[Array, ""]
     ) -> MaskType | None:
         return self.env.action_mask(state.env_state, key=key)
 
     def transition(
-        self, state: IdentityState[StateType], action: ActType, *, key: Key
+        self, state: IdentityState[StateType], action: ActType, *, key: Key[Array, ""]
     ) -> IdentityState[StateType]:
         return IdentityState(self.env.transition(state.env_state, action, key=key))
 
-    def observation(self, state: IdentityState[StateType], *, key: Key) -> ObsType:
+    def observation(
+        self, state: IdentityState[StateType], *, key: Key[Array, ""]
+    ) -> ObsType:
         return self.env.observation(state.env_state, key=key)
 
     def reward(
@@ -75,11 +77,13 @@ class Identity[StateType: AbstractEnvLikeState, ActType, ObsType, MaskType](
         action: ActType,
         next_state: IdentityState[StateType],
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> Float[Array, ""]:
         return self.env.reward(state.env_state, action, next_state.env_state, key=key)
 
-    def terminal(self, state: IdentityState[StateType], *, key: Key) -> Bool[Array, ""]:
+    def terminal(
+        self, state: IdentityState[StateType], *, key: Key[Array, ""]
+    ) -> Bool[Array, ""]:
         return self.env.terminal(state.env_state, key=key)
 
     def truncate(self, state: IdentityState[StateType]) -> Bool[Array, ""]:
@@ -149,17 +153,19 @@ class TimeLimit[StateType: AbstractEnvLikeState, ActType, ObsType, MaskType](
     def observation_space(self) -> AbstractSpace[ObsType, Any]:
         return self.env.observation_space
 
-    def initial(self, *, key: Key) -> TimeLimitState[StateType]:
+    def initial(self, *, key: Key[Array, ""]) -> TimeLimitState[StateType]:
         env_state = self.env.initial(key=key)
         return TimeLimitState(step_count=0, env_state=env_state)
 
     def transition(
-        self, state: TimeLimitState[StateType], action: ActType, *, key: Key
+        self, state: TimeLimitState[StateType], action: ActType, *, key: Key[Array, ""]
     ) -> TimeLimitState[StateType]:
         env_next_state = self.env.transition(state.env_state, action, key=key)
         return TimeLimitState(step_count=state.step_count + 1, env_state=env_next_state)
 
-    def observation(self, state: TimeLimitState[StateType], *, key: Key) -> ObsType:
+    def observation(
+        self, state: TimeLimitState[StateType], *, key: Key[Array, ""]
+    ) -> ObsType:
         return self.env.observation(state.env_state, key=key)
 
     def reward(
@@ -168,12 +174,12 @@ class TimeLimit[StateType: AbstractEnvLikeState, ActType, ObsType, MaskType](
         action: ActType,
         next_state: TimeLimitState[StateType],
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> Float[Array, ""]:
         return self.env.reward(state.env_state, action, next_state.env_state, key=key)
 
     def terminal(
-        self, state: TimeLimitState[StateType], *, key: Key
+        self, state: TimeLimitState[StateType], *, key: Key[Array, ""]
     ) -> Bool[Array, ""]:
         return self.env.terminal(state.env_state, key=key)
 

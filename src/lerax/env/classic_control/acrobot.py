@@ -158,7 +158,7 @@ class Acrobot(
         low = -state_high
         self.observation_space = Box(low=low, high=state_high)
 
-    def initial(self, *, key: Key) -> AcrobotState:
+    def initial(self, *, key: Key[Array, ""]) -> AcrobotState:
         return AcrobotState(
             y=jr.uniform(key, shape=(4,), minval=-0.1, maxval=0.1), t=jnp.array(0.0)
         )
@@ -239,7 +239,9 @@ class Acrobot(
 
         return jnp.array([joint_angle_1, joint_angle_2, joint_vel_1, joint_vel_2])
 
-    def observation(self, state: AcrobotState, *, key: Key) -> Float[Array, "4"]:
+    def observation(
+        self, state: AcrobotState, *, key: Key[Array, ""]
+    ) -> Float[Array, "4"]:
         joint_angle_1, joint_angle_2, joint_vel_1, joint_vel_2 = state.y
         return jnp.array(
             [
@@ -258,7 +260,7 @@ class Acrobot(
         action: Int[Array, ""],
         next_state: AcrobotState,
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> Float[Array, ""]:
         joint_angle_1, joint_angle_2 = next_state.y[0], next_state.y[1]
         done_angle = (
@@ -266,7 +268,7 @@ class Acrobot(
         )
         return done_angle.astype(float) - 1.0
 
-    def terminal(self, state: AcrobotState, *, key: Key) -> Bool[Array, ""]:
+    def terminal(self, state: AcrobotState, *, key: Key[Array, ""]) -> Bool[Array, ""]:
         joint_angle_1, joint_angle_2 = state.y[0], state.y[1]
         done_angle = (
             -jnp.cos(joint_angle_1) - jnp.cos(joint_angle_1 + joint_angle_2) > 1.0

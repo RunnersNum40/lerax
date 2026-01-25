@@ -127,7 +127,7 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
         self,
         batch_size: int,
         *,
-        key: Key | None = None,
+        key: Key[Array, ""] | None = None,
         batch_axes: tuple[int, ...] | int | None = None,
     ) -> Self:
         _ = eqx.error_if(
@@ -158,7 +158,7 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
         self,
         batch_size: int,
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> Self:
         flat_self = self.flatten_axes(None)
         total = flat_self.rewards.shape[0]

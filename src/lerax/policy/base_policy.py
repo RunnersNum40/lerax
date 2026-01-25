@@ -4,7 +4,7 @@ from abc import abstractmethod
 from typing import Any
 
 import equinox as eqx
-from jaxtyping import Key
+from jaxtyping import Array, Key
 
 from lerax.space import AbstractSpace
 from lerax.utils import Serializable
@@ -42,7 +42,7 @@ class AbstractPolicy[StateType: AbstractPolicyState | None, ActType, ObsType, Ma
         state: StateType,
         observation: ObsType,
         *,
-        key: Key | None = None,
+        key: Key[Array, ""] | None = None,
         action_mask: MaskType | None = None,
     ) -> tuple[StateType, ActType]:
         """
@@ -64,7 +64,7 @@ class AbstractPolicy[StateType: AbstractPolicyState | None, ActType, ObsType, Ma
         pass
 
     @abstractmethod
-    def reset(self, *, key: Key) -> StateType:
+    def reset(self, *, key: Key[Array, ""]) -> StateType:
         """
         Return an initial internal state for the policy.
 

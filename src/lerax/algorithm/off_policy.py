@@ -50,7 +50,7 @@ class OffPolicyStepState[PolicyType: AbstractPolicy](AbstractStepState):
         env: AbstractEnvLike,
         policy: PolicyType,
         callback: AbstractCallback,
-        key: Key,
+        key: Key[Array, ""],
     ) -> OffPolicyStepState[PolicyType]:
         """
         Initialize the off-policy step state.
@@ -144,7 +144,7 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
         policy: PolicyType,
         state: OffPolicyStepState[PolicyType],
         *,
-        key: Key,
+        key: Key[Array, ""],
         callback: AbstractCallback,
     ) -> OffPolicyStepState[PolicyType]:
         (
@@ -216,10 +216,10 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
         policy: PolicyType,
         step_state: OffPolicyStepState[PolicyType],
         callback: AbstractCallback,
-        key: Key,
+        key: Key[Array, ""],
     ) -> OffPolicyStepState[PolicyType]:
         def scan_step(
-            carry: OffPolicyStepState, key: Key
+            carry: OffPolicyStepState, key: Key[Array, ""]
         ) -> tuple[OffPolicyStepState, None]:
             carry = self.step(env, policy, carry, key=key, callback=callback)
             return carry, None
@@ -236,10 +236,10 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
         policy: PolicyType,
         step_state: OffPolicyStepState[PolicyType],
         callback: AbstractCallback,
-        key: Key,
+        key: Key[Array, ""],
     ) -> OffPolicyStepState[PolicyType]:
         def scan_step(
-            carry: OffPolicyStepState, key: Key
+            carry: OffPolicyStepState, key: Key[Array, ""]
         ) -> tuple[OffPolicyStepState, None]:
             carry = self.step(env, policy, carry, key=key, callback=callback)
             return self.per_step(carry), None
@@ -257,7 +257,7 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
         opt_state: optax.OptState,
         buffer: ReplayBuffer,
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
         """
         Trains the policy using data from the replay buffer.
@@ -278,7 +278,7 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
         env: AbstractEnvLike,
         policy: PolicyType,
         *,
-        key: Key,
+        key: Key[Array, ""],
         callback: AbstractCallback,
     ) -> OffPolicyState[PolicyType]:
         init_key, starts_key, callback_key = jr.split(key, 3)
@@ -318,7 +318,7 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
         self,
         state: OffPolicyState[PolicyType],
         *,
-        key: Key,
+        key: Key[Array, ""],
         callback: AbstractCallback,
     ) -> OffPolicyState[PolicyType]:
         rollout_key, train_key, callback_key = jr.split(key, 3)

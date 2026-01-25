@@ -21,7 +21,11 @@ class PureObservationState[StateType: AbstractEnvLikeState](
 
 
 class AbstractPureObservationWrapper[
-    WrapperObsType, StateType: AbstractEnvLikeState, ActType, ObsType, MaskType
+    WrapperObsType,
+    StateType: AbstractEnvLikeState,
+    ActType,
+    ObsType,
+    MaskType,
 ](
     AbstractWrapper[
         PureObservationState[StateType],
@@ -46,23 +50,27 @@ class AbstractPureObservationWrapper[
     def action_space(self) -> AbstractSpace[ActType, MaskType]:
         return self.env.action_space
 
-    def initial(self, *, key: Key) -> PureObservationState[StateType]:
+    def initial(self, *, key: Key[Array, ""]) -> PureObservationState[StateType]:
         return PureObservationState(self.env.initial(key=key))
 
     def action_mask(
-        self, state: PureObservationState[StateType], *, key: Key
+        self, state: PureObservationState[StateType], *, key: Key[Array, ""]
     ) -> MaskType | None:
         return self.env.action_mask(state.env_state, key=key)
 
     def transition(
-        self, state: PureObservationState[StateType], action: ActType, *, key: Key
+        self,
+        state: PureObservationState[StateType],
+        action: ActType,
+        *,
+        key: Key[Array, ""],
     ) -> PureObservationState[StateType]:
         return PureObservationState(
             self.env.transition(state.env_state, action, key=key)
         )
 
     def observation(
-        self, state: PureObservationState[StateType], *, key: Key
+        self, state: PureObservationState[StateType], *, key: Key[Array, ""]
     ) -> WrapperObsType:
         return self.func(self.env.observation(state.env_state, key=key))
 
@@ -72,12 +80,12 @@ class AbstractPureObservationWrapper[
         action: ActType,
         next_state: PureObservationState[StateType],
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> Float[Array, ""]:
         return self.env.reward(state.env_state, action, next_state.env_state, key=key)
 
     def terminal(
-        self, state: PureObservationState[StateType], *, key: Key
+        self, state: PureObservationState[StateType], *, key: Key[Array, ""]
     ) -> Bool[Array, ""]:
         return self.env.terminal(state.env_state, key=key)
 
@@ -97,7 +105,11 @@ class AbstractPureObservationWrapper[
 
 
 class TransformObservation[
-    WrapperObsType, StateType: AbstractEnvLikeState, ActType, ObsType, MaskType
+    WrapperObsType,
+    StateType: AbstractEnvLikeState,
+    ActType,
+    ObsType,
+    MaskType,
 ](
     AbstractPureObservationWrapper[
         WrapperObsType, StateType, ActType, ObsType, MaskType

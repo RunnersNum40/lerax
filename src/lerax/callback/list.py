@@ -52,21 +52,25 @@ class CallbackList(AbstractCallback[CallbackListState, CallbackListStepState]):
     def __init__(self, callbacks: list[AbstractCallback]) -> None:
         self.callbacks = callbacks
 
-    def reset(self, ctx: ResetContext, *, key: Key) -> CallbackListState:
+    def reset(self, ctx: ResetContext, *, key: Key[Array, ""]) -> CallbackListState:
         states = [
             callback.reset(ctx, key=key)
             for callback, key in zip(self.callbacks, jr.split(key, len(self.callbacks)))
         ]
         return CallbackListState(states=states)
 
-    def step_reset(self, ctx: ResetContext, *, key: Key) -> CallbackListStepState:
+    def step_reset(
+        self, ctx: ResetContext, *, key: Key[Array, ""]
+    ) -> CallbackListStepState:
         states = [
             callback.step_reset(ctx, key=key)
             for callback, key in zip(self.callbacks, jr.split(key, len(self.callbacks)))
         ]
         return CallbackListStepState(states=states)
 
-    def on_step(self, ctx: StepContext, *, key: Key) -> CallbackListStepState:
+    def on_step(
+        self, ctx: StepContext, *, key: Key[Array, ""]
+    ) -> CallbackListStepState:
         contexts = [
             eqx.tree_at(lambda c: c.state, ctx, state) for state in ctx.state.states
         ]
@@ -78,7 +82,9 @@ class CallbackList(AbstractCallback[CallbackListState, CallbackListStepState]):
         ]
         return CallbackListStepState(states=new_states)
 
-    def on_iteration(self, ctx: IterationContext, *, key: Key) -> CallbackListState:
+    def on_iteration(
+        self, ctx: IterationContext, *, key: Key[Array, ""]
+    ) -> CallbackListState:
         contexts = [
             eqx.tree_at(lambda c: (c.state, c.step_state), ctx, state)
             for state in zip(ctx.state.states, ctx.step_state.states)
@@ -91,7 +97,9 @@ class CallbackList(AbstractCallback[CallbackListState, CallbackListStepState]):
         ]
         return CallbackListState(states=new_states)
 
-    def on_training_start(self, ctx: TrainingContext, *, key: Key) -> CallbackListState:
+    def on_training_start(
+        self, ctx: TrainingContext, *, key: Key[Array, ""]
+    ) -> CallbackListState:
         contexts = [
             eqx.tree_at(lambda c: (c.state, c.step_state), ctx, state)
             for state in zip(ctx.state.states, ctx.step_state.states)
@@ -104,7 +112,9 @@ class CallbackList(AbstractCallback[CallbackListState, CallbackListStepState]):
         ]
         return CallbackListState(states=new_states)
 
-    def on_training_end(self, ctx: TrainingContext, *, key: Key) -> CallbackListState:
+    def on_training_end(
+        self, ctx: TrainingContext, *, key: Key[Array, ""]
+    ) -> CallbackListState:
         contexts = [
             eqx.tree_at(lambda c: (c.state, c.step_state), ctx, state)
             for state in zip(ctx.state.states, ctx.step_state.states)
@@ -117,7 +127,9 @@ class CallbackList(AbstractCallback[CallbackListState, CallbackListStepState]):
         ]
         return CallbackListState(states=new_states)
 
-    def continue_training(self, ctx: IterationContext, *, key: Key) -> Bool[Array, ""]:
+    def continue_training(
+        self, ctx: IterationContext, *, key: Key[Array, ""]
+    ) -> Bool[Array, ""]:
         contexts = [
             eqx.tree_at(lambda c: (c.state, c.step_state), ctx, state)
             for state in zip(ctx.state.states, ctx.step_state.states)

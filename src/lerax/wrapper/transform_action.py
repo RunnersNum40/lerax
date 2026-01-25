@@ -57,11 +57,11 @@ class AbstractPureTransformActionWrapper[
     def observation_space(self) -> AbstractSpace[ObsType, Any]:
         return self.env.observation_space
 
-    def initial(self, *, key: Key) -> TransformActionState[StateType]:
+    def initial(self, *, key: Key[Array, ""]) -> TransformActionState[StateType]:
         return TransformActionState(self.env.initial(key=key))
 
     def action_mask(
-        self, state: TransformActionState[StateType], *, key: Key
+        self, state: TransformActionState[StateType], *, key: Key[Array, ""]
     ) -> WrapperMaskType | None:
         env_mask = self.env.action_mask(state.env_state, key=key)
 
@@ -75,14 +75,14 @@ class AbstractPureTransformActionWrapper[
         state: TransformActionState[StateType],
         action: WrapperActType,
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> TransformActionState[StateType]:
         return TransformActionState(
             self.env.transition(state.env_state, self.func(action), key=key)
         )
 
     def observation(
-        self, state: TransformActionState[StateType], *, key: Key
+        self, state: TransformActionState[StateType], *, key: Key[Array, ""]
     ) -> ObsType:
         return self.env.observation(state.env_state, key=key)
 
@@ -92,14 +92,14 @@ class AbstractPureTransformActionWrapper[
         action: WrapperActType,
         next_state: TransformActionState[StateType],
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> Float[Array, ""]:
         return self.env.reward(
             state.env_state, self.func(action), next_state.env_state, key=key
         )
 
     def terminal(
-        self, state: TransformActionState[StateType], *, key: Key
+        self, state: TransformActionState[StateType], *, key: Key[Array, ""]
     ) -> Bool[Array, ""]:
         return self.env.terminal(state.env_state, key=key)
 

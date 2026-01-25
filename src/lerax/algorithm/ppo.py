@@ -237,7 +237,7 @@ class PPO[PolicyType: AbstractActorCriticPolicy](AbstractOnPolicyAlgorithm[Polic
         opt_state: optax.OptState,
         rollout_buffer: RolloutBuffer,
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> tuple[PolicyType, optax.OptState, PPOStats]:
         def batch_scan(
             carry: tuple[
@@ -271,10 +271,10 @@ class PPO[PolicyType: AbstractActorCriticPolicy](AbstractOnPolicyAlgorithm[Polic
         opt_state: optax.OptState,
         buffer: RolloutBuffer,
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
         def epoch_scan(
-            carry: tuple[PolicyType, optax.OptState], key: Key
+            carry: tuple[PolicyType, optax.OptState], key: Key[Array, ""]
         ) -> tuple[tuple[PolicyType, optax.OptState], PPOStats]:
             policy, opt_state = carry
             policy, opt_state, stats = self.train_epoch(

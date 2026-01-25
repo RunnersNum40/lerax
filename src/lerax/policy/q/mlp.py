@@ -48,7 +48,7 @@ class MLPQPolicy[ObsType: Real[Array, "..."]](AbstractQPolicy[None, ObsType]):
         epsilon: float = 0.1,
         width_size: int = 64,
         depth: int = 2,
-        key: Key,
+        key: Key[Array, ""],
     ):
         if not isinstance(env.action_space, Discrete):
             raise ValueError(
@@ -67,7 +67,7 @@ class MLPQPolicy[ObsType: Real[Array, "..."]](AbstractQPolicy[None, ObsType]):
             key=key,
         )
 
-    def reset(self, *, key: Key) -> None:
+    def reset(self, *, key: Key[Array, ""]) -> None:
         return None
 
     def q_values(

@@ -50,7 +50,8 @@ class StepContext[StepStateType: AbstractCallbackStepState](eqx.Module):
 
 
 class IterationContext[
-    StateType: AbstractCallbackState, StepStateType: AbstractCallbackStepState
+    StateType: AbstractCallbackState,
+    StepStateType: AbstractCallbackStepState,
 ](eqx.Module):
     """
     Values passed to iteration-related callback methods.
@@ -77,7 +78,8 @@ class IterationContext[
 
 
 class TrainingContext[
-    StateType: AbstractCallbackState, StepStateType: AbstractCallbackStepState
+    StateType: AbstractCallbackState,
+    StepStateType: AbstractCallbackStepState,
 ](eqx.Module):
     """
     Values passed to training-related callback methods.
@@ -103,7 +105,8 @@ class TrainingContext[
 
 
 class AbstractCallback[
-    StateType: AbstractCallbackState, StepStateType: AbstractCallbackStepState
+    StateType: AbstractCallbackState,
+    StepStateType: AbstractCallbackStepState,
 ](eqx.Module):
     """
     Base class for RL algorithm callbacks.
@@ -113,31 +116,37 @@ class AbstractCallback[
     """
 
     @abstractmethod
-    def reset(self, ctx: ResetContext, *, key: Key) -> StateType:
+    def reset(self, ctx: ResetContext, *, key: Key[Array, ""]) -> StateType:
         """Initialize the callback state."""
 
     @abstractmethod
-    def step_reset(self, ctx: ResetContext, *, key: Key) -> StepStateType:
+    def step_reset(self, ctx: ResetContext, *, key: Key[Array, ""]) -> StepStateType:
         """Reset the callback state for vectorized steps."""
 
     @abstractmethod
-    def on_step(self, ctx: StepContext, *, key: Key) -> StepStateType:
+    def on_step(self, ctx: StepContext, *, key: Key[Array, ""]) -> StepStateType:
         """Called at the end of each environment step."""
 
     @abstractmethod
-    def on_iteration(self, ctx: IterationContext, *, key: Key) -> StateType:
+    def on_iteration(self, ctx: IterationContext, *, key: Key[Array, ""]) -> StateType:
         """Called at the end of each training iteration."""
 
     @abstractmethod
-    def on_training_start(self, ctx: TrainingContext, *, key: Key) -> StateType:
+    def on_training_start(
+        self, ctx: TrainingContext, *, key: Key[Array, ""]
+    ) -> StateType:
         """Called at the start of training."""
 
     @abstractmethod
-    def on_training_end(self, ctx: TrainingContext, *, key: Key) -> StateType:
+    def on_training_end(
+        self, ctx: TrainingContext, *, key: Key[Array, ""]
+    ) -> StateType:
         """Called at the end of training."""
 
     @abstractmethod
-    def continue_training(self, ctx: IterationContext, *, key: Key) -> Bool[Array, ""]:
+    def continue_training(
+        self, ctx: IterationContext, *, key: Key[Array, ""]
+    ) -> Bool[Array, ""]:
         """Called at the end of each iteration to determine whether to continue."""
 
 
@@ -154,10 +163,12 @@ class AbstractStatelessCallback(
 ):
     """Callback that does not maintain any state."""
 
-    def reset(self, ctx: ResetContext, *, key: Key) -> EmptyCallbackState:
+    def reset(self, ctx: ResetContext, *, key: Key[Array, ""]) -> EmptyCallbackState:
         return EmptyCallbackState()
 
-    def step_reset(self, ctx: ResetContext, *, key: Key) -> EmptyCallbackStepState:
+    def step_reset(
+        self, ctx: ResetContext, *, key: Key[Array, ""]
+    ) -> EmptyCallbackStepState:
         return EmptyCallbackStepState()
 
 
@@ -166,21 +177,27 @@ class AbstractStepCallback[StepStateType: AbstractCallbackStepState](
 ):
     """Callback that only implements step-related methods."""
 
-    def reset(self, ctx: ResetContext, *, key: Key) -> EmptyCallbackState:
+    def reset(self, ctx: ResetContext, *, key: Key[Array, ""]) -> EmptyCallbackState:
         return EmptyCallbackState()
 
-    def on_iteration(self, ctx: IterationContext, *, key: Key) -> EmptyCallbackState:
-        return ctx.state
-
-    def on_training_start(
-        self, ctx: TrainingContext, *, key: Key
+    def on_iteration(
+        self, ctx: IterationContext, *, key: Key[Array, ""]
     ) -> EmptyCallbackState:
         return ctx.state
 
-    def on_training_end(self, ctx: TrainingContext, *, key: Key) -> EmptyCallbackState:
+    def on_training_start(
+        self, ctx: TrainingContext, *, key: Key[Array, ""]
+    ) -> EmptyCallbackState:
         return ctx.state
 
-    def continue_training(self, ctx: IterationContext, *, key: Key) -> Bool[Array, ""]:
+    def on_training_end(
+        self, ctx: TrainingContext, *, key: Key[Array, ""]
+    ) -> EmptyCallbackState:
+        return ctx.state
+
+    def continue_training(
+        self, ctx: IterationContext, *, key: Key[Array, ""]
+    ) -> Bool[Array, ""]:
         return jnp.array(True)
 
 
@@ -189,19 +206,29 @@ class AbstractIterationCallback[StateType: AbstractCallbackState](
 ):
     """Callback that only implements iteration-related methods."""
 
-    def step_reset(self, ctx: ResetContext, *, key: Key) -> EmptyCallbackStepState:
+    def step_reset(
+        self, ctx: ResetContext, *, key: Key[Array, ""]
+    ) -> EmptyCallbackStepState:
         return EmptyCallbackStepState()
 
-    def on_step(self, ctx: StepContext, *, key: Key) -> EmptyCallbackStepState:
+    def on_step(
+        self, ctx: StepContext, *, key: Key[Array, ""]
+    ) -> EmptyCallbackStepState:
         return ctx.state
 
-    def on_training_start(self, ctx: TrainingContext, *, key: Key) -> StateType:
+    def on_training_start(
+        self, ctx: TrainingContext, *, key: Key[Array, ""]
+    ) -> StateType:
         return ctx.state
 
-    def on_training_end(self, ctx: TrainingContext, *, key: Key) -> StateType:
+    def on_training_end(
+        self, ctx: TrainingContext, *, key: Key[Array, ""]
+    ) -> StateType:
         return ctx.state
 
-    def continue_training(self, ctx: IterationContext, *, key: Key) -> Bool[Array, ""]:
+    def continue_training(
+        self, ctx: IterationContext, *, key: Key[Array, ""]
+    ) -> Bool[Array, ""]:
         return jnp.array(True)
 
 
@@ -210,16 +237,22 @@ class AbstractTrainingCallback[StateType: AbstractCallbackState](
 ):
     """Callback that only implements training-related methods."""
 
-    def step_reset(self, ctx: ResetContext, *, key: Key) -> EmptyCallbackStepState:
+    def step_reset(
+        self, ctx: ResetContext, *, key: Key[Array, ""]
+    ) -> EmptyCallbackStepState:
         return EmptyCallbackStepState()
 
-    def on_step(self, ctx: StepContext, *, key: Key) -> EmptyCallbackStepState:
+    def on_step(
+        self, ctx: StepContext, *, key: Key[Array, ""]
+    ) -> EmptyCallbackStepState:
         return ctx.state
 
-    def on_iteration(self, ctx: IterationContext, *, key: Key) -> StateType:
+    def on_iteration(self, ctx: IterationContext, *, key: Key[Array, ""]) -> StateType:
         return ctx.state
 
-    def continue_training(self, ctx: IterationContext, *, key: Key) -> Bool[Array, ""]:
+    def continue_training(
+        self, ctx: IterationContext, *, key: Key[Array, ""]
+    ) -> Bool[Array, ""]:
         return jnp.array(True)
 
 
@@ -228,17 +261,25 @@ class AbstractContinueTrainingCallback[StateType: AbstractCallbackState](
 ):
     """Callback that only implements continue training method."""
 
-    def step_reset(self, ctx: ResetContext, *, key: Key) -> EmptyCallbackStepState:
+    def step_reset(
+        self, ctx: ResetContext, *, key: Key[Array, ""]
+    ) -> EmptyCallbackStepState:
         return EmptyCallbackStepState()
 
-    def on_step(self, ctx: StepContext, *, key: Key) -> EmptyCallbackStepState:
+    def on_step(
+        self, ctx: StepContext, *, key: Key[Array, ""]
+    ) -> EmptyCallbackStepState:
         return ctx.state
 
-    def on_iteration(self, ctx: IterationContext, *, key: Key) -> StateType:
+    def on_iteration(self, ctx: IterationContext, *, key: Key[Array, ""]) -> StateType:
         return ctx.state
 
-    def on_training_start(self, ctx: TrainingContext, *, key: Key) -> StateType:
+    def on_training_start(
+        self, ctx: TrainingContext, *, key: Key[Array, ""]
+    ) -> StateType:
         return ctx.state
 
-    def on_training_end(self, ctx: TrainingContext, *, key: Key) -> StateType:
+    def on_training_end(
+        self, ctx: TrainingContext, *, key: Key[Array, ""]
+    ) -> StateType:
         return ctx.state

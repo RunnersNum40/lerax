@@ -20,7 +20,9 @@ class AbstractSpace[SampleType, MaskType](eqx.Module):
         """The shape of a sample of the space."""
 
     @abstractmethod
-    def sample(self, *, key: Key, mask: MaskType | None = None) -> SampleType:
+    def sample(
+        self, *, key: Key[Array, ""], mask: MaskType | None = None
+    ) -> SampleType:
         """Returns a random sample from the space."""
 
     @abstractmethod

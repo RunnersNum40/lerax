@@ -35,7 +35,9 @@ class Dict(AbstractSpace[OrderedDict[str, Any], None]):
             {key: space.canonical() for key, space in self.spaces.items()}
         )
 
-    def sample(self, *, key: Key, mask: None = None) -> OrderedDict[str, Any]:
+    def sample(
+        self, *, key: Key[Array, ""], mask: None = None
+    ) -> OrderedDict[str, Any]:
         return OrderedDict(
             {
                 space_key: space.sample(key=subkey)

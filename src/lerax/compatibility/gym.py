@@ -146,7 +146,7 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
         self.action_space = gym_space_to_lerax_space(env.action_space)
         self.observation_space = gym_space_to_lerax_space(env.observation_space)
 
-    def initial(self, *args, key: Key, **kwargs) -> GymEnvState:
+    def initial(self, *args, key: Key[Array, ""], **kwargs) -> GymEnvState:
         """
         Forwards to the Gymnasium reset.
 
@@ -156,7 +156,7 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
         Args:
             *args: Positional arguments to pass to `env.reset`.
             key: JAX PRNG key, used to generate a seed if none is provided.
-            **kwargs: Keyword arguments to pass to `env.reset`. If "seed" is
+            **kwargs: Key[Array, ""]word arguments to pass to `env.reset`. If "seed" is
                 provided here, it overrides the key-generated seed.
 
         Returns:
@@ -188,10 +188,12 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
             truncated=jnp.array(False, dtype=bool),
         )
 
-    def action_mask(self, state: GymEnvState, *, key: Key) -> None:
+    def action_mask(self, state: GymEnvState, *, key: Key[Array, ""]) -> None:
         return None
 
-    def transition(self, state: GymEnvState, action: Array, *, key: Key) -> GymEnvState:
+    def transition(
+        self, state: GymEnvState, action: Array, *, key: Key[Array, ""]
+    ) -> GymEnvState:
         """
         Forwards to the Gymnasium step.
 
@@ -237,7 +239,7 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
             truncated=truncated,
         )
 
-    def observation(self, state: GymEnvState, *, key: Key) -> Array:
+    def observation(self, state: GymEnvState, *, key: Key[Array, ""]) -> Array:
         """
         Forwards to the Gymnasium observation.
 
@@ -250,7 +252,12 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
         return state.observation
 
     def reward(
-        self, state: GymEnvState, action: Array, next_state: GymEnvState, *, key: Key
+        self,
+        state: GymEnvState,
+        action: Array,
+        next_state: GymEnvState,
+        *,
+        key: Key[Array, ""],
     ) -> Float[Array, ""]:
         """
         Forwards to the Gymnasium reward.
@@ -267,7 +274,7 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
         """
         return next_state.reward
 
-    def terminal(self, state: GymEnvState, *, key: Key) -> Bool[Array, ""]:
+    def terminal(self, state: GymEnvState, *, key: Key[Array, ""]) -> Bool[Array, ""]:
         """
         Forwards to the Gymnasium terminated flag.
 
@@ -370,7 +377,7 @@ class LeraxToGymEnv[StateType: AbstractEnvState](gym.Env):
 
     env: AbstractEnv[StateType, Array, Array, Any]
     state: StateType
-    key: Key
+    key: Key[Array, ""]
 
     def __init__(
         self,

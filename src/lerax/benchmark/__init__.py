@@ -13,17 +13,21 @@ def rollout_while(
     env: AbstractEnvLike,
     policy: AbstractPolicy,
     *,
-    key: Key,
+    key: Key[Array, ""],
     deterministic: bool = False,
 ) -> Float[Array, ""]:
     def continue_rollout(
-        carry: tuple[AbstractEnvLikeState, AbstractPolicyState, Key, Float[Array, ""]],
+        carry: tuple[
+            AbstractEnvLikeState, AbstractPolicyState, Key[Array, ""], Float[Array, ""]
+        ],
     ) -> Bool[Array, ""]:
         env_state, _, key, _ = carry
         return ~(env.terminal(env_state, key=key) | env.truncate(env_state))
 
     def step(
-        carry: tuple[AbstractEnvLikeState, AbstractPolicyState, Key, Float[Array, ""]],
+        carry: tuple[
+            AbstractEnvLikeState, AbstractPolicyState, Key[Array, ""], Float[Array, ""]
+        ],
     ):
         env_state, policy_state, key, cumulative_reward = carry
         carry_key, obs_key, action_key, transition_key = jr.split(key, 4)
@@ -56,14 +60,13 @@ def rollout_scan(
     env: AbstractEnvLike,
     policy: AbstractPolicy,
     *,
-    key: Key,
+    key: Key[Array, ""],
     deterministic: bool = False,
     max_steps: int = 1024,
 ) -> Float[Array, ""]:
-
     def step(
         carry: tuple[AbstractEnvLikeState, AbstractPolicyState, Bool[Array, ""]],
-        key: Key,
+        key: Key[Array, ""],
     ) -> tuple[
         tuple[AbstractEnvLikeState, AbstractPolicyState, Bool[Array, ""]],
         Float[Array, ""],
@@ -109,9 +112,9 @@ def average_reward(
     max_steps: int | None = 1024,
     deterministic: bool = False,
     *,
-    key: Key,
+    key: Key[Array, ""],
 ) -> Float[Array, ""]:
-    def episode_reward(key: Key) -> Float[Array, ""]:
+    def episode_reward(key: Key[Array, ""]) -> Float[Array, ""]:
         if max_steps is None:
             return rollout_while(env, policy, key=key, deterministic=deterministic)
         else:

@@ -25,9 +25,9 @@ class Tuple(AbstractSpace[tuple[Any, ...], None]):
     def __init__(self, spaces: tuple[AbstractSpace, ...]):
         assert isinstance(spaces, tuple), "spaces must be a tuple"
         assert len(spaces) > 0, "spaces must be non-empty"
-        assert all(
-            isinstance(space, AbstractSpace) for space in spaces
-        ), "spaces must be a tuple of AbstractSpace"
+        assert all(isinstance(space, AbstractSpace) for space in spaces), (
+            "spaces must be a tuple of AbstractSpace"
+        )
 
         self.spaces = spaces
 
@@ -38,12 +38,12 @@ class Tuple(AbstractSpace[tuple[Any, ...], None]):
     def canonical(self) -> tuple[Any, ...]:
         return tuple(space.canonical() for space in self.spaces)
 
-    def sample(self, *, key: Key, mask: None = None) -> tuple[Any, ...]:
+    def sample(self, *, key: Key[Array, ""], mask: None = None) -> tuple[Any, ...]:
         """
         Returns a random sample from the space.
 
         Args:
-            key: A JAX PRNGKey.
+            key: A JAX PRNGKey[Array, ""].
 
         Returns:
             A tuple containing a random sample from each component space.

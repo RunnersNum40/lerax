@@ -15,7 +15,6 @@ from lerax.utils import unstack_pytree
 
 
 class AbstractEnvLikeState(eqx.Module):
-
     @property
     @abstractmethod
     def unwrapped(self) -> AbstractEnvState:
@@ -33,7 +32,7 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType, MaskTyp
     observation_space: eqx.AbstractVar[AbstractSpace[ObsType, Any]]
 
     @abstractmethod
-    def initial(self, *, key: Key) -> StateType:
+    def initial(self, *, key: Key[Array, ""]) -> StateType:
         """
         Generate the initial state of the environment.
 
@@ -45,7 +44,7 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType, MaskTyp
         """
 
     @abstractmethod
-    def action_mask(self, state: StateType, *, key: Key) -> MaskType | None:
+    def action_mask(self, state: StateType, *, key: Key[Array, ""]) -> MaskType | None:
         """
         Generate an action mask from the environment state.
 
@@ -58,7 +57,9 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType, MaskTyp
         """
 
     @abstractmethod
-    def transition(self, state: StateType, action: ActType, *, key: Key) -> StateType:
+    def transition(
+        self, state: StateType, action: ActType, *, key: Key[Array, ""]
+    ) -> StateType:
         """
         Update the environment state given an action.
 
@@ -72,7 +73,7 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType, MaskTyp
         """
 
     @abstractmethod
-    def observation(self, state: StateType, *, key: Key) -> ObsType:
+    def observation(self, state: StateType, *, key: Key[Array, ""]) -> ObsType:
         """
         Generate an observation from the environment state.
 
@@ -86,7 +87,12 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType, MaskTyp
 
     @abstractmethod
     def reward(
-        self, state: StateType, action: ActType, next_state: StateType, *, key: Key
+        self,
+        state: StateType,
+        action: ActType,
+        next_state: StateType,
+        *,
+        key: Key[Array, ""],
     ) -> Float[Array, ""]:
         """
         Generate a reward from the environment state transition.
@@ -102,7 +108,7 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType, MaskTyp
         """
 
     @abstractmethod
-    def terminal(self, state: StateType, *, key: Key) -> Bool[Array, ""]:
+    def terminal(self, state: StateType, *, key: Key[Array, ""]) -> Bool[Array, ""]:
         """
         Determine whether the environment state is terminal.
 
@@ -227,7 +233,7 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType, MaskTyp
         """
 
     @eqx.filter_jit
-    def reset(self, *, key: Key) -> tuple[StateType, ObsType, dict]:
+    def reset(self, *, key: Key[Array, ""]) -> tuple[StateType, ObsType, dict]:
         """
         Wrap the functional logic into a Gym API reset method.
 
@@ -245,7 +251,7 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType, MaskTyp
 
     @eqx.filter_jit
     def step(
-        self, state: StateType, action: ActType, *, key: Key
+        self, state: StateType, action: ActType, *, key: Key[Array, ""]
     ) -> tuple[
         StateType, ObsType, Float[Array, ""], Bool[Array, ""], Bool[Array, ""], dict
     ]:

@@ -135,7 +135,7 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy, StateType: AbstractAlgorithm
         env: AbstractEnvLike,
         policy: PolicyType,
         *,
-        key: Key,
+        key: Key[Array, ""],
         callback: AbstractCallback,
     ) -> StateType:
         """
@@ -170,7 +170,7 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy, StateType: AbstractAlgorithm
         self,
         state: StateType,
         *,
-        key: Key,
+        key: Key[Array, ""],
         callback: AbstractCallback,
     ) -> StateType:
         """
@@ -196,7 +196,7 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy, StateType: AbstractAlgorithm
         policy: PolicyType,
         total_timesteps: int,
         *,
-        key: Key,
+        key: Key[Array, ""],
         callback: Sequence[AbstractCallback] | AbstractCallback | None = None,
     ) -> PolicyType:
         """

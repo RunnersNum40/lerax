@@ -33,9 +33,9 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"], None]):
             assert n > 0, "n must be positive"
             self.n = (n,)
         else:
-            assert all(
-                isinstance(dim, int) and dim > 0 for dim in n
-            ), "all dimensions in n must be positive integers"
+            assert all(isinstance(dim, int) and dim > 0 for dim in n), (
+                "all dimensions in n must be positive integers"
+            )
             self.n = n
 
     @property
@@ -45,7 +45,7 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"], None]):
     def canonical(self) -> Bool[Array, " n"]:
         return jnp.zeros(self.shape, dtype=bool)
 
-    def sample(self, *, key: Key, mask: None = None) -> Bool[Array, " n"]:
+    def sample(self, *, key: Key[Array, ""], mask: None = None) -> Bool[Array, " n"]:
         return jr.bernoulli(key, shape=self.shape)
 
     def contains(self, x: Any) -> Bool[Array, ""]:

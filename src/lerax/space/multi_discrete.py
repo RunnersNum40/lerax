@@ -36,7 +36,7 @@ class MultiDiscrete(AbstractSpace[Int[Array, " n"], None]):
     def canonical(self) -> Int[Array, " n"]:
         return jnp.zeros(self.shape, dtype=int)
 
-    def sample(self, *, key: Key, mask: None = None) -> Int[Array, " n"]:
+    def sample(self, *, key: Key[Array, ""], mask: None = None) -> Int[Array, " n"]:
         return jr.randint(
             key,
             shape=self.shape,

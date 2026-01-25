@@ -36,7 +36,7 @@ class Discrete(AbstractSpace[Int[Array, ""], Bool[Array, " n"]]):
         return jnp.array(0, dtype=int)
 
     def sample(
-        self, *, mask: Bool[ArrayLike, " n"] | None = None, key: Key
+        self, *, mask: Bool[ArrayLike, " n"] | None = None, key: Key[Array, ""]
     ) -> Int[Array, ""]:
         mask = (
             jnp.asarray(mask) if mask is not None else jnp.ones((self.n,), dtype=bool)

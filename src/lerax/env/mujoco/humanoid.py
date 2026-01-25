@@ -140,7 +140,7 @@ class Humanoid(AbstractMujocoEnv[Float[Array, "..."], Float[Array, "..."]]):
         high_obs = jnp.full((obs_size,), jnp.inf, dtype=jnp.float32)
         self.observation_space = Box(low=-high_obs, high=high_obs)
 
-    def initial(self, *, key: Key) -> MujocoEnvState:
+    def initial(self, *, key: Key[Array, ""]) -> MujocoEnvState:
         qpos_key, qvel_key = jr.split(key)
 
         noise_low = -self.reset_noise_scale
@@ -161,7 +161,9 @@ class Humanoid(AbstractMujocoEnv[Float[Array, "..."], Float[Array, "..."]]):
 
         return MujocoEnvState(sim_state=data, t=jnp.array(0.0))
 
-    def observation(self, state: MujocoEnvState, *, key: Key) -> Float[Array, "..."]:
+    def observation(
+        self, state: MujocoEnvState, *, key: Key[Array, ""]
+    ) -> Float[Array, "..."]:
         data = state.sim_state
 
         position = data.qpos.reshape(-1)
@@ -207,7 +209,7 @@ class Humanoid(AbstractMujocoEnv[Float[Array, "..."], Float[Array, "..."]]):
         action: Float[Array, "..."],
         next_state: MujocoEnvState,
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> Float[Array, ""]:
         xy_before = self.mass_center(state.sim_state)
         xy_after = self.mass_center(next_state.sim_state)
@@ -225,7 +227,9 @@ class Humanoid(AbstractMujocoEnv[Float[Array, "..."], Float[Array, "..."]]):
         reward = forward_reward + healthy_reward - control_cost - contact_cost
         return reward
 
-    def terminal(self, state: MujocoEnvState, *, key: Key) -> Bool[Array, ""]:
+    def terminal(
+        self, state: MujocoEnvState, *, key: Key[Array, ""]
+    ) -> Bool[Array, ""]:
         if not self.terminate_when_unhealthy:
             return jnp.array(False)
         return ~self.is_healthy(state.sim_state)

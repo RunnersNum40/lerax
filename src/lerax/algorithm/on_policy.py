@@ -47,7 +47,7 @@ class OnPolicyStepState[PolicyType: AbstractPolicy](AbstractStepState):
         env: AbstractEnvLike,
         policy: PolicyType,
         callback: AbstractCallback,
-        key: Key,
+        key: Key[Array, ""],
     ) -> OnPolicyStepState[PolicyType]:
         """
         Initialize the step state for the on-policy algorithm.
@@ -135,7 +135,7 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
         policy: PolicyType,
         state: OnPolicyStepState[PolicyType],
         *,
-        key: Key,
+        key: Key[Array, ""],
         callback: AbstractCallback,
     ) -> tuple[OnPolicyStepState[PolicyType], RolloutBuffer]:
         (
@@ -226,13 +226,13 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
         policy: PolicyType,
         step_state: OnPolicyStepState[PolicyType],
         callback: AbstractCallback,
-        key: Key,
+        key: Key[Array, ""],
     ) -> tuple[OnPolicyStepState[PolicyType], RolloutBuffer]:
         """Collect a rollout using the current policy."""
         key, observation_key = jr.split(key, 2)
 
         def scan_step(
-            carry: OnPolicyStepState[PolicyType], key: Key
+            carry: OnPolicyStepState[PolicyType], key: Key[Array, ""]
         ) -> tuple[OnPolicyStepState[PolicyType], RolloutBuffer]:
             carry, rollout = self.step(
                 env,
@@ -263,7 +263,7 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
         opt_state: optax.OptState,
         buffer: RolloutBuffer,
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
         """
         Train the policy using the rollout buffer.
@@ -284,7 +284,7 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
         env: AbstractEnvLike,
         policy: PolicyType,
         *,
-        key: Key,
+        key: Key[Array, ""],
         callback: AbstractCallback,
     ) -> OnPolicyState[PolicyType]:
         step_key, callback_key = jr.split(key, 2)
@@ -311,7 +311,7 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
         self,
         state: OnPolicyState[PolicyType],
         *,
-        key: Key,
+        key: Key[Array, ""],
         callback: AbstractCallback,
     ) -> OnPolicyState[PolicyType]:
         rollout_key, train_key, callback_key = jr.split(key, 3)

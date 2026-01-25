@@ -64,7 +64,7 @@ class Box(AbstractSpace[Float[Array, " ..."], None]):
     def canonical(self) -> Float[Array, " ..."]:
         return (self.low + self.high) / 2
 
-    def sample(self, *, key: Key, mask: None = None) -> Float[Array, " ..."]:
+    def sample(self, *, key: Key[Array, ""], mask: None = None) -> Float[Array, " ..."]:
         bounded_key, unbounded_key, upper_bounded_key, lower_bounded_key = jr.split(
             key, 4
         )

@@ -23,7 +23,7 @@ class AbstractDistribution[SampleType](eqx.Module):
         """Compute the probability of a sample."""
 
     @abstractmethod
-    def sample(self, key: Key) -> SampleType:
+    def sample(self, key: Key[Array, ""]) -> SampleType:
         """Return a sample from the distribution."""
 
     @abstractmethod
@@ -39,7 +39,9 @@ class AbstractDistribution[SampleType](eqx.Module):
         """Compute the mode of the distribution."""
 
     @abstractmethod
-    def sample_and_log_prob(self, key: Key) -> tuple[SampleType, Float[Array, ""]]:
+    def sample_and_log_prob(
+        self, key: Key[Array, ""]
+    ) -> tuple[SampleType, Float[Array, ""]]:
         """Return a sample and its log probability."""
 
 
@@ -59,7 +61,7 @@ class AbstractDistreqxWrapper[SampleType](AbstractDistribution):
     def prob(self, value: SampleType) -> Float[Array, ""]:
         return self.distribution.prob(value)
 
-    def sample(self, key: Key) -> SampleType:
+    def sample(self, key: Key[Array, ""]) -> SampleType:
         return self.distribution.sample(key)
 
     def entropy(self) -> Float[Array, ""]:
@@ -71,7 +73,9 @@ class AbstractDistreqxWrapper[SampleType](AbstractDistribution):
     def mode(self) -> SampleType:
         return self.distribution.mode()
 
-    def sample_and_log_prob(self, key: Key) -> tuple[SampleType, Float[Array, ""]]:
+    def sample_and_log_prob(
+        self, key: Key[Array, ""]
+    ) -> tuple[SampleType, Float[Array, ""]]:
         return self.distribution.sample_and_log_prob(key)
 
 

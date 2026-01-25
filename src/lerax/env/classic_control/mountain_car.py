@@ -142,7 +142,7 @@ class MountainCar(
         else:
             self.stepsize_controller = stepsize_controller
 
-    def initial(self, *, key: Key) -> MountainCarState:
+    def initial(self, *, key: Key[Array, ""]) -> MountainCarState:
         return MountainCarState(
             y=jnp.asarray([jr.uniform(key, minval=-0.6, maxval=-0.4), 0.0]),
             t=jnp.array(0.0),
@@ -163,7 +163,9 @@ class MountainCar(
         v = v * ((x != self.min_position) | (v > 0.0))
         return jnp.array([x, v])
 
-    def observation(self, state: MountainCarState, *, key: Key) -> Float[Array, "2"]:
+    def observation(
+        self, state: MountainCarState, *, key: Key[Array, ""]
+    ) -> Float[Array, "2"]:
         return state.y
 
     def reward(
@@ -172,11 +174,13 @@ class MountainCar(
         action: Int[Array, ""],
         next_state: MountainCarState,
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> Float[Array, ""]:
         return jnp.array(-1.0)
 
-    def terminal(self, state: MountainCarState, *, key: Key) -> Bool[Array, ""]:
+    def terminal(
+        self, state: MountainCarState, *, key: Key[Array, ""]
+    ) -> Bool[Array, ""]:
         x, v = state.y
         return (x >= self.goal_position) & (v >= self.goal_velocity)
 

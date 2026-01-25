@@ -12,7 +12,10 @@ from ..base_policy import AbstractPolicy, AbstractPolicyState
 
 
 class AbstractActorCriticPolicy[
-    StateType: AbstractPolicyState | None, ActType, ObsType, MaskType
+    StateType: AbstractPolicyState | None,
+    ActType,
+    ObsType,
+    MaskType,
 ](AbstractPolicy[StateType, ActType, ObsType, MaskType]):
     """
     Base class for stateful actor-critic policies.
@@ -36,7 +39,7 @@ class AbstractActorCriticPolicy[
         state: StateType,
         observation: ObsType,
         *,
-        key: Key,
+        key: Key[Array, ""],
         action_mask: MaskType | None = None,
     ) -> tuple[StateType, ActType, Float[Array, ""], Float[Array, ""]]:
         """

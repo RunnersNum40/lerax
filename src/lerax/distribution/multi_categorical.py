@@ -156,7 +156,7 @@ class MultiCategorical(
     def prob(self, value: Integer[ArrayLike, " dims"]) -> Float[Array, "..."]:
         return jnp.exp(self.log_prob(value))
 
-    def sample(self, key: Key) -> Integer[Array, " ... dims"]:
+    def sample(self, key: Key[Array, ""]) -> Integer[Array, " ... dims"]:
         keys = jax.random.split(key, len(self.action_dims))
         samples = tuple(d.sample(k) for d, k in zip(self.distribution, keys))
         return jnp.stack(samples, axis=-1)
@@ -174,7 +174,7 @@ class MultiCategorical(
         return jnp.stack(modes, axis=-1)
 
     def sample_and_log_prob(
-        self, key: Key
+        self, key: Key[Array, ""]
     ) -> tuple[Integer[Array, " ... dims"], Float[Array, "..."]]:
         keys = jax.random.split(key, len(self.action_dims))
         pairs = tuple(d.sample_and_log_prob(k) for d, k in zip(self.distribution, keys))

@@ -81,7 +81,7 @@ class Pendulum(
         high = jnp.array([1.0, 1.0, self.max_speed])
         self.observation_space = Box(-high, high)
 
-    def initial(self, *, key: Key) -> PendulumState:
+    def initial(self, *, key: Key[Array, ""]) -> PendulumState:
         high = jnp.array([jnp.pi, 1.0])
         state = jr.uniform(key, shape=(2,), minval=-high, maxval=high)
         return PendulumState(y=state, t=jnp.array(0.0))
@@ -103,7 +103,9 @@ class Pendulum(
         theta_dot = jnp.clip(theta_dot, -self.max_speed, self.max_speed)
         return jnp.array([theta, theta_dot])
 
-    def observation(self, state: PendulumState, *, key: Key) -> Float[Array, "3"]:
+    def observation(
+        self, state: PendulumState, *, key: Key[Array, ""]
+    ) -> Float[Array, "3"]:
         theta, theta_dot = state.y
         return jnp.array([jnp.cos(theta), jnp.sin(theta), theta_dot])
 
@@ -113,14 +115,14 @@ class Pendulum(
         action: Float[Array, ""],
         next_state: PendulumState,
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> Float[Array, ""]:
         theta, theta_dot = next_state.y
         u = jnp.clip(action, -self.max_torque, self.max_torque)
         cost = theta**2 + 0.1 * theta_dot**2 + 0.001 * (u**2)
         return -cost
 
-    def terminal(self, state: PendulumState, *, key: Key) -> Bool[Array, ""]:
+    def terminal(self, state: PendulumState, *, key: Key[Array, ""]) -> Bool[Array, ""]:
         return jnp.array(False)
 
     def render(self, state: PendulumState, renderer: AbstractRenderer):

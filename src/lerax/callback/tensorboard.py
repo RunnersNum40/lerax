@@ -221,18 +221,22 @@ class TensorBoardCallback(
         self.tb_writer = JITSummaryWriter(log_dir=path)
         self.alpha = alpha
 
-    def reset(self, ctx: ResetContext, *, key: Key) -> EmptyCallbackState:
+    def reset(self, ctx: ResetContext, *, key: Key[Array, ""]) -> EmptyCallbackState:
         return EmptyCallbackState()
 
     def step_reset(
-        self, ctx: ResetContext, *, key: Key
+        self, ctx: ResetContext, *, key: Key[Array, ""]
     ) -> TensorBoardCallbackStepState:
         return TensorBoardCallbackStepState.initial()
 
-    def on_step(self, ctx: StepContext, *, key: Key) -> TensorBoardCallbackStepState:
+    def on_step(
+        self, ctx: StepContext, *, key: Key[Array, ""]
+    ) -> TensorBoardCallbackStepState:
         return ctx.state.next(ctx.reward, ctx.done, self.alpha)
 
-    def on_iteration(self, ctx: IterationContext, *, key: Key) -> EmptyCallbackState:
+    def on_iteration(
+        self, ctx: IterationContext, *, key: Key[Array, ""]
+    ) -> EmptyCallbackState:
         log = ctx.training_log
         opt_state = ctx.opt_state
 
@@ -258,12 +262,16 @@ class TensorBoardCallback(
         return ctx.state
 
     def on_training_start(
-        self, ctx: TrainingContext, *, key: Key
+        self, ctx: TrainingContext, *, key: Key[Array, ""]
     ) -> EmptyCallbackState:
         return ctx.state
 
-    def on_training_end(self, ctx: TrainingContext, *, key: Key) -> EmptyCallbackState:
+    def on_training_end(
+        self, ctx: TrainingContext, *, key: Key[Array, ""]
+    ) -> EmptyCallbackState:
         return ctx.state
 
-    def continue_training(self, ctx: IterationContext, *, key: Key) -> Bool[Array, ""]:
+    def continue_training(
+        self, ctx: IterationContext, *, key: Key[Array, ""]
+    ) -> Bool[Array, ""]:
         return jnp.array(True)

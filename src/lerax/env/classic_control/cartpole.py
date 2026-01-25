@@ -153,7 +153,7 @@ class CartPole(
         )
         self.observation_space = Box(-high, high)
 
-    def initial(self, *, key: Key) -> CartPoleState:
+    def initial(self, *, key: Key[Array, ""]) -> CartPoleState:
         return CartPoleState(
             y=jr.uniform(key, (4,), minval=-0.05, maxval=0.05), t=jnp.array(0.0)
         )
@@ -178,7 +178,9 @@ class CartPole(
     def clip(self, y: Float[Array, "4"]) -> Float[Array, "4"]:
         return y
 
-    def observation(self, state: CartPoleState, *, key: Key) -> Float[Array, "4"]:
+    def observation(
+        self, state: CartPoleState, *, key: Key[Array, ""]
+    ) -> Float[Array, "4"]:
         return state.y
 
     def reward(
@@ -187,11 +189,11 @@ class CartPole(
         action: Int[Array, ""],
         next_state: CartPoleState,
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> Float[Array, ""]:
         return jnp.array(1.0)
 
-    def terminal(self, state: CartPoleState, *, key: Key) -> Bool[Array, ""]:
+    def terminal(self, state: CartPoleState, *, key: Key[Array, ""]) -> Bool[Array, ""]:
         x, theta = state.y[0], state.y[2]
         within_x = (x >= -self.x_threshold) & (x <= self.x_threshold)
         within_theta = (theta >= -self.theta_threshold_radians) & (

@@ -20,7 +20,9 @@ class AbstractClassicControlEnvState(AbstractEnvState):
 
 
 class AbstractClassicControlEnv[
-    StateType: AbstractClassicControlEnvState, ActType, ObsType
+    StateType: AbstractClassicControlEnvState,
+    ActType,
+    ObsType,
 ](AbstractEnv[StateType, ActType, ObsType, None]):
     name: eqx.AbstractClassVar[str]
 
@@ -32,7 +34,7 @@ class AbstractClassicControlEnv[
     dt0: eqx.AbstractVar[float | None]
     stepsize_controller: eqx.AbstractVar[diffrax.AbstractStepSizeController]
 
-    def action_mask(self, state: StateType, *, key: Key) -> None:
+    def action_mask(self, state: StateType, *, key: Key[Array, ""]) -> None:
         return None
 
     @abstractmethod
@@ -45,7 +47,9 @@ class AbstractClassicControlEnv[
     def clip(self, y: Float[Array, " n"]) -> Float[Array, " n"]:
         """Clip the state to be within valid bounds."""
 
-    def transition(self, state: StateType, action: ActType, *, key: Key) -> StateType:
+    def transition(
+        self, state: StateType, action: ActType, *, key: Key[Array, ""]
+    ) -> StateType:
         @diffrax.ODETerm
         def term(t, y, args):
             return self.dynamics(t, y, action)

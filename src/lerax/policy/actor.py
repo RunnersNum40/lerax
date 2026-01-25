@@ -36,7 +36,6 @@ class AbstractActionDistribution[ActType, MaskType](eqx.Module):
 
 
 class BoxAction(AbstractActionDistribution[Float[Array, " action_dim"], None]):
-
     scalar: bool
     mapping: eqx.nn.Linear
     log_std: Float[Array, " *action_dim"]
@@ -46,7 +45,7 @@ class BoxAction(AbstractActionDistribution[Float[Array, " action_dim"], None]):
         latent_dim: int,
         action_space: Box,
         *,
-        key: Key,
+        key: Key[Array, ""],
         log_std_init: Float[ArrayLike, ""] = jnp.array(0.0),
     ):
         if action_space.shape:
@@ -76,10 +75,9 @@ class BoxAction(AbstractActionDistribution[Float[Array, " action_dim"], None]):
 
 
 class DiscreteAction(AbstractActionDistribution[Int[Array, ""], Bool[Array, " n"]]):
-
     mapping: eqx.nn.Linear
 
-    def __init__(self, latent_dim: int, action_space: Discrete, *, key: Key):
+    def __init__(self, latent_dim: int, action_space: Discrete, *, key: Key[Array, ""]):
         self.mapping = eqx.nn.Linear(latent_dim, int(action_space.n), key=key)
 
     def __call__(self, inputs: Float[Array, " latent_dim"]) -> Categorical:
@@ -87,11 +85,12 @@ class DiscreteAction(AbstractActionDistribution[Int[Array, ""], Bool[Array, " n"
 
 
 class MultiBinaryAction(AbstractActionDistribution[Int[Array, ""], None]):
-
     mapping: eqx.nn.Linear
     shape: tuple[int, ...]
 
-    def __init__(self, latent_dim: int, action_space: MultiBinary, *, key: Key):
+    def __init__(
+        self, latent_dim: int, action_space: MultiBinary, *, key: Key[Array, ""]
+    ):
         self.mapping = eqx.nn.Linear(latent_dim, action_space.flat_size, key=key)
         self.shape = action_space.shape
 
@@ -100,12 +99,13 @@ class MultiBinaryAction(AbstractActionDistribution[Int[Array, ""], None]):
 
 
 class MultiDiscreteAction(AbstractActionDistribution[Int[Array, ""], None]):
-
     ns: tuple[int, ...]
     mappings: eqx.nn.Linear
     shape: tuple[int, ...]
 
-    def __init__(self, latent_dim: int, action_space: MultiDiscrete, *, key: Key):
+    def __init__(
+        self, latent_dim: int, action_space: MultiDiscrete, *, key: Key[Array, ""]
+    ):
         self.ns = action_space.nvec
         self.mappings = eqx.nn.Linear(latent_dim, sum(action_space.nvec), key=key)
         self.shape = action_space.shape
@@ -118,7 +118,7 @@ def make_action_layer[ActType, MaskType](
     latent_dim: int,
     action_space: AbstractSpace[ActType, MaskType],
     *,
-    key: Key,
+    key: Key[Array, ""],
     log_std_init: float = 0.0,
 ) -> AbstractActionDistribution[ActType, MaskType]:
     """Create an action layer based on the action space."""
@@ -177,7 +177,7 @@ class ActionLayer[ActType, MaskType](eqx.Module):
         width_size: int,
         depth: int,
         *,
-        key: Key,
+        key: Key[Array, ""],
         log_std_init: float = 0.0,
     ):
         mlp_key, action_key = jr.split(key, 2)

@@ -93,7 +93,7 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
         self,
         batch_size: int,
         *,
-        key: Key | None = None,
+        key: Key[Array, ""] | None = None,
         batch_axes: tuple[int, ...] | int | None = None,
     ) -> Self:
         flat_self = self.flatten_axes(batch_axes)
@@ -113,7 +113,7 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
         self,
         batch_size: int,
         *,
-        key: Key,
+        key: Key[Array, ""],
         batch_axes: tuple[int, ...] | int | None = None,
     ) -> Self:
         flat_self = self.flatten_axes(batch_axes)

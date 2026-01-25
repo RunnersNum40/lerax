@@ -45,7 +45,6 @@ def tree_fix_dtype(tree: PyTree) -> PyTree:
 
 
 class MujocoEnvState(AbstractEnvState):
-
     sim_state: eqx.AbstractVar[mjx.Data] = eqx.field(converter=tree_fix_dtype)
     t: eqx.AbstractVar[Float[Array, ""]]
 
@@ -64,11 +63,11 @@ class AbstractMujocoEnv[
     frame_skip: eqx.AbstractVar[int]
     dt: eqx.AbstractVar[float]
 
-    def action_mask(self, state: MujocoEnvState, *, key: Key) -> None:
+    def action_mask(self, state: MujocoEnvState, *, key: Key[Array, ""]) -> None:
         return None
 
     def transition(
-        self, state: MujocoEnvState, action: ActType, *, key: Key
+        self, state: MujocoEnvState, action: ActType, *, key: Key[Array, ""]
     ) -> MujocoEnvState:
         def step_once(data: mjx.Data, _) -> tuple[mjx.Data, None]:
             data = mjx.step(self.model, data)

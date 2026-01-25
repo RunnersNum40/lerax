@@ -5,7 +5,7 @@ from abc import abstractmethod
 import equinox as eqx
 import jax
 from jax import numpy as jnp
-from jaxtyping import Key
+from jaxtyping import Array, Key
 
 
 class AbstractBuffer(eqx.Module):
@@ -59,7 +59,7 @@ class AbstractBuffer(eqx.Module):
         self: SelfType,
         batch_size: int,
         *,
-        key: Key | None = None,
+        key: Key[Array, ""] | None = None,
         batch_axes: tuple[int, ...] | int | None = None,
     ) -> SelfType:
         """Return an iterator over batches of data from the buffer."""
@@ -69,7 +69,7 @@ class AbstractBuffer(eqx.Module):
         self: SelfType,
         batch_size: int,
         *,
-        key: Key,
+        key: Key[Array, ""],
     ) -> SelfType:
         """Return uniformly sampled batch of data from the buffer."""
 
