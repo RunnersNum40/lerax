@@ -1,5 +1,5 @@
 ---
-title: On Policy Algorithm 
+title: On Policy Algorithm
 ---
 
 ::: lerax.algorithm.AbstractOnPolicyAlgorithm

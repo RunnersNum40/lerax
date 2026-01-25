@@ -1,5 +1,5 @@
 ---
-title: Algorithm 
+title: Algorithm
 ---
 
 ::: lerax.algorithm.AbstractAlgorithm
