@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 
 import optax
 from jax import lax
@@ -36,8 +37,11 @@ class JITSummaryWriter:
 
     summary_writer: SummaryWriter
 
-    def __init__(self, log_dir: str | None = None):
-        self.summary_writer = SummaryWriter(log_dir=log_dir)
+    def __init__(self, log_dir: str | Path | None = None):
+        if log_dir is None:
+            self.summary_writer = SummaryWriter()
+        else:
+            self.summary_writer = SummaryWriter(log_dir=Path(log_dir).as_posix())
 
     def add_scalar(
         self,
@@ -184,6 +188,7 @@ class TensorBoardCallback(
         env: The environment being trained on. Used for naming if `name` is None.
         policy: The policy being trained. Used for naming if `name` is None.
         alpha: Smoothing factor for exponential moving averages.
+        log_dir: Base directory for TensorBoard logs.
     """
 
     tb_writer: JITSummaryWriter
@@ -195,22 +200,25 @@ class TensorBoardCallback(
         env: AbstractEnvLike | None = None,
         policy: AbstractPolicy | None = None,
         alpha: float = 0.9,
+        log_dir: str | Path = "logs",
     ):
-        log_dir = "logs/"
+        log_dir = Path(log_dir)
         time = datetime.now().strftime("%Y%m%d_%H%M%S")
         if name is None:
             if env is not None:
                 if policy is not None:
-                    name = f"{log_dir}{policy.name}_{env.name}_{time}"
+                    name = f"{policy.name}_{env.name}_{time}"
                 else:
-                    name = f"{log_dir}{env.name}_{time}"
+                    name = f"{env.name}_{time}"
             else:
                 if policy is not None:
-                    name = f"{log_dir}{policy.name}_{time}"
+                    name = f"{policy.name}_{time}"
                 else:
-                    name = f"{log_dir}training_{time}"
+                    name = f"training_{time}"
 
-        self.tb_writer = JITSummaryWriter(log_dir=name)
+        path = log_dir / name
+
+        self.tb_writer = JITSummaryWriter(log_dir=path)
         self.alpha = alpha
 
     def reset(self, ctx: ResetContext, *, key: Key) -> EmptyCallbackState:
