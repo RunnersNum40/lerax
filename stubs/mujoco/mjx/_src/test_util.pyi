@@ -44,7 +44,7 @@ def benchmark(m: mujoco._structs.MjModel, nstep: int = 1000, batch_size: int = 1
 def create_mjcf(seed: int, min_trees: int = 1, max_trees: int = 1, max_tree_depth: int = 5, body_pos: typing.Tuple[float, float, float] = (0.0, 0.0, -0.5), geom_pos: typing.Tuple[float, float, float] = (0.0, 0.0, 0.0), max_stacked_joints = 4, max_geoms_per_body = 2, max_contact_excludes = 1, max_contact_pairs = 4, disable_actuation_pct: int = 0, add_actuators: bool = False, root_always_free: bool = False, enable_contact: bool = True) -> str:
     """
     Creates a random MJCF for testing.
-    
+
     Args:
       seed: seed for rng
       min_trees: minimum number of kinematic trees to generate
@@ -62,7 +62,7 @@ def create_mjcf(seed: int, min_trees: int = 1, max_trees: int = 1, max_tree_dept
       root_always_free: if True, the root body of each kinematic tree has a free
         joint with the world
       enable_contact: if False, disables all contacts via contype/conaffinity
-    
+
     Returns:
       an XML string for the MuJoCo config
     Raises:

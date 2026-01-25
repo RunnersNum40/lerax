@@ -20,7 +20,7 @@ __all__: list[str] = ['BlockDim', 'DATA_NON_VMAP', 'DataWarp', 'ModelWarp', 'Opt
 class BlockDim:
     """
     Block dimension 'block_dim' settings for wp.launch_tiled.
-    
+
     TODO(team): experimental and may be removed
     """
     __dataclass_fields__: typing.ClassVar[dict]  # value = {'actuator_velocity': Field(name='actuator_velocity',type=<class 'int'>,default=<dataclasses._MISSING_TYPE object>,default_factory=<dataclasses._MISSING_TYPE object>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD), 'cholesky_factorize': Field(name='cholesky_factorize',type=<class 'int'>,default=<dataclasses._MISSING_TYPE object>,default_factory=<dataclasses._MISSING_TYPE object>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD), 'cholesky_factorize_solve': Field(name='cholesky_factorize_solve',type=<class 'int'>,default=<dataclasses._MISSING_TYPE object>,default_factory=<dataclasses._MISSING_TYPE object>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD), 'cholesky_solve': Field(name='cholesky_solve',type=<class 'int'>,default=<dataclasses._MISSING_TYPE object>,default_factory=<dataclasses._MISSING_TYPE object>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD), 'contact_sort': Field(name='contact_sort',type=<class 'int'>,default=<dataclasses._MISSING_TYPE object>,default_factory=<dataclasses._MISSING_TYPE object>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD), 'energy_vel_kinetic': Field(name='energy_vel_kinetic',type=<class 'int'>,default=<dataclasses._MISSING_TYPE object>,default_factory=<dataclasses._MISSING_TYPE object>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD), 'euler_dense': Field(name='euler_dense',type=<class 'int'>,default=<dataclasses._MISSING_TYPE object>,default_factory=<dataclasses._MISSING_TYPE object>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD), 'mul_m_dense': Field(name='mul_m_dense',type=<class 'int'>,default=<dataclasses._MISSING_TYPE object>,default_factory=<dataclasses._MISSING_TYPE object>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD), 'qderiv_actuator_passive_actuation': Field(name='qderiv_actuator_passive_actuation',type=<class 'int'>,default=<dataclasses._MISSING_TYPE object>,default_factory=<dataclasses._MISSING_TYPE object>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD), 'qderiv_actuator_passive_no_actuation': Field(name='qderiv_actuator_passive_no_actuation',type=<class 'int'>,default=<dataclasses._MISSING_TYPE object>,default_factory=<dataclasses._MISSING_TYPE object>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD), 'ray': Field(name='ray',type=<class 'int'>,default=<dataclasses._MISSING_TYPE object>,default_factory=<dataclasses._MISSING_TYPE object>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD), 'segmented_sort': Field(name='segmented_sort',type=<class 'int'>,default=<dataclasses._MISSING_TYPE object>,default_factory=<dataclasses._MISSING_TYPE object>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD), 'tendon_velocity': Field(name='tendon_velocity',type=<class 'int'>,default=<dataclasses._MISSING_TYPE object>,default_factory=<dataclasses._MISSING_TYPE object>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD), 'update_gradient_cholesky': Field(name='update_gradient_cholesky',type=<class 'int'>,default=<dataclasses._MISSING_TYPE object>,default_factory=<dataclasses._MISSING_TYPE object>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD)}
@@ -56,14 +56,14 @@ class DataWarp(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -96,14 +96,14 @@ class ModelWarp(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -133,14 +133,14 @@ class OptionWarp(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -170,14 +170,14 @@ class StatisticWarp(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -199,9 +199,9 @@ class StatisticWarp(mujoco.mjx._src.dataclasses.PyTreeNode):
 class TileSet:
     """
     Tiling configuration for decomposable block diagonal matrix.
-    
+
     For non-square, non-block-diagonal tiles, use two tilesets.
-    
+
     Attributes:
       adr: address of each tile in the set
       size: size of all the tiles in this set

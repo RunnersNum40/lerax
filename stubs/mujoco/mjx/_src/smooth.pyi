@@ -57,7 +57,7 @@ def kinematics(m: mujoco.mjx._src.types.Model, d: mujoco.mjx._src.types.Data) ->
 def rne(m: mujoco.mjx._src.types.Model, d: mujoco.mjx._src.types.Data, flg_acc: bool = False) -> mujoco.mjx._src.types.Data:
     """
     Computes inverse dynamics using the recursive Newton-Euler algorithm.
-    
+
     flg_acc=False removes inertial term.
     """
 def rne_postconstraint(m: mujoco.mjx._src.types.Model, d: mujoco.mjx._src.types.Data) -> mujoco.mjx._src.types.Data:

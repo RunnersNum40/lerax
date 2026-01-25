@@ -131,7 +131,7 @@ def has_cuda_gpu_device() -> bool:
 def make_data(m: typing.Union[mujoco.mjx._src.types.Model, mujoco._structs.MjModel], device: typing.Optional[jaxlib._jax.Device] = None, impl: typing.Union[str, mujoco.mjx._src.types.Impl, NoneType] = None, _full_compat: bool = False, nconmax: typing.Optional[int] = None, njmax: typing.Optional[int] = None) -> mujoco.mjx._src.types.Data:
     """
     Allocate and initialize Data.
-    
+
     Args:
       m: the model to use
       device: which device to use - if unspecified picks the default device
@@ -142,10 +142,10 @@ def make_data(m: typing.Union[mujoco.mjx._src.types.Model, mujoco._structs.MjMod
         across all worlds. In MuJoCo Warp, the analgous field is called
         `naconmax`.
       njmax: maximum number of constraints to allocate for warp across all worlds
-    
+
     Returns:
       an initialized mjx.Data placed on device
-    
+
     Raises:
       ValueError: if the model's impl does not match the make_data impl
       NotImplementedError: if the impl is not implemented yet
@@ -153,7 +153,7 @@ def make_data(m: typing.Union[mujoco.mjx._src.types.Model, mujoco._structs.MjMod
 def put_data(m: mujoco._structs.MjModel, d: mujoco._structs.MjData, device: typing.Optional[jaxlib._jax.Device] = None, impl: typing.Union[str, mujoco.mjx._src.types.Impl, NoneType] = None, nconmax: int = -1, njmax: int = -1) -> mujoco.mjx._src.types.Data:
     """
     Puts mujoco.MjData onto a device, resulting in mjx.Data.
-    
+
     Args:
       m: the model to use
       d: the data to put on device
@@ -161,22 +161,22 @@ def put_data(m: mujoco._structs.MjModel, d: mujoco._structs.MjData, device: typi
       impl: implementation to use ('jax', 'warp')
       nconmax: maximum number of contacts to allocate for warp
       njmax: maximum number of constraints to allocate for warp
-    
+
     Returns:
       an mjx.Data placed on device
     """
 def put_model(m: mujoco._structs.MjModel, device: typing.Optional[jaxlib._jax.Device] = None, impl: typing.Union[str, mujoco.mjx._src.types.Impl, NoneType] = None) -> mujoco.mjx._src.types.Model:
     """
     Puts mujoco.MjModel onto a device, resulting in mjx.Model.
-    
+
     Args:
       m: the model to put onto device
       device: which device to use - if unspecified picks the default device
       impl: implementation to use
-    
+
     Returns:
       an mjx.Model placed on device
-    
+
     Raises:
       ValueError: if impl is not supported
     """

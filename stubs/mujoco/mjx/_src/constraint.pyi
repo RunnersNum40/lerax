@@ -40,14 +40,14 @@ class _Efc(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2

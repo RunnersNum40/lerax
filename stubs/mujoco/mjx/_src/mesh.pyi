@@ -42,11 +42,11 @@ def box(info: mujoco.mjx._src.collision_types.GeomInfo) -> mujoco.mjx._src.colli
 def convex(m: typing.Union[mujoco._structs.MjModel, mujoco.mjx._src.types.Model], data_id: int) -> mujoco.mjx._src.types.ConvexMesh:
     """
     Processes a mesh for use in convex collision algorithms.
-    
+
     Args:
       m: an MJX model
       data_id: the mesh id to process
-    
+
     Returns:
       a convex mesh
     """

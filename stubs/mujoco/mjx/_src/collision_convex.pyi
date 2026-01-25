@@ -30,7 +30,7 @@ def _box_box(b1: mujoco.mjx._src.collision_types.ConvexInfo, b2: mujoco.mjx._src
 def _box_box_impl(faces_a: jax.Array, faces_b: jax.Array, vertices_a: jax.Array, vertices_b: jax.Array, normals_a: jax.Array, normals_b: jax.Array, unique_edges_a: jax.Array, unique_edges_b: jax.Array) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
     """
     Runs the Separating Axis Test for two boxes.
-    
+
     Args:
       faces_a: Faces for hull A.
       faces_b: Faces for hull B.
@@ -40,7 +40,7 @@ def _box_box_impl(faces_a: jax.Array, faces_b: jax.Array, vertices_a: jax.Array,
       normals_b: Normal vectors for hull B faces.
       unique_edges_a: Unique edges for hull A.
       unique_edges_b: Unique edges for hull B.
-    
+
     Returns:
       tuple of dist, pos, and normal
     """
@@ -51,16 +51,16 @@ def _capsule_convex(cap: mujoco.mjx._src.collision_types.GeomInfo, convex: mujoc
 def _clip(clipping_poly: jax.Array, subject_poly: jax.Array, clipping_normal: jax.Array, subject_normal: jax.Array) -> typing.Tuple[jax.Array, jax.Array]:
     """
     Clips a subject polygon against a clipping polygon.
-    
+
     A parallelized clipping algorithm for convex polygons. The result is a set of
     vertices on the clipped subject polygon in the subject polygon plane.
-    
+
     Args:
       clipping_poly: the polygon that we use to clip the subject polygon against
       subject_poly: the polygon that gets clipped
       clipping_normal: normal of the clipping polygon
       subject_normal: normal of the subject polygon
-    
+
     Returns:
       clipped_pts: points on the clipped polygon
       mask: True if a point is in the clipping polygon, False otherwise
@@ -68,15 +68,15 @@ def _clip(clipping_poly: jax.Array, subject_poly: jax.Array, clipping_normal: ja
 def _clip_edge_to_planes(edge_p0: jax.Array, edge_p1: jax.Array, plane_pts: jax.Array, plane_normals: jax.Array) -> typing.Tuple[jax.Array, jax.Array]:
     """
     Clips an edge against side planes.
-    
+
     We return two clipped points, and a mask to include the new edge or not.
-    
+
     Args:
       edge_p0: the first point on the edge
       edge_p1: the second point on the edge
       plane_pts: side plane points
       plane_normals: side plane normals
-    
+
     Returns:
       new_ps: new edge points that are clipped against side planes
       mask: a boolean mask, True if an edge point is a valid clipped point and
@@ -85,13 +85,13 @@ def _clip_edge_to_planes(edge_p0: jax.Array, edge_p1: jax.Array, plane_pts: jax.
 def _closest_segment_point_plane(a: jax.Array, b: jax.Array, p0: jax.Array, plane_normal: jax.Array) -> jax.Array:
     """
     Gets the closest point between a line segment and a plane.
-    
+
     Args:
       a: first line segment point
       b: second line segment point
       p0: point on plane
       plane_normal: plane normal
-    
+
     Returns:
       closest point between the line segment and the plane
     """
@@ -102,17 +102,17 @@ def _convex_convex(c1: mujoco.mjx._src.collision_types.ConvexInfo, c2: mujoco.mj
 def _create_contact_manifold(clipping_poly: jax.Array, subject_poly: jax.Array, clipping_norm: jax.Array, subject_norm: jax.Array, sep_axis: jax.Array) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
     """
     Creates a contact manifold between two convex polygons.
-    
+
     The polygon faces are expected to have a counter clockwise winding order so
     that clipping plane normals point away from the polygon center.
-    
+
     Args:
       clipping_poly: the reference polygon to clip the contact against.
       subject_poly: the subject polygon to clip contacts onto.
       clipping_norm: the clipping polygon normal.
       subject_norm: the subject polygon normal.
       sep_axis: the separating axis
-    
+
     Returns:
       tuple of dist, pos, and normal
     """
@@ -143,11 +143,11 @@ def _project_pt_onto_plane(pt: jax.Array, plane_pt: jax.Array, plane_normal: jax
 def _sat_gaussmap(centroid_a: jax.Array, faces_a: jax.Array, faces_b: jax.Array, vertices_a: jax.Array, vertices_b: jax.Array, normals_a: jax.Array, normals_b: jax.Array, edges_a: jax.Array, edges_b: jax.Array, edge_face_normals_a: jax.Array, edge_face_normals_b: jax.Array) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
     """
     Runs the Separating Axis Test for a pair of hulls.
-    
+
     Runs the separating axis test for all faces. Tests edge separating axes via
     edge intersections on gauss maps for all edge pairs. h/t to Dirk Gregorius
     for the implementation details and gauss map trick.
-    
+
     Args:
       centroid_a: Centroid of hull A.
       faces_a: Faces for hull A.
@@ -160,7 +160,7 @@ def _sat_gaussmap(centroid_a: jax.Array, faces_a: jax.Array, faces_b: jax.Array,
       edges_b: Edges for hull B.
       edge_face_normals_a: Face normals for edges in hull A.
       edge_face_normals_b: Face normals for edges in hull B.
-    
+
     Returns:
       tuple of dist, pos, and normal
     """

@@ -47,7 +47,7 @@ def _ray_triangle(vert: jax.Array, pnt: jax.Array, vec: jax.Array, basis: jax.Ar
 def ray(m: mujoco.mjx._src.types.Model, d: mujoco.mjx._src.types.Data, pnt: jax.Array, vec: jax.Array, geomgroup: typing.Sequence[int] = tuple(), flg_static: bool = True, bodyexclude: int = -1) -> typing.Tuple[jax.Array, jax.Array]:
     """
     Returns the geom id and distance at which a ray intersects with a geom.
-    
+
     Args:
       m: MJX model
       d: MJX data
@@ -56,7 +56,7 @@ def ray(m: mujoco.mjx._src.types.Model, d: mujoco.mjx._src.types.Data, pnt: jax.
       geomgroup: group inclusion/exclusion mask, or empty to ignore
       flg_static: if True, allows rays to intersect with static geoms
       bodyexclude: ignore geoms on specified body id
-    
+
     Returns:
       dist: distance from ray origin to geom surface (or -1.0 for no intersection)
       id: id of intersected geom (or -1 for no intersection)
@@ -64,13 +64,13 @@ def ray(m: mujoco.mjx._src.types.Model, d: mujoco.mjx._src.types.Data, pnt: jax.
 def ray_geom(size: jax.Array, pnt: jax.Array, vec: jax.Array, geomtype: mujoco.mjx._src.types.GeomType) -> jax.Array:
     """
     Returns the distance at which a ray intersects with a primitive geom.
-    
+
     Args:
       size: geom size (1,), (2,), or (3,)
       pnt: ray origin point (3,)
       vec: ray direction    (3,)
       geomtype: type of geom
-    
+
     Returns:
       dist: distance from ray origin to geom surface
     """

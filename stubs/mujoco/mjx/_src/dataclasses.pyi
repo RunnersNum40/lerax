@@ -16,7 +16,7 @@ __all__: list[str] = ['PyTreeNode', 'TNode', 'TypeVar', 'copy', 'dataclass', 'da
 class PyTreeNode:
     """
     Base class for dataclasses that should act like a JAX pytree node.
-    
+
     This base class additionally avoids type checking errors when using PyType.
     """
     @classmethod
@@ -40,14 +40,14 @@ def _tree_replace(base: PyTreeNode, attr: typing.Sequence[str], val: typing.Unio
 def dataclass(clz: ~_T, register_as_pytree: bool) -> ~_T:
     """
     Wraps a dataclass with metadata for which fields are pytrees.
-    
+
     This is based off flax.struct.dataclass, but instead of using field
     descriptors to specify which fields are pytrees, we follow a simple rule:
     a leaf field is a pytree node if and only if it's a jax.Array
-    
+
     Args:
       clz: the class to register as a dataclass
-    
+
     Returns:
       the resulting dataclass, registered with Jax
     """

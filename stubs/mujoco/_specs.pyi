@@ -246,7 +246,7 @@ class MjSpec:
     def from_file(filename: str, include: collections.abc.Mapping[str, bytes] | None = None, assets: dict | None = None) -> MjSpec:
         """
             Creates a spec from an XML file.
-        
+
             Parameters
             ----------
             filename : str
@@ -262,7 +262,7 @@ class MjSpec:
     def from_string(xml: str, include: collections.abc.Mapping[str, bytes] | None = None, assets: dict | None = None) -> MjSpec:
         """
             Creates a spec from an XML string.
-        
+
             Parameters
             ----------
             xml : str
@@ -278,7 +278,7 @@ class MjSpec:
     def from_zip(file: typing.Union[str, typing.IO[bytes]]) -> MjSpec:
         """
         Reads a zip file and returns an MjSpec.
-        
+
         Args:
           file: The path to the file to read from or the file object to read from.
         Returns:
@@ -291,7 +291,7 @@ class MjSpec:
     def to_zip(spec: MjSpec, file: typing.Union[str, typing.IO[bytes]]) -> None:
         """
         Converts an MjSpec to a zip file.
-        
+
         Args:
           spec: The mjSpec to save to a file.
           file: The path to the file to save to or the file object to write to.

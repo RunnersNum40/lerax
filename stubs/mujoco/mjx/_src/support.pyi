@@ -90,27 +90,27 @@ def full_m(m: mujoco.mjx._src.types.Model, d: mujoco.mjx._src.types.Data) -> jax
 def id2name(m: typing.Union[mujoco.mjx._src.types.Model, mujoco._structs.MjModel], typ: mujoco._enums.mjtObj, i: int) -> typing.Optional[str]:
     """
     Gets the name of an object with the specified mjtObj type and ids.
-    
+
     See mujoco.id2name for more info.
-    
+
     Args:
       m: mujoco.MjModel or mjx.Model
       typ: mujoco.mjtObj type
       i: the id
-    
+
     Returns:
       the name string, or None if not found
     """
 def is_sparse(m: typing.Union[mujoco._structs.MjModel, mujoco.mjx._src.types.Model]) -> bool:
     """
     Return True if this model should create sparse mass matrices.
-    
+
     Args:
       m: a MuJoCo or MJX model
-    
+
     Returns:
       True if provided model should create sparse mass matrices
-    
+
     Modern TPUs have specialized hardware for rapidly operating over sparse
     matrices, whereas GPUs tend to be faster with dense matrices as long as they
     fit onto the device.  As such, the default behavior in MJX (via
@@ -160,14 +160,14 @@ def muscle_gain_length(length: jax.Array, lmin: jax.Array, lmax: jax.Array) -> j
 def name2id(m: typing.Union[mujoco.mjx._src.types.Model, mujoco._structs.MjModel], typ: mujoco._enums.mjtObj, name: str) -> int:
     """
     Gets the id of an object with the specified mjtObj type and name.
-    
+
     See mujoco.mj_name2id for more info.
-    
+
     Args:
       m: mujoco.MjModel or mjx.Model
       typ: mujoco.mjtObj type
       name: the name of the object
-    
+
     Returns:
      the id, or -1 if not found
     """
@@ -182,11 +182,11 @@ def wrap_circle(d: jax.Array, sd: jax.Array, sidesite: jax.Array, rad: jax.Array
 def wrap_inside(end: jax.Array, radius: jax.Array, maxiter: int, tolerance: float, z_init: float) -> typing.Tuple[jax.Array, jax.Array]:
     """
     Compute 2D inside wrap point.
-    
+
     Args:
       end: 2D points
       radius: radius of circle
-    
+
     Returns:
       status: 0 if wrap, else -1
       concatentated 2D wrap points: jax.Array

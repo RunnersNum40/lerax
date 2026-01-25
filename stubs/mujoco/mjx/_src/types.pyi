@@ -19,7 +19,7 @@ __all__: list[str] = ['BiasType', 'CamLightType', 'ConeType', 'ConstraintType', 
 class BiasType(enum.IntEnum):
     """
     Type of actuator bias.
-    
+
     Members:
       NONE: no bias
       AFFINE: const + kp*length + kv*velocity
@@ -38,7 +38,7 @@ class BiasType(enum.IntEnum):
 class CamLightType(enum.IntEnum):
     """
     Type of camera light.
-    
+
     Members:
       FIXED: pos and rot fixed in body
       TRACK: pos tracks body, rot fixed in global
@@ -61,7 +61,7 @@ class CamLightType(enum.IntEnum):
 class ConeType(enum.IntEnum):
     """
     Type of friction cone.
-    
+
     Members:
       PYRAMIDAL: pyramidal
       ELLIPTIC: elliptic
@@ -78,7 +78,7 @@ class ConeType(enum.IntEnum):
 class ConstraintType(enum.IntEnum):
     """
     Type of constraint.
-    
+
     Members:
       EQUALITY: equality constraint
       LIMIT_JOINT: joint limit
@@ -104,7 +104,7 @@ class ConstraintType(enum.IntEnum):
 class Contact(mujoco.mjx._src.dataclasses.PyTreeNode):
     """
     Result of collision detection functions.
-    
+
     Attributes:
       dist: distance between nearest points; neg: penetration
       pos: position of contact point: midpoint between geoms            (3,)
@@ -127,14 +127,14 @@ class Contact(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -156,7 +156,7 @@ class Contact(mujoco.mjx._src.dataclasses.PyTreeNode):
 class ConvexMesh(mujoco.mjx._src.dataclasses.PyTreeNode):
     """
     Geom properties for convex meshes.
-    
+
     Members:
       vert: vertices of the convex mesh
       face: faces of the convex mesh
@@ -171,14 +171,14 @@ class ConvexMesh(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -208,14 +208,14 @@ class Data(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -256,14 +256,14 @@ class DataC(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -293,14 +293,14 @@ class DataJAX(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -322,7 +322,7 @@ class DataJAX(mujoco.mjx._src.dataclasses.PyTreeNode):
 class DisableBit(enum.IntFlag):
     """
     Disable default feature bitflags.
-    
+
     Members:
       CONSTRAINT:   entire constraint solver
       EQUALITY:     equality constraints
@@ -377,7 +377,7 @@ class DisableBit(enum.IntFlag):
 class DynType(enum.IntEnum):
     """
     Type of actuator dynamics.
-    
+
     Members:
       NONE: no internal dynamics; ctrl specifies force
       INTEGRATOR: integrator: da/dt = u
@@ -400,7 +400,7 @@ class DynType(enum.IntEnum):
 class EnableBit(enum.IntFlag):
     """
     Enable optional feature bitflags.
-    
+
     Members:
       INVDISCRETE: discrete-time inverse dynamics
     """
@@ -430,7 +430,7 @@ class EnableBit(enum.IntFlag):
 class EqType(enum.IntEnum):
     """
     Type of equality constraint.
-    
+
     Members:
       CONNECT: connect two bodies at a point (ball joint)
       WELD: fix relative position and orientation of two bodies
@@ -451,7 +451,7 @@ class EqType(enum.IntEnum):
 class GainType(enum.IntEnum):
     """
     Type of actuator gain.
-    
+
     Members:
       FIXED: fixed gain
       AFFINE: const + kp*length + kv*velocity
@@ -470,7 +470,7 @@ class GainType(enum.IntEnum):
 class GeomType(enum.IntEnum):
     """
     Type of geometry.
-    
+
     Members:
       PLANE: plane
       HFIELD: height field
@@ -507,7 +507,7 @@ class Impl(enum.Enum):
 class IntegratorType(enum.IntEnum):
     """
     Integrator mode.
-    
+
     Members:
       EULER: semi-implicit Euler
       RK4: 4th-order Runge Kutta
@@ -526,7 +526,7 @@ class IntegratorType(enum.IntEnum):
 class JacobianType(enum.IntEnum):
     """
     Type of constraint Jacobian.
-    
+
     Members:
       DENSE: dense
       SPARSE: sparse
@@ -545,7 +545,7 @@ class JacobianType(enum.IntEnum):
 class JointType(enum.IntEnum):
     """
     Type of degree of freedom.
-    
+
     Members:
       FREE:  global position and orientation (quat)       (7,)
       BALL:  orientation (quat) relative to parent        (4,)
@@ -574,14 +574,14 @@ class Model(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -620,14 +620,14 @@ class ModelC(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -657,14 +657,14 @@ class ModelJAX(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -686,7 +686,7 @@ class ModelJAX(mujoco.mjx._src.dataclasses.PyTreeNode):
 class ObjType(mujoco.mjx._src.dataclasses.PyTreeNode):
     """
     Type of object.
-    
+
     Members:
       UNKNOWN: unknown object type
       BODY: body
@@ -708,14 +708,14 @@ class ObjType(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -745,14 +745,14 @@ class Option(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -782,14 +782,14 @@ class OptionC(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -819,14 +819,14 @@ class OptionJAX(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -848,7 +848,7 @@ class OptionJAX(mujoco.mjx._src.dataclasses.PyTreeNode):
 class SensorType(enum.IntEnum):
     """
     Type of sensor.
-    
+
     Members:
       MAGNETOMETER: magnetometer
       CAMPROJECTION: camera projection
@@ -929,7 +929,7 @@ class SensorType(enum.IntEnum):
 class SolverType(enum.IntEnum):
     """
     Constraint solver algorithm.
-    
+
     Members:
       CG: Conjugate gradient (primal)
       NEWTON: Newton (primal)
@@ -946,7 +946,7 @@ class SolverType(enum.IntEnum):
 class Statistic(mujoco.mjx._src.dataclasses.PyTreeNode):
     """
     Model statistics (in qpos0).
-    
+
     Attributes:
       meaninertia: mean diagonal inertia
       meanmass: mean body mass (not used)
@@ -961,14 +961,14 @@ class Statistic(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -998,14 +998,14 @@ class StatisticWarp(mujoco.mjx.warp.types.StatisticWarp, Statistic):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -1027,7 +1027,7 @@ class StatisticWarp(mujoco.mjx.warp.types.StatisticWarp, Statistic):
 class TrnType(enum.IntEnum):
     """
     Type of actuator transmission.
-    
+
     Members:
       JOINT: force on joint
       JOINTINPARENT: force on joint, expressed in parent frame
@@ -1048,7 +1048,7 @@ class TrnType(enum.IntEnum):
 class WrapType(enum.IntEnum):
     """
     Type of tendon wrap object.
-    
+
     Members:
       JOINT: constant moment arm
       PULLEY: pulley used to split tendon

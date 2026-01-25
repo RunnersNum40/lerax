@@ -26,7 +26,7 @@ __all__: list[str] = ['ConeType', 'Context', 'Data', 'DataJAX', 'DisableBit', 'M
 class Context(mujoco.mjx._src.dataclasses.PyTreeNode):
     """
     Data updated during each solver iteration.
-    
+
     Attributes:
       qacc: acceleration (from Data)                    (nv,)
       qfrc_constraint: constraint force (from Data)     (nv,)
@@ -53,14 +53,14 @@ class Context(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -85,7 +85,7 @@ class Context(mujoco.mjx._src.dataclasses.PyTreeNode):
 class _LSContext(mujoco.mjx._src.dataclasses.PyTreeNode):
     """
     Data updated during each line search iteration.
-    
+
     Attributes:
       lo: low point bounding the line search interval
       hi: high point bounding the line search interval
@@ -99,14 +99,14 @@ class _LSContext(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -128,7 +128,7 @@ class _LSContext(mujoco.mjx._src.dataclasses.PyTreeNode):
 class _LSPoint(mujoco.mjx._src.dataclasses.PyTreeNode):
     """
     Line search evaluation point.
-    
+
     Attributes:
       alpha: step size that reduces f(x + alpha * p) given search direction p
       cost: line search cost
@@ -142,14 +142,14 @@ class _LSPoint(mujoco.mjx._src.dataclasses.PyTreeNode):
     def replace(obj, **changes):
         """
         Return a new object replacing specified fields with new values.
-        
+
         This is especially useful for frozen classes.  Example usage::
-        
+
           @dataclass(frozen=True)
           class C:
               x: int
               y: int
-        
+
           c = C(1, 2)
           c1 = replace(c, x=3)
           assert c1.x == 3 and c1.y == 2
@@ -176,12 +176,12 @@ class _LSPoint(mujoco.mjx._src.dataclasses.PyTreeNode):
 def _linesearch(m: mujoco.mjx._src.types.Model, d: mujoco.mjx._src.types.Data, ctx: Context) -> Context:
     """
     Performs a zoom linesearch to find optimal search step size.
-    
+
     Args:
       m: model defining search options and other needed terms
       d: data with inertia matrix and other needed terms
       ctx: current solver context
-    
+
     Returns:
       updated context with new qacc, Ma, Jaref
     """
@@ -190,28 +190,28 @@ def _rescale(m: mujoco.mjx._src.types.Model, value: jax.Array) -> jax.Array:
 def _update_constraint(m: mujoco.mjx._src.types.Model, d: mujoco.mjx._src.types.Data, ctx: Context) -> Context:
     """
     Updates constraint force and resulting cost given last solver iteration.
-    
+
     Corresponds to CGupdateConstraint in mujoco/src/engine/engine_solver.c
-    
+
     Args:
       m: model defining constraints
       d: data which contains latest qacc and smooth terms
       ctx: current solver context
-    
+
     Returns:
       context with new constraint force and costs
     """
 def _update_gradient(m: mujoco.mjx._src.types.Model, d: mujoco.mjx._src.types.Data, ctx: Context) -> Context:
     """
     Updates grad and M / grad given latest solver iteration.
-    
+
     Corresponds to CGupdateGradient in mujoco/src/engine/engine_solver.c
-    
+
     Args:
       m: model defining constraints
       d: data which contains latest smooth terms
       ctx: current solver context
-    
+
     Returns:
       context with new grad and M / grad
     Raises:

@@ -6,11 +6,11 @@ __all__: list[str] = ['mjtAlignFree', 'mjtBias', 'mjtBuiltin', 'mjtButton', 'mjt
 class mjtAlignFree:
     """
     Members:
-    
+
       mjALIGNFREE_FALSE
-    
+
       mjALIGNFREE_TRUE
-    
+
       mjALIGNFREE_AUTO
     """
     __members__: typing.ClassVar[dict[str, mjtAlignFree]]  # value = {'mjALIGNFREE_FALSE': <mjtAlignFree.mjALIGNFREE_FALSE: 0>, 'mjALIGNFREE_TRUE': <mjtAlignFree.mjALIGNFREE_TRUE: 1>, 'mjALIGNFREE_AUTO': <mjtAlignFree.mjALIGNFREE_AUTO: 2>}
@@ -132,13 +132,13 @@ class mjtAlignFree:
 class mjtBias:
     """
     Members:
-    
+
       mjBIAS_NONE
-    
+
       mjBIAS_AFFINE
-    
+
       mjBIAS_MUSCLE
-    
+
       mjBIAS_USER
     """
     __members__: typing.ClassVar[dict[str, mjtBias]]  # value = {'mjBIAS_NONE': <mjtBias.mjBIAS_NONE: 0>, 'mjBIAS_AFFINE': <mjtBias.mjBIAS_AFFINE: 1>, 'mjBIAS_MUSCLE': <mjtBias.mjBIAS_MUSCLE: 2>, 'mjBIAS_USER': <mjtBias.mjBIAS_USER: 3>}
@@ -261,13 +261,13 @@ class mjtBias:
 class mjtBuiltin:
     """
     Members:
-    
+
       mjBUILTIN_NONE
-    
+
       mjBUILTIN_GRADIENT
-    
+
       mjBUILTIN_CHECKER
-    
+
       mjBUILTIN_FLAT
     """
     __members__: typing.ClassVar[dict[str, mjtBuiltin]]  # value = {'mjBUILTIN_NONE': <mjtBuiltin.mjBUILTIN_NONE: 0>, 'mjBUILTIN_GRADIENT': <mjtBuiltin.mjBUILTIN_GRADIENT: 1>, 'mjBUILTIN_CHECKER': <mjtBuiltin.mjBUILTIN_CHECKER: 2>, 'mjBUILTIN_FLAT': <mjtBuiltin.mjBUILTIN_FLAT: 3>}
@@ -390,13 +390,13 @@ class mjtBuiltin:
 class mjtButton:
     """
     Members:
-    
+
       mjBUTTON_NONE
-    
+
       mjBUTTON_LEFT
-    
+
       mjBUTTON_RIGHT
-    
+
       mjBUTTON_MIDDLE
     """
     __members__: typing.ClassVar[dict[str, mjtButton]]  # value = {'mjBUTTON_NONE': <mjtButton.mjBUTTON_NONE: 0>, 'mjBUTTON_LEFT': <mjtButton.mjBUTTON_LEFT: 1>, 'mjBUTTON_RIGHT': <mjtButton.mjBUTTON_RIGHT: 2>, 'mjBUTTON_MIDDLE': <mjtButton.mjBUTTON_MIDDLE: 3>}
@@ -519,15 +519,15 @@ class mjtButton:
 class mjtCamLight:
     """
     Members:
-    
+
       mjCAMLIGHT_FIXED
-    
+
       mjCAMLIGHT_TRACK
-    
+
       mjCAMLIGHT_TRACKCOM
-    
+
       mjCAMLIGHT_TARGETBODY
-    
+
       mjCAMLIGHT_TARGETBODYCOM
     """
     __members__: typing.ClassVar[dict[str, mjtCamLight]]  # value = {'mjCAMLIGHT_FIXED': <mjtCamLight.mjCAMLIGHT_FIXED: 0>, 'mjCAMLIGHT_TRACK': <mjtCamLight.mjCAMLIGHT_TRACK: 1>, 'mjCAMLIGHT_TRACKCOM': <mjtCamLight.mjCAMLIGHT_TRACKCOM: 2>, 'mjCAMLIGHT_TARGETBODY': <mjtCamLight.mjCAMLIGHT_TARGETBODY: 3>, 'mjCAMLIGHT_TARGETBODYCOM': <mjtCamLight.mjCAMLIGHT_TARGETBODYCOM: 4>}
@@ -651,13 +651,13 @@ class mjtCamLight:
 class mjtCamera:
     """
     Members:
-    
+
       mjCAMERA_FREE
-    
+
       mjCAMERA_TRACKING
-    
+
       mjCAMERA_FIXED
-    
+
       mjCAMERA_USER
     """
     __members__: typing.ClassVar[dict[str, mjtCamera]]  # value = {'mjCAMERA_FREE': <mjtCamera.mjCAMERA_FREE: 0>, 'mjCAMERA_TRACKING': <mjtCamera.mjCAMERA_TRACKING: 1>, 'mjCAMERA_FIXED': <mjtCamera.mjCAMERA_FIXED: 2>, 'mjCAMERA_USER': <mjtCamera.mjCAMERA_USER: 3>}
@@ -780,13 +780,13 @@ class mjtCamera:
 class mjtCatBit:
     """
     Members:
-    
+
       mjCAT_STATIC
-    
+
       mjCAT_DYNAMIC
-    
+
       mjCAT_DECOR
-    
+
       mjCAT_ALL
     """
     __members__: typing.ClassVar[dict[str, mjtCatBit]]  # value = {'mjCAT_STATIC': <mjtCatBit.mjCAT_STATIC: 1>, 'mjCAT_DYNAMIC': <mjtCatBit.mjCAT_DYNAMIC: 2>, 'mjCAT_DECOR': <mjtCatBit.mjCAT_DECOR: 4>, 'mjCAT_ALL': <mjtCatBit.mjCAT_ALL: 7>}
@@ -909,11 +909,11 @@ class mjtCatBit:
 class mjtColorSpace:
     """
     Members:
-    
+
       mjCOLORSPACE_AUTO
-    
+
       mjCOLORSPACE_LINEAR
-    
+
       mjCOLORSPACE_SRGB
     """
     __members__: typing.ClassVar[dict[str, mjtColorSpace]]  # value = {'mjCOLORSPACE_AUTO': <mjtColorSpace.mjCOLORSPACE_AUTO: 0>, 'mjCOLORSPACE_LINEAR': <mjtColorSpace.mjCOLORSPACE_LINEAR: 1>, 'mjCOLORSPACE_SRGB': <mjtColorSpace.mjCOLORSPACE_SRGB: 2>}
@@ -1035,21 +1035,21 @@ class mjtColorSpace:
 class mjtConDataField:
     """
     Members:
-    
+
       mjCONDATA_FOUND
-    
+
       mjCONDATA_FORCE
-    
+
       mjCONDATA_TORQUE
-    
+
       mjCONDATA_DIST
-    
+
       mjCONDATA_POS
-    
+
       mjCONDATA_NORMAL
-    
+
       mjCONDATA_TANGENT
-    
+
       mjNCONDATA
     """
     __members__: typing.ClassVar[dict[str, mjtConDataField]]  # value = {'mjCONDATA_FOUND': <mjtConDataField.mjCONDATA_FOUND: 0>, 'mjCONDATA_FORCE': <mjtConDataField.mjCONDATA_FORCE: 1>, 'mjCONDATA_TORQUE': <mjtConDataField.mjCONDATA_TORQUE: 2>, 'mjCONDATA_DIST': <mjtConDataField.mjCONDATA_DIST: 3>, 'mjCONDATA_POS': <mjtConDataField.mjCONDATA_POS: 4>, 'mjCONDATA_NORMAL': <mjtConDataField.mjCONDATA_NORMAL: 5>, 'mjCONDATA_TANGENT': <mjtConDataField.mjCONDATA_TANGENT: 6>, 'mjNCONDATA': <mjtConDataField.mjNCONDATA: 7>}
@@ -1176,9 +1176,9 @@ class mjtConDataField:
 class mjtCone:
     """
     Members:
-    
+
       mjCONE_PYRAMIDAL
-    
+
       mjCONE_ELLIPTIC
     """
     __members__: typing.ClassVar[dict[str, mjtCone]]  # value = {'mjCONE_PYRAMIDAL': <mjtCone.mjCONE_PYRAMIDAL: 0>, 'mjCONE_ELLIPTIC': <mjtCone.mjCONE_ELLIPTIC: 1>}
@@ -1299,21 +1299,21 @@ class mjtCone:
 class mjtConstraint:
     """
     Members:
-    
+
       mjCNSTR_EQUALITY
-    
+
       mjCNSTR_FRICTION_DOF
-    
+
       mjCNSTR_FRICTION_TENDON
-    
+
       mjCNSTR_LIMIT_JOINT
-    
+
       mjCNSTR_LIMIT_TENDON
-    
+
       mjCNSTR_CONTACT_FRICTIONLESS
-    
+
       mjCNSTR_CONTACT_PYRAMIDAL
-    
+
       mjCNSTR_CONTACT_ELLIPTIC
     """
     __members__: typing.ClassVar[dict[str, mjtConstraint]]  # value = {'mjCNSTR_EQUALITY': <mjtConstraint.mjCNSTR_EQUALITY: 0>, 'mjCNSTR_FRICTION_DOF': <mjtConstraint.mjCNSTR_FRICTION_DOF: 1>, 'mjCNSTR_FRICTION_TENDON': <mjtConstraint.mjCNSTR_FRICTION_TENDON: 2>, 'mjCNSTR_LIMIT_JOINT': <mjtConstraint.mjCNSTR_LIMIT_JOINT: 3>, 'mjCNSTR_LIMIT_TENDON': <mjtConstraint.mjCNSTR_LIMIT_TENDON: 4>, 'mjCNSTR_CONTACT_FRICTIONLESS': <mjtConstraint.mjCNSTR_CONTACT_FRICTIONLESS: 5>, 'mjCNSTR_CONTACT_PYRAMIDAL': <mjtConstraint.mjCNSTR_CONTACT_PYRAMIDAL: 6>, 'mjCNSTR_CONTACT_ELLIPTIC': <mjtConstraint.mjCNSTR_CONTACT_ELLIPTIC: 7>}
@@ -1440,15 +1440,15 @@ class mjtConstraint:
 class mjtConstraintState:
     """
     Members:
-    
+
       mjCNSTRSTATE_SATISFIED
-    
+
       mjCNSTRSTATE_QUADRATIC
-    
+
       mjCNSTRSTATE_LINEARNEG
-    
+
       mjCNSTRSTATE_LINEARPOS
-    
+
       mjCNSTRSTATE_CONE
     """
     __members__: typing.ClassVar[dict[str, mjtConstraintState]]  # value = {'mjCNSTRSTATE_SATISFIED': <mjtConstraintState.mjCNSTRSTATE_SATISFIED: 0>, 'mjCNSTRSTATE_QUADRATIC': <mjtConstraintState.mjCNSTRSTATE_QUADRATIC: 1>, 'mjCNSTRSTATE_LINEARNEG': <mjtConstraintState.mjCNSTRSTATE_LINEARNEG: 2>, 'mjCNSTRSTATE_LINEARPOS': <mjtConstraintState.mjCNSTRSTATE_LINEARPOS: 3>, 'mjCNSTRSTATE_CONE': <mjtConstraintState.mjCNSTRSTATE_CONE: 4>}
@@ -1572,13 +1572,13 @@ class mjtConstraintState:
 class mjtDataType:
     """
     Members:
-    
+
       mjDATATYPE_REAL
-    
+
       mjDATATYPE_POSITIVE
-    
+
       mjDATATYPE_AXIS
-    
+
       mjDATATYPE_QUATERNION
     """
     __members__: typing.ClassVar[dict[str, mjtDataType]]  # value = {'mjDATATYPE_REAL': <mjtDataType.mjDATATYPE_REAL: 0>, 'mjDATATYPE_POSITIVE': <mjtDataType.mjDATATYPE_POSITIVE: 1>, 'mjDATATYPE_AXIS': <mjtDataType.mjDATATYPE_AXIS: 2>, 'mjDATATYPE_QUATERNION': <mjtDataType.mjDATATYPE_QUATERNION: 3>}
@@ -1701,9 +1701,9 @@ class mjtDataType:
 class mjtDepthMap:
     """
     Members:
-    
+
       mjDEPTH_ZERONEAR
-    
+
       mjDEPTH_ZEROFAR
     """
     __members__: typing.ClassVar[dict[str, mjtDepthMap]]  # value = {'mjDEPTH_ZERONEAR': <mjtDepthMap.mjDEPTH_ZERONEAR: 0>, 'mjDEPTH_ZEROFAR': <mjtDepthMap.mjDEPTH_ZEROFAR: 1>}
@@ -1824,45 +1824,45 @@ class mjtDepthMap:
 class mjtDisableBit:
     """
     Members:
-    
+
       mjDSBL_CONSTRAINT
-    
+
       mjDSBL_EQUALITY
-    
+
       mjDSBL_FRICTIONLOSS
-    
+
       mjDSBL_LIMIT
-    
+
       mjDSBL_CONTACT
-    
+
       mjDSBL_SPRING
-    
+
       mjDSBL_DAMPER
-    
+
       mjDSBL_GRAVITY
-    
+
       mjDSBL_CLAMPCTRL
-    
+
       mjDSBL_WARMSTART
-    
+
       mjDSBL_FILTERPARENT
-    
+
       mjDSBL_ACTUATION
-    
+
       mjDSBL_REFSAFE
-    
+
       mjDSBL_SENSOR
-    
+
       mjDSBL_MIDPHASE
-    
+
       mjDSBL_EULERDAMP
-    
+
       mjDSBL_AUTORESET
-    
+
       mjDSBL_NATIVECCD
-    
+
       mjDSBL_ISLAND
-    
+
       mjNDISABLE
     """
     __members__: typing.ClassVar[dict[str, mjtDisableBit]]  # value = {'mjDSBL_CONSTRAINT': <mjtDisableBit.mjDSBL_CONSTRAINT: 1>, 'mjDSBL_EQUALITY': <mjtDisableBit.mjDSBL_EQUALITY: 2>, 'mjDSBL_FRICTIONLOSS': <mjtDisableBit.mjDSBL_FRICTIONLOSS: 4>, 'mjDSBL_LIMIT': <mjtDisableBit.mjDSBL_LIMIT: 8>, 'mjDSBL_CONTACT': <mjtDisableBit.mjDSBL_CONTACT: 16>, 'mjDSBL_SPRING': <mjtDisableBit.mjDSBL_SPRING: 32>, 'mjDSBL_DAMPER': <mjtDisableBit.mjDSBL_DAMPER: 64>, 'mjDSBL_GRAVITY': <mjtDisableBit.mjDSBL_GRAVITY: 128>, 'mjDSBL_CLAMPCTRL': <mjtDisableBit.mjDSBL_CLAMPCTRL: 256>, 'mjDSBL_WARMSTART': <mjtDisableBit.mjDSBL_WARMSTART: 512>, 'mjDSBL_FILTERPARENT': <mjtDisableBit.mjDSBL_FILTERPARENT: 1024>, 'mjDSBL_ACTUATION': <mjtDisableBit.mjDSBL_ACTUATION: 2048>, 'mjDSBL_REFSAFE': <mjtDisableBit.mjDSBL_REFSAFE: 4096>, 'mjDSBL_SENSOR': <mjtDisableBit.mjDSBL_SENSOR: 8192>, 'mjDSBL_MIDPHASE': <mjtDisableBit.mjDSBL_MIDPHASE: 16384>, 'mjDSBL_EULERDAMP': <mjtDisableBit.mjDSBL_EULERDAMP: 32768>, 'mjDSBL_AUTORESET': <mjtDisableBit.mjDSBL_AUTORESET: 65536>, 'mjDSBL_NATIVECCD': <mjtDisableBit.mjDSBL_NATIVECCD: 131072>, 'mjDSBL_ISLAND': <mjtDisableBit.mjDSBL_ISLAND: 262144>, 'mjNDISABLE': <mjtDisableBit.mjNDISABLE: 19>}
@@ -2001,17 +2001,17 @@ class mjtDisableBit:
 class mjtDyn:
     """
     Members:
-    
+
       mjDYN_NONE
-    
+
       mjDYN_INTEGRATOR
-    
+
       mjDYN_FILTER
-    
+
       mjDYN_FILTEREXACT
-    
+
       mjDYN_MUSCLE
-    
+
       mjDYN_USER
     """
     __members__: typing.ClassVar[dict[str, mjtDyn]]  # value = {'mjDYN_NONE': <mjtDyn.mjDYN_NONE: 0>, 'mjDYN_INTEGRATOR': <mjtDyn.mjDYN_INTEGRATOR: 1>, 'mjDYN_FILTER': <mjtDyn.mjDYN_FILTER: 2>, 'mjDYN_FILTEREXACT': <mjtDyn.mjDYN_FILTEREXACT: 3>, 'mjDYN_MUSCLE': <mjtDyn.mjDYN_MUSCLE: 4>, 'mjDYN_USER': <mjtDyn.mjDYN_USER: 5>}
@@ -2136,17 +2136,17 @@ class mjtDyn:
 class mjtEnableBit:
     """
     Members:
-    
+
       mjENBL_OVERRIDE
-    
+
       mjENBL_ENERGY
-    
+
       mjENBL_FWDINV
-    
+
       mjENBL_INVDISCRETE
-    
+
       mjENBL_MULTICCD
-    
+
       mjNENABLE
     """
     __members__: typing.ClassVar[dict[str, mjtEnableBit]]  # value = {'mjENBL_OVERRIDE': <mjtEnableBit.mjENBL_OVERRIDE: 1>, 'mjENBL_ENERGY': <mjtEnableBit.mjENBL_ENERGY: 2>, 'mjENBL_FWDINV': <mjtEnableBit.mjENBL_FWDINV: 4>, 'mjENBL_INVDISCRETE': <mjtEnableBit.mjENBL_INVDISCRETE: 8>, 'mjENBL_MULTICCD': <mjtEnableBit.mjENBL_MULTICCD: 16>, 'mjNENABLE': <mjtEnableBit.mjNENABLE: 5>}
@@ -2271,17 +2271,17 @@ class mjtEnableBit:
 class mjtEq:
     """
     Members:
-    
+
       mjEQ_CONNECT
-    
+
       mjEQ_WELD
-    
+
       mjEQ_JOINT
-    
+
       mjEQ_TENDON
-    
+
       mjEQ_FLEX
-    
+
       mjEQ_DISTANCE
     """
     __members__: typing.ClassVar[dict[str, mjtEq]]  # value = {'mjEQ_CONNECT': <mjtEq.mjEQ_CONNECT: 0>, 'mjEQ_WELD': <mjtEq.mjEQ_WELD: 1>, 'mjEQ_JOINT': <mjtEq.mjEQ_JOINT: 2>, 'mjEQ_TENDON': <mjtEq.mjEQ_TENDON: 3>, 'mjEQ_FLEX': <mjtEq.mjEQ_FLEX: 4>, 'mjEQ_DISTANCE': <mjtEq.mjEQ_DISTANCE: 5>}
@@ -2406,23 +2406,23 @@ class mjtEq:
 class mjtEvent:
     """
     Members:
-    
+
       mjEVENT_NONE
-    
+
       mjEVENT_MOVE
-    
+
       mjEVENT_PRESS
-    
+
       mjEVENT_RELEASE
-    
+
       mjEVENT_SCROLL
-    
+
       mjEVENT_KEY
-    
+
       mjEVENT_RESIZE
-    
+
       mjEVENT_REDRAW
-    
+
       mjEVENT_FILESDROP
     """
     __members__: typing.ClassVar[dict[str, mjtEvent]]  # value = {'mjEVENT_NONE': <mjtEvent.mjEVENT_NONE: 0>, 'mjEVENT_MOVE': <mjtEvent.mjEVENT_MOVE: 1>, 'mjEVENT_PRESS': <mjtEvent.mjEVENT_PRESS: 2>, 'mjEVENT_RELEASE': <mjtEvent.mjEVENT_RELEASE: 3>, 'mjEVENT_SCROLL': <mjtEvent.mjEVENT_SCROLL: 4>, 'mjEVENT_KEY': <mjtEvent.mjEVENT_KEY: 5>, 'mjEVENT_RESIZE': <mjtEvent.mjEVENT_RESIZE: 6>, 'mjEVENT_REDRAW': <mjtEvent.mjEVENT_REDRAW: 7>, 'mjEVENT_FILESDROP': <mjtEvent.mjEVENT_FILESDROP: 8>}
@@ -2550,15 +2550,15 @@ class mjtEvent:
 class mjtFlexSelf:
     """
     Members:
-    
+
       mjFLEXSELF_NONE
-    
+
       mjFLEXSELF_NARROW
-    
+
       mjFLEXSELF_BVH
-    
+
       mjFLEXSELF_SAP
-    
+
       mjFLEXSELF_AUTO
     """
     __members__: typing.ClassVar[dict[str, mjtFlexSelf]]  # value = {'mjFLEXSELF_NONE': <mjtFlexSelf.mjFLEXSELF_NONE: 0>, 'mjFLEXSELF_NARROW': <mjtFlexSelf.mjFLEXSELF_NARROW: 1>, 'mjFLEXSELF_BVH': <mjtFlexSelf.mjFLEXSELF_BVH: 2>, 'mjFLEXSELF_SAP': <mjtFlexSelf.mjFLEXSELF_SAP: 3>, 'mjFLEXSELF_AUTO': <mjtFlexSelf.mjFLEXSELF_AUTO: 4>}
@@ -2682,11 +2682,11 @@ class mjtFlexSelf:
 class mjtFont:
     """
     Members:
-    
+
       mjFONT_NORMAL
-    
+
       mjFONT_SHADOW
-    
+
       mjFONT_BIG
     """
     __members__: typing.ClassVar[dict[str, mjtFont]]  # value = {'mjFONT_NORMAL': <mjtFont.mjFONT_NORMAL: 0>, 'mjFONT_SHADOW': <mjtFont.mjFONT_SHADOW: 1>, 'mjFONT_BIG': <mjtFont.mjFONT_BIG: 2>}
@@ -2808,17 +2808,17 @@ class mjtFont:
 class mjtFontScale:
     """
     Members:
-    
+
       mjFONTSCALE_50
-    
+
       mjFONTSCALE_100
-    
+
       mjFONTSCALE_150
-    
+
       mjFONTSCALE_200
-    
+
       mjFONTSCALE_250
-    
+
       mjFONTSCALE_300
     """
     __members__: typing.ClassVar[dict[str, mjtFontScale]]  # value = {'mjFONTSCALE_50': <mjtFontScale.mjFONTSCALE_50: 50>, 'mjFONTSCALE_100': <mjtFontScale.mjFONTSCALE_100: 100>, 'mjFONTSCALE_150': <mjtFontScale.mjFONTSCALE_150: 150>, 'mjFONTSCALE_200': <mjtFontScale.mjFONTSCALE_200: 200>, 'mjFONTSCALE_250': <mjtFontScale.mjFONTSCALE_250: 250>, 'mjFONTSCALE_300': <mjtFontScale.mjFONTSCALE_300: 300>}
@@ -2943,23 +2943,23 @@ class mjtFontScale:
 class mjtFrame:
     """
     Members:
-    
+
       mjFRAME_NONE
-    
+
       mjFRAME_BODY
-    
+
       mjFRAME_GEOM
-    
+
       mjFRAME_SITE
-    
+
       mjFRAME_CAMERA
-    
+
       mjFRAME_LIGHT
-    
+
       mjFRAME_CONTACT
-    
+
       mjFRAME_WORLD
-    
+
       mjNFRAME
     """
     __members__: typing.ClassVar[dict[str, mjtFrame]]  # value = {'mjFRAME_NONE': <mjtFrame.mjFRAME_NONE: 0>, 'mjFRAME_BODY': <mjtFrame.mjFRAME_BODY: 1>, 'mjFRAME_GEOM': <mjtFrame.mjFRAME_GEOM: 2>, 'mjFRAME_SITE': <mjtFrame.mjFRAME_SITE: 3>, 'mjFRAME_CAMERA': <mjtFrame.mjFRAME_CAMERA: 4>, 'mjFRAME_LIGHT': <mjtFrame.mjFRAME_LIGHT: 5>, 'mjFRAME_CONTACT': <mjtFrame.mjFRAME_CONTACT: 6>, 'mjFRAME_WORLD': <mjtFrame.mjFRAME_WORLD: 7>, 'mjNFRAME': <mjtFrame.mjNFRAME: 8>}
@@ -3087,9 +3087,9 @@ class mjtFrame:
 class mjtFramebuffer:
     """
     Members:
-    
+
       mjFB_WINDOW
-    
+
       mjFB_OFFSCREEN
     """
     __members__: typing.ClassVar[dict[str, mjtFramebuffer]]  # value = {'mjFB_WINDOW': <mjtFramebuffer.mjFB_WINDOW: 0>, 'mjFB_OFFSCREEN': <mjtFramebuffer.mjFB_OFFSCREEN: 1>}
@@ -3210,13 +3210,13 @@ class mjtFramebuffer:
 class mjtGain:
     """
     Members:
-    
+
       mjGAIN_FIXED
-    
+
       mjGAIN_AFFINE
-    
+
       mjGAIN_MUSCLE
-    
+
       mjGAIN_USER
     """
     __members__: typing.ClassVar[dict[str, mjtGain]]  # value = {'mjGAIN_FIXED': <mjtGain.mjGAIN_FIXED: 0>, 'mjGAIN_AFFINE': <mjtGain.mjGAIN_AFFINE: 1>, 'mjGAIN_MUSCLE': <mjtGain.mjGAIN_MUSCLE: 2>, 'mjGAIN_USER': <mjtGain.mjGAIN_USER: 3>}
@@ -3339,45 +3339,45 @@ class mjtGain:
 class mjtGeom:
     """
     Members:
-    
+
       mjGEOM_PLANE
-    
+
       mjGEOM_HFIELD
-    
+
       mjGEOM_SPHERE
-    
+
       mjGEOM_CAPSULE
-    
+
       mjGEOM_ELLIPSOID
-    
+
       mjGEOM_CYLINDER
-    
+
       mjGEOM_BOX
-    
+
       mjGEOM_MESH
-    
+
       mjGEOM_SDF
-    
+
       mjNGEOMTYPES
-    
+
       mjGEOM_ARROW
-    
+
       mjGEOM_ARROW1
-    
+
       mjGEOM_ARROW2
-    
+
       mjGEOM_LINE
-    
+
       mjGEOM_LINEBOX
-    
+
       mjGEOM_FLEX
-    
+
       mjGEOM_SKIN
-    
+
       mjGEOM_LABEL
-    
+
       mjGEOM_TRIANGLE
-    
+
       mjGEOM_NONE
     """
     __members__: typing.ClassVar[dict[str, mjtGeom]]  # value = {'mjGEOM_PLANE': <mjtGeom.mjGEOM_PLANE: 0>, 'mjGEOM_HFIELD': <mjtGeom.mjGEOM_HFIELD: 1>, 'mjGEOM_SPHERE': <mjtGeom.mjGEOM_SPHERE: 2>, 'mjGEOM_CAPSULE': <mjtGeom.mjGEOM_CAPSULE: 3>, 'mjGEOM_ELLIPSOID': <mjtGeom.mjGEOM_ELLIPSOID: 4>, 'mjGEOM_CYLINDER': <mjtGeom.mjGEOM_CYLINDER: 5>, 'mjGEOM_BOX': <mjtGeom.mjGEOM_BOX: 6>, 'mjGEOM_MESH': <mjtGeom.mjGEOM_MESH: 7>, 'mjGEOM_SDF': <mjtGeom.mjGEOM_SDF: 8>, 'mjNGEOMTYPES': <mjtGeom.mjNGEOMTYPES: 9>, 'mjGEOM_ARROW': <mjtGeom.mjGEOM_ARROW: 100>, 'mjGEOM_ARROW1': <mjtGeom.mjGEOM_ARROW1: 101>, 'mjGEOM_ARROW2': <mjtGeom.mjGEOM_ARROW2: 102>, 'mjGEOM_LINE': <mjtGeom.mjGEOM_LINE: 103>, 'mjGEOM_LINEBOX': <mjtGeom.mjGEOM_LINEBOX: 104>, 'mjGEOM_FLEX': <mjtGeom.mjGEOM_FLEX: 105>, 'mjGEOM_SKIN': <mjtGeom.mjGEOM_SKIN: 106>, 'mjGEOM_LABEL': <mjtGeom.mjGEOM_LABEL: 107>, 'mjGEOM_TRIANGLE': <mjtGeom.mjGEOM_TRIANGLE: 108>, 'mjGEOM_NONE': <mjtGeom.mjGEOM_NONE: 1001>}
@@ -3516,9 +3516,9 @@ class mjtGeom:
 class mjtGeomInertia:
     """
     Members:
-    
+
       mjINERTIA_VOLUME
-    
+
       mjINERTIA_SHELL
     """
     __members__: typing.ClassVar[dict[str, mjtGeomInertia]]  # value = {'mjINERTIA_VOLUME': <mjtGeomInertia.mjINERTIA_VOLUME: 0>, 'mjINERTIA_SHELL': <mjtGeomInertia.mjINERTIA_SHELL: 1>}
@@ -3639,21 +3639,21 @@ class mjtGeomInertia:
 class mjtGridPos:
     """
     Members:
-    
+
       mjGRID_TOPLEFT
-    
+
       mjGRID_TOPRIGHT
-    
+
       mjGRID_BOTTOMLEFT
-    
+
       mjGRID_BOTTOMRIGHT
-    
+
       mjGRID_TOP
-    
+
       mjGRID_BOTTOM
-    
+
       mjGRID_LEFT
-    
+
       mjGRID_RIGHT
     """
     __members__: typing.ClassVar[dict[str, mjtGridPos]]  # value = {'mjGRID_TOPLEFT': <mjtGridPos.mjGRID_TOPLEFT: 0>, 'mjGRID_TOPRIGHT': <mjtGridPos.mjGRID_TOPRIGHT: 1>, 'mjGRID_BOTTOMLEFT': <mjtGridPos.mjGRID_BOTTOMLEFT: 2>, 'mjGRID_BOTTOMRIGHT': <mjtGridPos.mjGRID_BOTTOMRIGHT: 3>, 'mjGRID_TOP': <mjtGridPos.mjGRID_TOP: 4>, 'mjGRID_BOTTOM': <mjtGridPos.mjGRID_BOTTOM: 5>, 'mjGRID_LEFT': <mjtGridPos.mjGRID_LEFT: 6>, 'mjGRID_RIGHT': <mjtGridPos.mjGRID_RIGHT: 7>}
@@ -3780,11 +3780,11 @@ class mjtGridPos:
 class mjtInertiaFromGeom:
     """
     Members:
-    
+
       mjINERTIAFROMGEOM_FALSE
-    
+
       mjINERTIAFROMGEOM_TRUE
-    
+
       mjINERTIAFROMGEOM_AUTO
     """
     __members__: typing.ClassVar[dict[str, mjtInertiaFromGeom]]  # value = {'mjINERTIAFROMGEOM_FALSE': <mjtInertiaFromGeom.mjINERTIAFROMGEOM_FALSE: 0>, 'mjINERTIAFROMGEOM_TRUE': <mjtInertiaFromGeom.mjINERTIAFROMGEOM_TRUE: 1>, 'mjINERTIAFROMGEOM_AUTO': <mjtInertiaFromGeom.mjINERTIAFROMGEOM_AUTO: 2>}
@@ -3906,13 +3906,13 @@ class mjtInertiaFromGeom:
 class mjtIntegrator:
     """
     Members:
-    
+
       mjINT_EULER
-    
+
       mjINT_RK4
-    
+
       mjINT_IMPLICIT
-    
+
       mjINT_IMPLICITFAST
     """
     __members__: typing.ClassVar[dict[str, mjtIntegrator]]  # value = {'mjINT_EULER': <mjtIntegrator.mjINT_EULER: 0>, 'mjINT_RK4': <mjtIntegrator.mjINT_RK4: 1>, 'mjINT_IMPLICIT': <mjtIntegrator.mjINT_IMPLICIT: 2>, 'mjINT_IMPLICITFAST': <mjtIntegrator.mjINT_IMPLICITFAST: 3>}
@@ -4035,39 +4035,39 @@ class mjtIntegrator:
 class mjtItem:
     """
     Members:
-    
+
       mjITEM_END
-    
+
       mjITEM_SECTION
-    
+
       mjITEM_SEPARATOR
-    
+
       mjITEM_STATIC
-    
+
       mjITEM_BUTTON
-    
+
       mjITEM_CHECKINT
-    
+
       mjITEM_CHECKBYTE
-    
+
       mjITEM_RADIO
-    
+
       mjITEM_RADIOLINE
-    
+
       mjITEM_SELECT
-    
+
       mjITEM_SLIDERINT
-    
+
       mjITEM_SLIDERNUM
-    
+
       mjITEM_EDITINT
-    
+
       mjITEM_EDITNUM
-    
+
       mjITEM_EDITFLOAT
-    
+
       mjITEM_EDITTXT
-    
+
       mjNITEM
     """
     __members__: typing.ClassVar[dict[str, mjtItem]]  # value = {'mjITEM_END': <mjtItem.mjITEM_END: -2>, 'mjITEM_SECTION': <mjtItem.mjITEM_SECTION: -1>, 'mjITEM_SEPARATOR': <mjtItem.mjITEM_SEPARATOR: 0>, 'mjITEM_STATIC': <mjtItem.mjITEM_STATIC: 1>, 'mjITEM_BUTTON': <mjtItem.mjITEM_BUTTON: 2>, 'mjITEM_CHECKINT': <mjtItem.mjITEM_CHECKINT: 3>, 'mjITEM_CHECKBYTE': <mjtItem.mjITEM_CHECKBYTE: 4>, 'mjITEM_RADIO': <mjtItem.mjITEM_RADIO: 5>, 'mjITEM_RADIOLINE': <mjtItem.mjITEM_RADIOLINE: 6>, 'mjITEM_SELECT': <mjtItem.mjITEM_SELECT: 7>, 'mjITEM_SLIDERINT': <mjtItem.mjITEM_SLIDERINT: 8>, 'mjITEM_SLIDERNUM': <mjtItem.mjITEM_SLIDERNUM: 9>, 'mjITEM_EDITINT': <mjtItem.mjITEM_EDITINT: 10>, 'mjITEM_EDITNUM': <mjtItem.mjITEM_EDITNUM: 11>, 'mjITEM_EDITFLOAT': <mjtItem.mjITEM_EDITFLOAT: 12>, 'mjITEM_EDITTXT': <mjtItem.mjITEM_EDITTXT: 13>, 'mjNITEM': <mjtItem.mjNITEM: 14>}
@@ -4203,11 +4203,11 @@ class mjtItem:
 class mjtJacobian:
     """
     Members:
-    
+
       mjJAC_DENSE
-    
+
       mjJAC_SPARSE
-    
+
       mjJAC_AUTO
     """
     __members__: typing.ClassVar[dict[str, mjtJacobian]]  # value = {'mjJAC_DENSE': <mjtJacobian.mjJAC_DENSE: 0>, 'mjJAC_SPARSE': <mjtJacobian.mjJAC_SPARSE: 1>, 'mjJAC_AUTO': <mjtJacobian.mjJAC_AUTO: 2>}
@@ -4329,13 +4329,13 @@ class mjtJacobian:
 class mjtJoint:
     """
     Members:
-    
+
       mjJNT_FREE
-    
+
       mjJNT_BALL
-    
+
       mjJNT_SLIDE
-    
+
       mjJNT_HINGE
     """
     __members__: typing.ClassVar[dict[str, mjtJoint]]  # value = {'mjJNT_FREE': <mjtJoint.mjJNT_FREE: 0>, 'mjJNT_BALL': <mjtJoint.mjJNT_BALL: 1>, 'mjJNT_SLIDE': <mjtJoint.mjJNT_SLIDE: 2>, 'mjJNT_HINGE': <mjtJoint.mjJNT_HINGE: 3>}
@@ -4458,13 +4458,13 @@ class mjtJoint:
 class mjtLRMode:
     """
     Members:
-    
+
       mjLRMODE_NONE
-    
+
       mjLRMODE_MUSCLE
-    
+
       mjLRMODE_MUSCLEUSER
-    
+
       mjLRMODE_ALL
     """
     __members__: typing.ClassVar[dict[str, mjtLRMode]]  # value = {'mjLRMODE_NONE': <mjtLRMode.mjLRMODE_NONE: 0>, 'mjLRMODE_MUSCLE': <mjtLRMode.mjLRMODE_MUSCLE: 1>, 'mjLRMODE_MUSCLEUSER': <mjtLRMode.mjLRMODE_MUSCLEUSER: 2>, 'mjLRMODE_ALL': <mjtLRMode.mjLRMODE_ALL: 3>}
@@ -4587,41 +4587,41 @@ class mjtLRMode:
 class mjtLabel:
     """
     Members:
-    
+
       mjLABEL_NONE
-    
+
       mjLABEL_BODY
-    
+
       mjLABEL_JOINT
-    
+
       mjLABEL_GEOM
-    
+
       mjLABEL_SITE
-    
+
       mjLABEL_CAMERA
-    
+
       mjLABEL_LIGHT
-    
+
       mjLABEL_TENDON
-    
+
       mjLABEL_ACTUATOR
-    
+
       mjLABEL_CONSTRAINT
-    
+
       mjLABEL_FLEX
-    
+
       mjLABEL_SKIN
-    
+
       mjLABEL_SELECTION
-    
+
       mjLABEL_SELPNT
-    
+
       mjLABEL_CONTACTPOINT
-    
+
       mjLABEL_CONTACTFORCE
-    
+
       mjLABEL_ISLAND
-    
+
       mjNLABEL
     """
     __members__: typing.ClassVar[dict[str, mjtLabel]]  # value = {'mjLABEL_NONE': <mjtLabel.mjLABEL_NONE: 0>, 'mjLABEL_BODY': <mjtLabel.mjLABEL_BODY: 1>, 'mjLABEL_JOINT': <mjtLabel.mjLABEL_JOINT: 2>, 'mjLABEL_GEOM': <mjtLabel.mjLABEL_GEOM: 3>, 'mjLABEL_SITE': <mjtLabel.mjLABEL_SITE: 4>, 'mjLABEL_CAMERA': <mjtLabel.mjLABEL_CAMERA: 5>, 'mjLABEL_LIGHT': <mjtLabel.mjLABEL_LIGHT: 6>, 'mjLABEL_TENDON': <mjtLabel.mjLABEL_TENDON: 7>, 'mjLABEL_ACTUATOR': <mjtLabel.mjLABEL_ACTUATOR: 8>, 'mjLABEL_CONSTRAINT': <mjtLabel.mjLABEL_CONSTRAINT: 9>, 'mjLABEL_FLEX': <mjtLabel.mjLABEL_FLEX: 10>, 'mjLABEL_SKIN': <mjtLabel.mjLABEL_SKIN: 11>, 'mjLABEL_SELECTION': <mjtLabel.mjLABEL_SELECTION: 12>, 'mjLABEL_SELPNT': <mjtLabel.mjLABEL_SELPNT: 13>, 'mjLABEL_CONTACTPOINT': <mjtLabel.mjLABEL_CONTACTPOINT: 14>, 'mjLABEL_CONTACTFORCE': <mjtLabel.mjLABEL_CONTACTFORCE: 15>, 'mjLABEL_ISLAND': <mjtLabel.mjLABEL_ISLAND: 16>, 'mjNLABEL': <mjtLabel.mjNLABEL: 17>}
@@ -4758,13 +4758,13 @@ class mjtLabel:
 class mjtLightType:
     """
     Members:
-    
+
       mjLIGHT_SPOT
-    
+
       mjLIGHT_DIRECTIONAL
-    
+
       mjLIGHT_POINT
-    
+
       mjLIGHT_IMAGE
     """
     __members__: typing.ClassVar[dict[str, mjtLightType]]  # value = {'mjLIGHT_SPOT': <mjtLightType.mjLIGHT_SPOT: 0>, 'mjLIGHT_DIRECTIONAL': <mjtLightType.mjLIGHT_DIRECTIONAL: 1>, 'mjLIGHT_POINT': <mjtLightType.mjLIGHT_POINT: 2>, 'mjLIGHT_IMAGE': <mjtLightType.mjLIGHT_IMAGE: 3>}
@@ -4887,11 +4887,11 @@ class mjtLightType:
 class mjtLimited:
     """
     Members:
-    
+
       mjLIMITED_FALSE
-    
+
       mjLIMITED_TRUE
-    
+
       mjLIMITED_AUTO
     """
     __members__: typing.ClassVar[dict[str, mjtLimited]]  # value = {'mjLIMITED_FALSE': <mjtLimited.mjLIMITED_FALSE: 0>, 'mjLIMITED_TRUE': <mjtLimited.mjLIMITED_TRUE: 1>, 'mjLIMITED_AUTO': <mjtLimited.mjLIMITED_AUTO: 2>}
@@ -5013,13 +5013,13 @@ class mjtLimited:
 class mjtMark:
     """
     Members:
-    
+
       mjMARK_NONE
-    
+
       mjMARK_EDGE
-    
+
       mjMARK_CROSS
-    
+
       mjMARK_RANDOM
     """
     __members__: typing.ClassVar[dict[str, mjtMark]]  # value = {'mjMARK_NONE': <mjtMark.mjMARK_NONE: 0>, 'mjMARK_EDGE': <mjtMark.mjMARK_EDGE: 1>, 'mjMARK_CROSS': <mjtMark.mjMARK_CROSS: 2>, 'mjMARK_RANDOM': <mjtMark.mjMARK_RANDOM: 3>}
@@ -5142,21 +5142,21 @@ class mjtMark:
 class mjtMeshBuiltin:
     """
     Members:
-    
+
       mjMESH_BUILTIN_NONE
-    
+
       mjMESH_BUILTIN_SPHERE
-    
+
       mjMESH_BUILTIN_HEMISPHERE
-    
+
       mjMESH_BUILTIN_CONE
-    
+
       mjMESH_BUILTIN_SUPERSPHERE
-    
+
       mjMESH_BUILTIN_SUPERTORUS
-    
+
       mjMESH_BUILTIN_WEDGE
-    
+
       mjMESH_BUILTIN_PLATE
     """
     __members__: typing.ClassVar[dict[str, mjtMeshBuiltin]]  # value = {'mjMESH_BUILTIN_NONE': <mjtMeshBuiltin.mjMESH_BUILTIN_NONE: 0>, 'mjMESH_BUILTIN_SPHERE': <mjtMeshBuiltin.mjMESH_BUILTIN_SPHERE: 1>, 'mjMESH_BUILTIN_HEMISPHERE': <mjtMeshBuiltin.mjMESH_BUILTIN_HEMISPHERE: 2>, 'mjMESH_BUILTIN_CONE': <mjtMeshBuiltin.mjMESH_BUILTIN_CONE: 3>, 'mjMESH_BUILTIN_SUPERSPHERE': <mjtMeshBuiltin.mjMESH_BUILTIN_SUPERSPHERE: 4>, 'mjMESH_BUILTIN_SUPERTORUS': <mjtMeshBuiltin.mjMESH_BUILTIN_SUPERTORUS: 5>, 'mjMESH_BUILTIN_WEDGE': <mjtMeshBuiltin.mjMESH_BUILTIN_WEDGE: 6>, 'mjMESH_BUILTIN_PLATE': <mjtMeshBuiltin.mjMESH_BUILTIN_PLATE: 7>}
@@ -5283,13 +5283,13 @@ class mjtMeshBuiltin:
 class mjtMeshInertia:
     """
     Members:
-    
+
       mjMESH_INERTIA_CONVEX
-    
+
       mjMESH_INERTIA_EXACT
-    
+
       mjMESH_INERTIA_LEGACY
-    
+
       mjMESH_INERTIA_SHELL
     """
     __members__: typing.ClassVar[dict[str, mjtMeshInertia]]  # value = {'mjMESH_INERTIA_CONVEX': <mjtMeshInertia.mjMESH_INERTIA_CONVEX: 0>, 'mjMESH_INERTIA_EXACT': <mjtMeshInertia.mjMESH_INERTIA_EXACT: 1>, 'mjMESH_INERTIA_LEGACY': <mjtMeshInertia.mjMESH_INERTIA_LEGACY: 2>, 'mjMESH_INERTIA_SHELL': <mjtMeshInertia.mjMESH_INERTIA_SHELL: 3>}
@@ -5412,21 +5412,21 @@ class mjtMeshInertia:
 class mjtMouse:
     """
     Members:
-    
+
       mjMOUSE_NONE
-    
+
       mjMOUSE_ROTATE_V
-    
+
       mjMOUSE_ROTATE_H
-    
+
       mjMOUSE_MOVE_V
-    
+
       mjMOUSE_MOVE_H
-    
+
       mjMOUSE_ZOOM
-    
+
       mjMOUSE_MOVE_V_REL
-    
+
       mjMOUSE_MOVE_H_REL
     """
     __members__: typing.ClassVar[dict[str, mjtMouse]]  # value = {'mjMOUSE_NONE': <mjtMouse.mjMOUSE_NONE: 0>, 'mjMOUSE_ROTATE_V': <mjtMouse.mjMOUSE_ROTATE_V: 1>, 'mjMOUSE_ROTATE_H': <mjtMouse.mjMOUSE_ROTATE_H: 2>, 'mjMOUSE_MOVE_V': <mjtMouse.mjMOUSE_MOVE_V: 3>, 'mjMOUSE_MOVE_H': <mjtMouse.mjMOUSE_MOVE_H: 4>, 'mjMOUSE_ZOOM': <mjtMouse.mjMOUSE_ZOOM: 5>, 'mjMOUSE_MOVE_V_REL': <mjtMouse.mjMOUSE_MOVE_V_REL: 6>, 'mjMOUSE_MOVE_H_REL': <mjtMouse.mjMOUSE_MOVE_H_REL: 7>}
@@ -5553,65 +5553,65 @@ class mjtMouse:
 class mjtObj:
     """
     Members:
-    
+
       mjOBJ_UNKNOWN
-    
+
       mjOBJ_BODY
-    
+
       mjOBJ_XBODY
-    
+
       mjOBJ_JOINT
-    
+
       mjOBJ_DOF
-    
+
       mjOBJ_GEOM
-    
+
       mjOBJ_SITE
-    
+
       mjOBJ_CAMERA
-    
+
       mjOBJ_LIGHT
-    
+
       mjOBJ_FLEX
-    
+
       mjOBJ_MESH
-    
+
       mjOBJ_SKIN
-    
+
       mjOBJ_HFIELD
-    
+
       mjOBJ_TEXTURE
-    
+
       mjOBJ_MATERIAL
-    
+
       mjOBJ_PAIR
-    
+
       mjOBJ_EXCLUDE
-    
+
       mjOBJ_EQUALITY
-    
+
       mjOBJ_TENDON
-    
+
       mjOBJ_ACTUATOR
-    
+
       mjOBJ_SENSOR
-    
+
       mjOBJ_NUMERIC
-    
+
       mjOBJ_TEXT
-    
+
       mjOBJ_TUPLE
-    
+
       mjOBJ_KEY
-    
+
       mjOBJ_PLUGIN
-    
+
       mjNOBJECT
-    
+
       mjOBJ_FRAME
-    
+
       mjOBJ_DEFAULT
-    
+
       mjOBJ_MODEL
     """
     __members__: typing.ClassVar[dict[str, mjtObj]]  # value = {'mjOBJ_UNKNOWN': <mjtObj.mjOBJ_UNKNOWN: 0>, 'mjOBJ_BODY': <mjtObj.mjOBJ_BODY: 1>, 'mjOBJ_XBODY': <mjtObj.mjOBJ_XBODY: 2>, 'mjOBJ_JOINT': <mjtObj.mjOBJ_JOINT: 3>, 'mjOBJ_DOF': <mjtObj.mjOBJ_DOF: 4>, 'mjOBJ_GEOM': <mjtObj.mjOBJ_GEOM: 5>, 'mjOBJ_SITE': <mjtObj.mjOBJ_SITE: 6>, 'mjOBJ_CAMERA': <mjtObj.mjOBJ_CAMERA: 7>, 'mjOBJ_LIGHT': <mjtObj.mjOBJ_LIGHT: 8>, 'mjOBJ_FLEX': <mjtObj.mjOBJ_FLEX: 9>, 'mjOBJ_MESH': <mjtObj.mjOBJ_MESH: 10>, 'mjOBJ_SKIN': <mjtObj.mjOBJ_SKIN: 11>, 'mjOBJ_HFIELD': <mjtObj.mjOBJ_HFIELD: 12>, 'mjOBJ_TEXTURE': <mjtObj.mjOBJ_TEXTURE: 13>, 'mjOBJ_MATERIAL': <mjtObj.mjOBJ_MATERIAL: 14>, 'mjOBJ_PAIR': <mjtObj.mjOBJ_PAIR: 15>, 'mjOBJ_EXCLUDE': <mjtObj.mjOBJ_EXCLUDE: 16>, 'mjOBJ_EQUALITY': <mjtObj.mjOBJ_EQUALITY: 17>, 'mjOBJ_TENDON': <mjtObj.mjOBJ_TENDON: 18>, 'mjOBJ_ACTUATOR': <mjtObj.mjOBJ_ACTUATOR: 19>, 'mjOBJ_SENSOR': <mjtObj.mjOBJ_SENSOR: 20>, 'mjOBJ_NUMERIC': <mjtObj.mjOBJ_NUMERIC: 21>, 'mjOBJ_TEXT': <mjtObj.mjOBJ_TEXT: 22>, 'mjOBJ_TUPLE': <mjtObj.mjOBJ_TUPLE: 23>, 'mjOBJ_KEY': <mjtObj.mjOBJ_KEY: 24>, 'mjOBJ_PLUGIN': <mjtObj.mjOBJ_PLUGIN: 25>, 'mjNOBJECT': <mjtObj.mjNOBJECT: 26>, 'mjOBJ_FRAME': <mjtObj.mjOBJ_FRAME: 100>, 'mjOBJ_DEFAULT': <mjtObj.mjOBJ_DEFAULT: 101>, 'mjOBJ_MODEL': <mjtObj.mjOBJ_MODEL: 102>}
@@ -5760,15 +5760,15 @@ class mjtObj:
 class mjtOrientation:
     """
     Members:
-    
+
       mjORIENTATION_QUAT
-    
+
       mjORIENTATION_AXISANGLE
-    
+
       mjORIENTATION_XYAXES
-    
+
       mjORIENTATION_ZAXIS
-    
+
       mjORIENTATION_EULER
     """
     __members__: typing.ClassVar[dict[str, mjtOrientation]]  # value = {'mjORIENTATION_QUAT': <mjtOrientation.mjORIENTATION_QUAT: 0>, 'mjORIENTATION_AXISANGLE': <mjtOrientation.mjORIENTATION_AXISANGLE: 1>, 'mjORIENTATION_XYAXES': <mjtOrientation.mjORIENTATION_XYAXES: 2>, 'mjORIENTATION_ZAXIS': <mjtOrientation.mjORIENTATION_ZAXIS: 3>, 'mjORIENTATION_EULER': <mjtOrientation.mjORIENTATION_EULER: 4>}
@@ -5892,9 +5892,9 @@ class mjtOrientation:
 class mjtPertBit:
     """
     Members:
-    
+
       mjPERT_TRANSLATE
-    
+
       mjPERT_ROTATE
     """
     __members__: typing.ClassVar[dict[str, mjtPertBit]]  # value = {'mjPERT_TRANSLATE': <mjtPertBit.mjPERT_TRANSLATE: 1>, 'mjPERT_ROTATE': <mjtPertBit.mjPERT_ROTATE: 2>}
@@ -6015,13 +6015,13 @@ class mjtPertBit:
 class mjtPluginCapabilityBit:
     """
     Members:
-    
+
       mjPLUGIN_ACTUATOR
-    
+
       mjPLUGIN_SENSOR
-    
+
       mjPLUGIN_PASSIVE
-    
+
       mjPLUGIN_SDF
     """
     __members__: typing.ClassVar[dict[str, mjtPluginCapabilityBit]]  # value = {'mjPLUGIN_ACTUATOR': <mjtPluginCapabilityBit.mjPLUGIN_ACTUATOR: 1>, 'mjPLUGIN_SENSOR': <mjtPluginCapabilityBit.mjPLUGIN_SENSOR: 2>, 'mjPLUGIN_PASSIVE': <mjtPluginCapabilityBit.mjPLUGIN_PASSIVE: 4>, 'mjPLUGIN_SDF': <mjtPluginCapabilityBit.mjPLUGIN_SDF: 8>}
@@ -6144,27 +6144,27 @@ class mjtPluginCapabilityBit:
 class mjtRndFlag:
     """
     Members:
-    
+
       mjRND_SHADOW
-    
+
       mjRND_WIREFRAME
-    
+
       mjRND_REFLECTION
-    
+
       mjRND_ADDITIVE
-    
+
       mjRND_SKYBOX
-    
+
       mjRND_FOG
-    
+
       mjRND_HAZE
-    
+
       mjRND_SEGMENT
-    
+
       mjRND_IDCOLOR
-    
+
       mjRND_CULL_FACE
-    
+
       mjNRNDFLAG
     """
     __members__: typing.ClassVar[dict[str, mjtRndFlag]]  # value = {'mjRND_SHADOW': <mjtRndFlag.mjRND_SHADOW: 0>, 'mjRND_WIREFRAME': <mjtRndFlag.mjRND_WIREFRAME: 1>, 'mjRND_REFLECTION': <mjtRndFlag.mjRND_REFLECTION: 2>, 'mjRND_ADDITIVE': <mjtRndFlag.mjRND_ADDITIVE: 3>, 'mjRND_SKYBOX': <mjtRndFlag.mjRND_SKYBOX: 4>, 'mjRND_FOG': <mjtRndFlag.mjRND_FOG: 5>, 'mjRND_HAZE': <mjtRndFlag.mjRND_HAZE: 6>, 'mjRND_SEGMENT': <mjtRndFlag.mjRND_SEGMENT: 7>, 'mjRND_IDCOLOR': <mjtRndFlag.mjRND_IDCOLOR: 8>, 'mjRND_CULL_FACE': <mjtRndFlag.mjRND_CULL_FACE: 9>, 'mjNRNDFLAG': <mjtRndFlag.mjNRNDFLAG: 10>}
@@ -6294,13 +6294,13 @@ class mjtRndFlag:
 class mjtSDFType:
     """
     Members:
-    
+
       mjSDFTYPE_SINGLE
-    
+
       mjSDFTYPE_INTERSECTION
-    
+
       mjSDFTYPE_MIDSURFACE
-    
+
       mjSDFTYPE_COLLISION
     """
     __members__: typing.ClassVar[dict[str, mjtSDFType]]  # value = {'mjSDFTYPE_SINGLE': <mjtSDFType.mjSDFTYPE_SINGLE: 0>, 'mjSDFTYPE_INTERSECTION': <mjtSDFType.mjSDFTYPE_INTERSECTION: 1>, 'mjSDFTYPE_MIDSURFACE': <mjtSDFType.mjSDFTYPE_MIDSURFACE: 2>, 'mjSDFTYPE_COLLISION': <mjtSDFType.mjSDFTYPE_COLLISION: 3>}
@@ -6423,15 +6423,15 @@ class mjtSDFType:
 class mjtSameFrame:
     """
     Members:
-    
+
       mjSAMEFRAME_NONE
-    
+
       mjSAMEFRAME_BODY
-    
+
       mjSAMEFRAME_INERTIA
-    
+
       mjSAMEFRAME_BODYROT
-    
+
       mjSAMEFRAME_INERTIAROT
     """
     __members__: typing.ClassVar[dict[str, mjtSameFrame]]  # value = {'mjSAMEFRAME_NONE': <mjtSameFrame.mjSAMEFRAME_NONE: 0>, 'mjSAMEFRAME_BODY': <mjtSameFrame.mjSAMEFRAME_BODY: 1>, 'mjSAMEFRAME_INERTIA': <mjtSameFrame.mjSAMEFRAME_INERTIA: 2>, 'mjSAMEFRAME_BODYROT': <mjtSameFrame.mjSAMEFRAME_BODYROT: 3>, 'mjSAMEFRAME_INERTIAROT': <mjtSameFrame.mjSAMEFRAME_INERTIAROT: 4>}
@@ -6555,11 +6555,11 @@ class mjtSameFrame:
 class mjtSection:
     """
     Members:
-    
+
       mjSECT_CLOSED
-    
+
       mjSECT_OPEN
-    
+
       mjSECT_FIXED
     """
     __members__: typing.ClassVar[dict[str, mjtSection]]  # value = {'mjSECT_CLOSED': <mjtSection.mjSECT_CLOSED: 0>, 'mjSECT_OPEN': <mjtSection.mjSECT_OPEN: 1>, 'mjSECT_FIXED': <mjtSection.mjSECT_FIXED: 2>}
@@ -6681,103 +6681,103 @@ class mjtSection:
 class mjtSensor:
     """
     Members:
-    
+
       mjSENS_TOUCH
-    
+
       mjSENS_ACCELEROMETER
-    
+
       mjSENS_VELOCIMETER
-    
+
       mjSENS_GYRO
-    
+
       mjSENS_FORCE
-    
+
       mjSENS_TORQUE
-    
+
       mjSENS_MAGNETOMETER
-    
+
       mjSENS_RANGEFINDER
-    
+
       mjSENS_CAMPROJECTION
-    
+
       mjSENS_JOINTPOS
-    
+
       mjSENS_JOINTVEL
-    
+
       mjSENS_TENDONPOS
-    
+
       mjSENS_TENDONVEL
-    
+
       mjSENS_ACTUATORPOS
-    
+
       mjSENS_ACTUATORVEL
-    
+
       mjSENS_ACTUATORFRC
-    
+
       mjSENS_JOINTACTFRC
-    
+
       mjSENS_TENDONACTFRC
-    
+
       mjSENS_BALLQUAT
-    
+
       mjSENS_BALLANGVEL
-    
+
       mjSENS_JOINTLIMITPOS
-    
+
       mjSENS_JOINTLIMITVEL
-    
+
       mjSENS_JOINTLIMITFRC
-    
+
       mjSENS_TENDONLIMITPOS
-    
+
       mjSENS_TENDONLIMITVEL
-    
+
       mjSENS_TENDONLIMITFRC
-    
+
       mjSENS_FRAMEPOS
-    
+
       mjSENS_FRAMEQUAT
-    
+
       mjSENS_FRAMEXAXIS
-    
+
       mjSENS_FRAMEYAXIS
-    
+
       mjSENS_FRAMEZAXIS
-    
+
       mjSENS_FRAMELINVEL
-    
+
       mjSENS_FRAMEANGVEL
-    
+
       mjSENS_FRAMELINACC
-    
+
       mjSENS_FRAMEANGACC
-    
+
       mjSENS_SUBTREECOM
-    
+
       mjSENS_SUBTREELINVEL
-    
+
       mjSENS_SUBTREEANGMOM
-    
+
       mjSENS_INSIDESITE
-    
+
       mjSENS_GEOMDIST
-    
+
       mjSENS_GEOMNORMAL
-    
+
       mjSENS_GEOMFROMTO
-    
+
       mjSENS_CONTACT
-    
+
       mjSENS_E_POTENTIAL
-    
+
       mjSENS_E_KINETIC
-    
+
       mjSENS_CLOCK
-    
+
       mjSENS_TACTILE
-    
+
       mjSENS_PLUGIN
-    
+
       mjSENS_USER
     """
     __members__: typing.ClassVar[dict[str, mjtSensor]]  # value = {'mjSENS_TOUCH': <mjtSensor.mjSENS_TOUCH: 0>, 'mjSENS_ACCELEROMETER': <mjtSensor.mjSENS_ACCELEROMETER: 1>, 'mjSENS_VELOCIMETER': <mjtSensor.mjSENS_VELOCIMETER: 2>, 'mjSENS_GYRO': <mjtSensor.mjSENS_GYRO: 3>, 'mjSENS_FORCE': <mjtSensor.mjSENS_FORCE: 4>, 'mjSENS_TORQUE': <mjtSensor.mjSENS_TORQUE: 5>, 'mjSENS_MAGNETOMETER': <mjtSensor.mjSENS_MAGNETOMETER: 6>, 'mjSENS_RANGEFINDER': <mjtSensor.mjSENS_RANGEFINDER: 7>, 'mjSENS_CAMPROJECTION': <mjtSensor.mjSENS_CAMPROJECTION: 8>, 'mjSENS_JOINTPOS': <mjtSensor.mjSENS_JOINTPOS: 9>, 'mjSENS_JOINTVEL': <mjtSensor.mjSENS_JOINTVEL: 10>, 'mjSENS_TENDONPOS': <mjtSensor.mjSENS_TENDONPOS: 11>, 'mjSENS_TENDONVEL': <mjtSensor.mjSENS_TENDONVEL: 12>, 'mjSENS_ACTUATORPOS': <mjtSensor.mjSENS_ACTUATORPOS: 13>, 'mjSENS_ACTUATORVEL': <mjtSensor.mjSENS_ACTUATORVEL: 14>, 'mjSENS_ACTUATORFRC': <mjtSensor.mjSENS_ACTUATORFRC: 15>, 'mjSENS_JOINTACTFRC': <mjtSensor.mjSENS_JOINTACTFRC: 16>, 'mjSENS_TENDONACTFRC': <mjtSensor.mjSENS_TENDONACTFRC: 17>, 'mjSENS_BALLQUAT': <mjtSensor.mjSENS_BALLQUAT: 18>, 'mjSENS_BALLANGVEL': <mjtSensor.mjSENS_BALLANGVEL: 19>, 'mjSENS_JOINTLIMITPOS': <mjtSensor.mjSENS_JOINTLIMITPOS: 20>, 'mjSENS_JOINTLIMITVEL': <mjtSensor.mjSENS_JOINTLIMITVEL: 21>, 'mjSENS_JOINTLIMITFRC': <mjtSensor.mjSENS_JOINTLIMITFRC: 22>, 'mjSENS_TENDONLIMITPOS': <mjtSensor.mjSENS_TENDONLIMITPOS: 23>, 'mjSENS_TENDONLIMITVEL': <mjtSensor.mjSENS_TENDONLIMITVEL: 24>, 'mjSENS_TENDONLIMITFRC': <mjtSensor.mjSENS_TENDONLIMITFRC: 25>, 'mjSENS_FRAMEPOS': <mjtSensor.mjSENS_FRAMEPOS: 26>, 'mjSENS_FRAMEQUAT': <mjtSensor.mjSENS_FRAMEQUAT: 27>, 'mjSENS_FRAMEXAXIS': <mjtSensor.mjSENS_FRAMEXAXIS: 28>, 'mjSENS_FRAMEYAXIS': <mjtSensor.mjSENS_FRAMEYAXIS: 29>, 'mjSENS_FRAMEZAXIS': <mjtSensor.mjSENS_FRAMEZAXIS: 30>, 'mjSENS_FRAMELINVEL': <mjtSensor.mjSENS_FRAMELINVEL: 31>, 'mjSENS_FRAMEANGVEL': <mjtSensor.mjSENS_FRAMEANGVEL: 32>, 'mjSENS_FRAMELINACC': <mjtSensor.mjSENS_FRAMELINACC: 33>, 'mjSENS_FRAMEANGACC': <mjtSensor.mjSENS_FRAMEANGACC: 34>, 'mjSENS_SUBTREECOM': <mjtSensor.mjSENS_SUBTREECOM: 35>, 'mjSENS_SUBTREELINVEL': <mjtSensor.mjSENS_SUBTREELINVEL: 36>, 'mjSENS_SUBTREEANGMOM': <mjtSensor.mjSENS_SUBTREEANGMOM: 37>, 'mjSENS_INSIDESITE': <mjtSensor.mjSENS_INSIDESITE: 38>, 'mjSENS_GEOMDIST': <mjtSensor.mjSENS_GEOMDIST: 39>, 'mjSENS_GEOMNORMAL': <mjtSensor.mjSENS_GEOMNORMAL: 40>, 'mjSENS_GEOMFROMTO': <mjtSensor.mjSENS_GEOMFROMTO: 41>, 'mjSENS_CONTACT': <mjtSensor.mjSENS_CONTACT: 42>, 'mjSENS_E_POTENTIAL': <mjtSensor.mjSENS_E_POTENTIAL: 43>, 'mjSENS_E_KINETIC': <mjtSensor.mjSENS_E_KINETIC: 44>, 'mjSENS_CLOCK': <mjtSensor.mjSENS_CLOCK: 45>, 'mjSENS_TACTILE': <mjtSensor.mjSENS_TACTILE: 46>, 'mjSENS_PLUGIN': <mjtSensor.mjSENS_PLUGIN: 47>, 'mjSENS_USER': <mjtSensor.mjSENS_USER: 48>}
@@ -6945,11 +6945,11 @@ class mjtSensor:
 class mjtSolver:
     """
     Members:
-    
+
       mjSOL_PGS
-    
+
       mjSOL_CG
-    
+
       mjSOL_NEWTON
     """
     __members__: typing.ClassVar[dict[str, mjtSolver]]  # value = {'mjSOL_PGS': <mjtSolver.mjSOL_PGS: 0>, 'mjSOL_CG': <mjtSolver.mjSOL_CG: 1>, 'mjSOL_NEWTON': <mjtSolver.mjSOL_NEWTON: 2>}
@@ -7071,13 +7071,13 @@ class mjtSolver:
 class mjtStage:
     """
     Members:
-    
+
       mjSTAGE_NONE
-    
+
       mjSTAGE_POS
-    
+
       mjSTAGE_VEL
-    
+
       mjSTAGE_ACC
     """
     __members__: typing.ClassVar[dict[str, mjtStage]]  # value = {'mjSTAGE_NONE': <mjtStage.mjSTAGE_NONE: 0>, 'mjSTAGE_POS': <mjtStage.mjSTAGE_POS: 1>, 'mjSTAGE_VEL': <mjtStage.mjSTAGE_VEL: 2>, 'mjSTAGE_ACC': <mjtStage.mjSTAGE_ACC: 3>}
@@ -7200,41 +7200,41 @@ class mjtStage:
 class mjtState:
     """
     Members:
-    
+
       mjSTATE_TIME
-    
+
       mjSTATE_QPOS
-    
+
       mjSTATE_QVEL
-    
+
       mjSTATE_ACT
-    
+
       mjSTATE_WARMSTART
-    
+
       mjSTATE_CTRL
-    
+
       mjSTATE_QFRC_APPLIED
-    
+
       mjSTATE_XFRC_APPLIED
-    
+
       mjSTATE_EQ_ACTIVE
-    
+
       mjSTATE_MOCAP_POS
-    
+
       mjSTATE_MOCAP_QUAT
-    
+
       mjSTATE_USERDATA
-    
+
       mjSTATE_PLUGIN
-    
+
       mjNSTATE
-    
+
       mjSTATE_PHYSICS
-    
+
       mjSTATE_FULLPHYSICS
-    
+
       mjSTATE_USER
-    
+
       mjSTATE_INTEGRATION
     """
     __members__: typing.ClassVar[dict[str, mjtState]]  # value = {'mjSTATE_TIME': <mjtState.mjSTATE_TIME: 1>, 'mjSTATE_QPOS': <mjtState.mjSTATE_QPOS: 2>, 'mjSTATE_QVEL': <mjtState.mjSTATE_QVEL: 4>, 'mjSTATE_ACT': <mjtState.mjSTATE_ACT: 8>, 'mjSTATE_WARMSTART': <mjtState.mjSTATE_WARMSTART: 16>, 'mjSTATE_CTRL': <mjtState.mjSTATE_CTRL: 32>, 'mjSTATE_QFRC_APPLIED': <mjtState.mjSTATE_QFRC_APPLIED: 64>, 'mjSTATE_XFRC_APPLIED': <mjtState.mjSTATE_XFRC_APPLIED: 128>, 'mjSTATE_EQ_ACTIVE': <mjtState.mjSTATE_EQ_ACTIVE: 256>, 'mjSTATE_MOCAP_POS': <mjtState.mjSTATE_MOCAP_POS: 512>, 'mjSTATE_MOCAP_QUAT': <mjtState.mjSTATE_MOCAP_QUAT: 1024>, 'mjSTATE_USERDATA': <mjtState.mjSTATE_USERDATA: 2048>, 'mjSTATE_PLUGIN': <mjtState.mjSTATE_PLUGIN: 4096>, 'mjNSTATE': <mjtState.mjNSTATE: 13>, 'mjSTATE_PHYSICS': <mjtState.mjSTATE_PHYSICS: 14>, 'mjSTATE_FULLPHYSICS': <mjtState.mjSTATE_FULLPHYSICS: 4111>, 'mjSTATE_USER': <mjtState.mjSTATE_USER: 4064>, 'mjSTATE_INTEGRATION': <mjtState.mjSTATE_INTEGRATION: 8191>}
@@ -7371,11 +7371,11 @@ class mjtState:
 class mjtStereo:
     """
     Members:
-    
+
       mjSTEREO_NONE
-    
+
       mjSTEREO_QUADBUFFERED
-    
+
       mjSTEREO_SIDEBYSIDE
     """
     __members__: typing.ClassVar[dict[str, mjtStereo]]  # value = {'mjSTEREO_NONE': <mjtStereo.mjSTEREO_NONE: 0>, 'mjSTEREO_QUADBUFFERED': <mjtStereo.mjSTEREO_QUADBUFFERED: 1>, 'mjSTEREO_SIDEBYSIDE': <mjtStereo.mjSTEREO_SIDEBYSIDE: 2>}
@@ -7497,11 +7497,11 @@ class mjtStereo:
 class mjtTaskStatus:
     """
     Members:
-    
+
       mjTASK_NEW
-    
+
       mjTASK_QUEUED
-    
+
       mjTASK_COMPLETED
     """
     __members__: typing.ClassVar[dict[str, mjtTaskStatus]]  # value = {'mjTASK_NEW': <mjtTaskStatus.mjTASK_NEW: 0>, 'mjTASK_QUEUED': <mjtTaskStatus.mjTASK_QUEUED: 1>, 'mjTASK_COMPLETED': <mjtTaskStatus.mjTASK_COMPLETED: 2>}
@@ -7623,11 +7623,11 @@ class mjtTaskStatus:
 class mjtTexture:
     """
     Members:
-    
+
       mjTEXTURE_2D
-    
+
       mjTEXTURE_CUBE
-    
+
       mjTEXTURE_SKYBOX
     """
     __members__: typing.ClassVar[dict[str, mjtTexture]]  # value = {'mjTEXTURE_2D': <mjtTexture.mjTEXTURE_2D: 0>, 'mjTEXTURE_CUBE': <mjtTexture.mjTEXTURE_CUBE: 1>, 'mjTEXTURE_SKYBOX': <mjtTexture.mjTEXTURE_SKYBOX: 2>}
@@ -7749,27 +7749,27 @@ class mjtTexture:
 class mjtTextureRole:
     """
     Members:
-    
+
       mjTEXROLE_USER
-    
+
       mjTEXROLE_RGB
-    
+
       mjTEXROLE_OCCLUSION
-    
+
       mjTEXROLE_ROUGHNESS
-    
+
       mjTEXROLE_METALLIC
-    
+
       mjTEXROLE_NORMAL
-    
+
       mjTEXROLE_OPACITY
-    
+
       mjTEXROLE_EMISSIVE
-    
+
       mjTEXROLE_RGBA
-    
+
       mjTEXROLE_ORM
-    
+
       mjNTEXROLE
     """
     __members__: typing.ClassVar[dict[str, mjtTextureRole]]  # value = {'mjTEXROLE_USER': <mjtTextureRole.mjTEXROLE_USER: 0>, 'mjTEXROLE_RGB': <mjtTextureRole.mjTEXROLE_RGB: 1>, 'mjTEXROLE_OCCLUSION': <mjtTextureRole.mjTEXROLE_OCCLUSION: 2>, 'mjTEXROLE_ROUGHNESS': <mjtTextureRole.mjTEXROLE_ROUGHNESS: 3>, 'mjTEXROLE_METALLIC': <mjtTextureRole.mjTEXROLE_METALLIC: 4>, 'mjTEXROLE_NORMAL': <mjtTextureRole.mjTEXROLE_NORMAL: 5>, 'mjTEXROLE_OPACITY': <mjtTextureRole.mjTEXROLE_OPACITY: 6>, 'mjTEXROLE_EMISSIVE': <mjtTextureRole.mjTEXROLE_EMISSIVE: 7>, 'mjTEXROLE_RGBA': <mjtTextureRole.mjTEXROLE_RGBA: 8>, 'mjTEXROLE_ORM': <mjtTextureRole.mjTEXROLE_ORM: 9>, 'mjNTEXROLE': <mjtTextureRole.mjNTEXROLE: 10>}
@@ -7899,37 +7899,37 @@ class mjtTextureRole:
 class mjtTimer:
     """
     Members:
-    
+
       mjTIMER_STEP
-    
+
       mjTIMER_FORWARD
-    
+
       mjTIMER_INVERSE
-    
+
       mjTIMER_POSITION
-    
+
       mjTIMER_VELOCITY
-    
+
       mjTIMER_ACTUATION
-    
+
       mjTIMER_CONSTRAINT
-    
+
       mjTIMER_ADVANCE
-    
+
       mjTIMER_POS_KINEMATICS
-    
+
       mjTIMER_POS_INERTIA
-    
+
       mjTIMER_POS_COLLISION
-    
+
       mjTIMER_POS_MAKE
-    
+
       mjTIMER_POS_PROJECT
-    
+
       mjTIMER_COL_BROAD
-    
+
       mjTIMER_COL_NARROW
-    
+
       mjNTIMER
     """
     __members__: typing.ClassVar[dict[str, mjtTimer]]  # value = {'mjTIMER_STEP': <mjtTimer.mjTIMER_STEP: 0>, 'mjTIMER_FORWARD': <mjtTimer.mjTIMER_FORWARD: 1>, 'mjTIMER_INVERSE': <mjtTimer.mjTIMER_INVERSE: 2>, 'mjTIMER_POSITION': <mjtTimer.mjTIMER_POSITION: 3>, 'mjTIMER_VELOCITY': <mjtTimer.mjTIMER_VELOCITY: 4>, 'mjTIMER_ACTUATION': <mjtTimer.mjTIMER_ACTUATION: 5>, 'mjTIMER_CONSTRAINT': <mjtTimer.mjTIMER_CONSTRAINT: 6>, 'mjTIMER_ADVANCE': <mjtTimer.mjTIMER_ADVANCE: 7>, 'mjTIMER_POS_KINEMATICS': <mjtTimer.mjTIMER_POS_KINEMATICS: 8>, 'mjTIMER_POS_INERTIA': <mjtTimer.mjTIMER_POS_INERTIA: 9>, 'mjTIMER_POS_COLLISION': <mjtTimer.mjTIMER_POS_COLLISION: 10>, 'mjTIMER_POS_MAKE': <mjtTimer.mjTIMER_POS_MAKE: 11>, 'mjTIMER_POS_PROJECT': <mjtTimer.mjTIMER_POS_PROJECT: 12>, 'mjTIMER_COL_BROAD': <mjtTimer.mjTIMER_COL_BROAD: 13>, 'mjTIMER_COL_NARROW': <mjtTimer.mjTIMER_COL_NARROW: 14>, 'mjNTIMER': <mjtTimer.mjNTIMER: 15>}
@@ -8064,19 +8064,19 @@ class mjtTimer:
 class mjtTrn:
     """
     Members:
-    
+
       mjTRN_JOINT
-    
+
       mjTRN_JOINTINPARENT
-    
+
       mjTRN_SLIDERCRANK
-    
+
       mjTRN_TENDON
-    
+
       mjTRN_SITE
-    
+
       mjTRN_BODY
-    
+
       mjTRN_UNDEFINED
     """
     __members__: typing.ClassVar[dict[str, mjtTrn]]  # value = {'mjTRN_JOINT': <mjtTrn.mjTRN_JOINT: 0>, 'mjTRN_JOINTINPARENT': <mjtTrn.mjTRN_JOINTINPARENT: 1>, 'mjTRN_SLIDERCRANK': <mjtTrn.mjTRN_SLIDERCRANK: 2>, 'mjTRN_TENDON': <mjtTrn.mjTRN_TENDON: 3>, 'mjTRN_SITE': <mjtTrn.mjTRN_SITE: 4>, 'mjTRN_BODY': <mjtTrn.mjTRN_BODY: 5>, 'mjTRN_UNDEFINED': <mjtTrn.mjTRN_UNDEFINED: 1000>}
@@ -8202,69 +8202,69 @@ class mjtTrn:
 class mjtVisFlag:
     """
     Members:
-    
+
       mjVIS_CONVEXHULL
-    
+
       mjVIS_TEXTURE
-    
+
       mjVIS_JOINT
-    
+
       mjVIS_CAMERA
-    
+
       mjVIS_ACTUATOR
-    
+
       mjVIS_ACTIVATION
-    
+
       mjVIS_LIGHT
-    
+
       mjVIS_TENDON
-    
+
       mjVIS_RANGEFINDER
-    
+
       mjVIS_CONSTRAINT
-    
+
       mjVIS_INERTIA
-    
+
       mjVIS_SCLINERTIA
-    
+
       mjVIS_PERTFORCE
-    
+
       mjVIS_PERTOBJ
-    
+
       mjVIS_CONTACTPOINT
-    
+
       mjVIS_ISLAND
-    
+
       mjVIS_CONTACTFORCE
-    
+
       mjVIS_CONTACTSPLIT
-    
+
       mjVIS_TRANSPARENT
-    
+
       mjVIS_AUTOCONNECT
-    
+
       mjVIS_COM
-    
+
       mjVIS_SELECT
-    
+
       mjVIS_STATIC
-    
+
       mjVIS_SKIN
-    
+
       mjVIS_FLEXVERT
-    
+
       mjVIS_FLEXEDGE
-    
+
       mjVIS_FLEXFACE
-    
+
       mjVIS_FLEXSKIN
-    
+
       mjVIS_BODYBVH
-    
+
       mjVIS_MESHBVH
-    
+
       mjVIS_SDFITER
-    
+
       mjNVISFLAG
     """
     __members__: typing.ClassVar[dict[str, mjtVisFlag]]  # value = {'mjVIS_CONVEXHULL': <mjtVisFlag.mjVIS_CONVEXHULL: 0>, 'mjVIS_TEXTURE': <mjtVisFlag.mjVIS_TEXTURE: 1>, 'mjVIS_JOINT': <mjtVisFlag.mjVIS_JOINT: 2>, 'mjVIS_CAMERA': <mjtVisFlag.mjVIS_CAMERA: 3>, 'mjVIS_ACTUATOR': <mjtVisFlag.mjVIS_ACTUATOR: 4>, 'mjVIS_ACTIVATION': <mjtVisFlag.mjVIS_ACTIVATION: 5>, 'mjVIS_LIGHT': <mjtVisFlag.mjVIS_LIGHT: 6>, 'mjVIS_TENDON': <mjtVisFlag.mjVIS_TENDON: 7>, 'mjVIS_RANGEFINDER': <mjtVisFlag.mjVIS_RANGEFINDER: 8>, 'mjVIS_CONSTRAINT': <mjtVisFlag.mjVIS_CONSTRAINT: 9>, 'mjVIS_INERTIA': <mjtVisFlag.mjVIS_INERTIA: 10>, 'mjVIS_SCLINERTIA': <mjtVisFlag.mjVIS_SCLINERTIA: 11>, 'mjVIS_PERTFORCE': <mjtVisFlag.mjVIS_PERTFORCE: 12>, 'mjVIS_PERTOBJ': <mjtVisFlag.mjVIS_PERTOBJ: 13>, 'mjVIS_CONTACTPOINT': <mjtVisFlag.mjVIS_CONTACTPOINT: 14>, 'mjVIS_ISLAND': <mjtVisFlag.mjVIS_ISLAND: 15>, 'mjVIS_CONTACTFORCE': <mjtVisFlag.mjVIS_CONTACTFORCE: 16>, 'mjVIS_CONTACTSPLIT': <mjtVisFlag.mjVIS_CONTACTSPLIT: 17>, 'mjVIS_TRANSPARENT': <mjtVisFlag.mjVIS_TRANSPARENT: 18>, 'mjVIS_AUTOCONNECT': <mjtVisFlag.mjVIS_AUTOCONNECT: 19>, 'mjVIS_COM': <mjtVisFlag.mjVIS_COM: 20>, 'mjVIS_SELECT': <mjtVisFlag.mjVIS_SELECT: 21>, 'mjVIS_STATIC': <mjtVisFlag.mjVIS_STATIC: 22>, 'mjVIS_SKIN': <mjtVisFlag.mjVIS_SKIN: 23>, 'mjVIS_FLEXVERT': <mjtVisFlag.mjVIS_FLEXVERT: 24>, 'mjVIS_FLEXEDGE': <mjtVisFlag.mjVIS_FLEXEDGE: 25>, 'mjVIS_FLEXFACE': <mjtVisFlag.mjVIS_FLEXFACE: 26>, 'mjVIS_FLEXSKIN': <mjtVisFlag.mjVIS_FLEXSKIN: 27>, 'mjVIS_BODYBVH': <mjtVisFlag.mjVIS_BODYBVH: 28>, 'mjVIS_MESHBVH': <mjtVisFlag.mjVIS_MESHBVH: 29>, 'mjVIS_SDFITER': <mjtVisFlag.mjVIS_SDFITER: 30>, 'mjNVISFLAG': <mjtVisFlag.mjNVISFLAG: 31>}
@@ -8415,23 +8415,23 @@ class mjtVisFlag:
 class mjtWarning:
     """
     Members:
-    
+
       mjWARN_INERTIA
-    
+
       mjWARN_CONTACTFULL
-    
+
       mjWARN_CNSTRFULL
-    
+
       mjWARN_VGEOMFULL
-    
+
       mjWARN_BADQPOS
-    
+
       mjWARN_BADQVEL
-    
+
       mjWARN_BADQACC
-    
+
       mjWARN_BADCTRL
-    
+
       mjNWARNING
     """
     __members__: typing.ClassVar[dict[str, mjtWarning]]  # value = {'mjWARN_INERTIA': <mjtWarning.mjWARN_INERTIA: 0>, 'mjWARN_CONTACTFULL': <mjtWarning.mjWARN_CONTACTFULL: 1>, 'mjWARN_CNSTRFULL': <mjtWarning.mjWARN_CNSTRFULL: 2>, 'mjWARN_VGEOMFULL': <mjtWarning.mjWARN_VGEOMFULL: 3>, 'mjWARN_BADQPOS': <mjtWarning.mjWARN_BADQPOS: 4>, 'mjWARN_BADQVEL': <mjtWarning.mjWARN_BADQVEL: 5>, 'mjWARN_BADQACC': <mjtWarning.mjWARN_BADQACC: 6>, 'mjWARN_BADCTRL': <mjtWarning.mjWARN_BADCTRL: 7>, 'mjNWARNING': <mjtWarning.mjNWARNING: 8>}
@@ -8559,17 +8559,17 @@ class mjtWarning:
 class mjtWrap:
     """
     Members:
-    
+
       mjWRAP_NONE
-    
+
       mjWRAP_JOINT
-    
+
       mjWRAP_PULLEY
-    
+
       mjWRAP_SITE
-    
+
       mjWRAP_SPHERE
-    
+
       mjWRAP_CYLINDER
     """
     __members__: typing.ClassVar[dict[str, mjtWrap]]  # value = {'mjWRAP_NONE': <mjtWrap.mjWRAP_NONE: 0>, 'mjWRAP_JOINT': <mjtWrap.mjWRAP_JOINT: 1>, 'mjWRAP_PULLEY': <mjtWrap.mjWRAP_PULLEY: 2>, 'mjWRAP_SITE': <mjtWrap.mjWRAP_SITE: 3>, 'mjWRAP_SPHERE': <mjtWrap.mjWRAP_SPHERE: 4>, 'mjWRAP_CYLINDER': <mjtWrap.mjWRAP_CYLINDER: 5>}

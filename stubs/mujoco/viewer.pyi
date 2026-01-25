@@ -47,7 +47,7 @@ class Handle:
     def set_figures(self, viewports_figures: typing.Union[typing.Tuple[mujoco._render.MjrRect, mujoco._structs.MjvFigure], typing.List[typing.Tuple[mujoco._render.MjrRect, mujoco._structs.MjvFigure]]]):
         """
         Overlay figures on the viewer.
-        
+
         Args:
           viewports_figures: Single tuple or list of tuples of (viewport, figure)
             viewport: Rectangle defining position and size of the figure
@@ -56,7 +56,7 @@ class Handle:
     def set_images(self, viewports_images: typing.Union[typing.Tuple[mujoco._render.MjrRect, numpy.ndarray], typing.List[typing.Tuple[mujoco._render.MjrRect, numpy.ndarray]]]):
         """
         Overlay images on the viewer.
-        
+
         Args:
           viewports_images: Single tuple or list of tuples of (viewport, image)
             viewport: Rectangle defining position and size of the image
@@ -65,7 +65,7 @@ class Handle:
     def set_texts(self, texts: typing.Union[typing.Tuple[typing.Optional[int], typing.Optional[int], typing.Optional[str], typing.Optional[str]], typing.List[typing.Tuple[typing.Optional[int], typing.Optional[int], typing.Optional[str], typing.Optional[str]]]]):
         """
         Overlay text on the viewer.
-        
+
         Args:
           texts: Single tuple or list of tuples of (font, gridpos, text1, text2)
             font: Font style from mujoco.mjtFontScale

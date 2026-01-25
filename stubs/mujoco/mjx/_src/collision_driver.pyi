@@ -50,21 +50,21 @@ __all__: list[str] = ['Contact', 'Data', 'DataJAX', 'DisableBit', 'FunctionKey',
 def _contact_groups(m: mujoco.mjx._src.types.Model, d: mujoco.mjx._src.types.Data) -> typing.Dict[mujoco.mjx._src.collision_types.FunctionKey, mujoco.mjx._src.types.Contact]:
     """
     Returns contact groups to check for collisions.
-    
+
     Contacts are grouped the same way as _geom_groups.  Only one contact is
     emitted per geom pair, even if the collision function emits multiple contacts.
-    
+
     Args:
       m: MJX model
       d: MJX data
-    
+
     Returns:
       a dict where the key is the grouping and value is a Contact
     """
 def _geom_groups(m: typing.Union[mujoco.mjx._src.types.Model, mujoco._structs.MjModel]) -> typing.Dict[mujoco.mjx._src.collision_types.FunctionKey, typing.List[typing.Tuple[int, int, int]]]:
     """
     Returns geom pairs to check for collision grouped by collision function.
-    
+
     The grouping consists of:
       - The collision function to run, which is determined by geom types
       - For mesh geoms, convex functions are run for each distinct mesh in the
@@ -72,10 +72,10 @@ def _geom_groups(m: typing.Union[mujoco.mjx._src.types.Model, mujoco._structs.Mj
         collides with a cube and a tetrahedron, sphere_convex is called twice.
       - The condim of the collision. This ensures that the size of the resulting
         constraint jacobian is determined at compile time.
-    
+
     Args:
       m: a MuJoCo or MJX model
-    
+
     Returns:
       a dict with grouping key and values geom1, geom2, pair index
     """
@@ -88,10 +88,10 @@ def collision(m: mujoco.mjx._src.types.Model, d: mujoco.mjx._src.types.Data) -> 
 def geom_pairs(m: typing.Union[mujoco.mjx._src.types.Model, mujoco._structs.MjModel]) -> typing.Iterator[typing.Tuple[int, int, int]]:
     """
     Yields geom pairs to check for collisions.
-    
+
     Args:
       m: a MuJoCo or MJX model
-    
+
     Yields:
       geom1, geom2, and pair index if defined in <pair> (else -1)
     """
