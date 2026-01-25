@@ -37,6 +37,7 @@ dev = [
   "gymnax",
   "mkdocstrings-python",
   "mujoco-mjx",
+  "prek>=0.3.0",
   "pygame",
   "pyright",
   "pytest",
