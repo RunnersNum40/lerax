@@ -17,7 +17,11 @@ repos:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
-  - repo: https://github.com/DetachHead/basedpyright-pre-commit-mirror
-    rev: 1.37.2
+  - repo: local
     hooks:
-      - id: basedpyright
+      - id: ty
+        name: ty check
+        entry: uv run ty check
+        pass_filenames: false
+        language: system
+        types: [python]

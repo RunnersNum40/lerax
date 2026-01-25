@@ -33,7 +33,6 @@ render = ["pygame", "imageio", "imageio-ffmpeg"]
 
 [dependency-groups]
 dev = [
-  "basedpyright>=1.37.2",
   "gymnasium",
   "gymnax",
   "mkdocstrings-python",
@@ -45,13 +44,13 @@ dev = [
   "pytest-xdist",
   "ruff",
   "stable-baselines3",
+  "ty>=0.0.13",
   "zensical",
 ]
 
+# Kept for contributors that use pyright rather than ty
 [tool.pyright]
-reportIncompatibleMethodOverride = true
 reportIncompatibleVariableOverride = false  # Incompatible with eqx.AbstractVar
-reportFunctionMemberAccess = false
 stubPath = "stubs"
 include = ["src/**", "examples/**", "tests/**"]
 
@@ -71,6 +70,7 @@ fixable = ["I001", "F401"]
 ignore = ["E402", "E721", "E731", "E741", "F722", "E501"]
 select = ["E", "F", "I001"]
 
+[tool.ty]
 [tool.ty.rules]
 
 [tool.ty.src]
@@ -78,6 +78,10 @@ include = ["src", "examples", "tests"]
 
 [tool.ty.environment]
 extra-paths = ["stubs"]
+
+[tool.typos]
+[tool.typos.files]
+extend-exclude = ["stubs"]
 
 [tool.uv]
 package = true
