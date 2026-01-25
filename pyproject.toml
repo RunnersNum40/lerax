@@ -63,6 +63,9 @@ testpaths = ["tests"]
 [tool.ruff]
 exclude = ["stubs"]
 
+[tool.ruff.format]
+docstring-code-format = true
+
 [tool.ruff.lint]
 fixable = ["I001", "F401"]
 ignore = ["E402", "E721", "E731", "E741", "F722", "E501"]
