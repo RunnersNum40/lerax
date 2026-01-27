@@ -8,15 +8,15 @@ license = "GPL-3.0-or-later"
 license-files = ["LICENSE"]
 authors = [{ name = "Theodore Pinkerton", email = "ted@tedpinkerton.ca" }]
 dependencies = [
-  "diffrax",
+  "diffrax>=0.7.0",
   "distreqx>=0.0.2",
-  "equinox",
-  "jax",
-  "jaxtyping",
-  "optax",
-  "rich",
-  "tensorboard",
-  "tensorboardX",
+  "equinox>=0.13.3",
+  "jax>=0.9.0",
+  "jaxtyping>=0.3.6",
+  "optax>=0.2.6",
+  "rich>=14.3.1",
+  "tensorboard>=2.20.0",
+  "tensorboardX>=2.6.4",
 ]
 
 [project.urls]
@@ -26,26 +26,31 @@ issues = "https://github.com/RunnersNum40/lerax/issues"
 source = "https://github.com/RunnersNum40/lerax.git"
 
 [project.optional-dependencies]
-compatibility = ["gymnasium", "stable-baselines3", "gymnax", "flax"]
-docs = ["zensical", "mkdocstrings-python"]
-mujoco = ["mujoco-mjx"]
-render = ["pygame", "imageio", "imageio-ffmpeg"]
+compatibility = [
+  "gymnasium>=1.2.3",
+  "stable-baselines3>=2.7.1",
+  "gymnax>=0.0.9",
+  "flax>=0.12.2",
+]
+docs = ["zensical>=0.0.19", "mkdocstrings-python>=2.0.1"]
+mujoco = ["mujoco-mjx>=3.4.0"]
+render = ["pygame>=2.6.1", "imageio>=2.37.2", "imageio-ffmpeg>=0.6.0"]
 
 [dependency-groups]
 dev = [
-  "gymnasium",
-  "gymnax",
-  "mkdocstrings-python",
-  "mujoco-mjx",
+  "gymnasium>=1.2.3",
+  "gymnax>=0.0.9",
+  "mkdocstrings-python>=2.0.1",
+  "mujoco-mjx>=3.4.0",
   "prek>=0.3.0",
-  "pygame",
-  "pytest",
-  "pytest-cov",
-  "pytest-xdist",
-  "ruff",
-  "stable-baselines3",
+  "pygame>=2.6.1",
+  "pytest>=9.0.2",
+  "pytest-cov>=7.0.0",
+  "pytest-xdist>=3.8.0",
+  "ruff>=0.14.14",
+  "stable-baselines3>=2.7.1",
   "ty>=0.0.13",
-  "zensical",
+  "zensical>=0.0.19",
 ]
 
 # Kept for contributors that use pyright rather than ty
