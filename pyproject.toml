@@ -4,7 +4,7 @@ version = "0.0.5"
 description = "Deep Reinforcement Learning with JAX and Equinox."
 readme = "README.md"
 requires-python = ">=3.13"
-license = "GPL-3.0-or-later"
+license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "Theodore Pinkerton", email = "ted@tedpinkerton.ca" }]
 dependencies = [
