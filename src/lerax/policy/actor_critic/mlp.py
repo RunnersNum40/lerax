@@ -4,7 +4,7 @@ from typing import Any, ClassVar
 
 import equinox as eqx
 from jax import random as jr
-from jaxtyping import Array, Float, Integer, Key, Real
+from jaxtyping import Array, Float, Integer, Key, PyTree, Real
 
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.space import AbstractSpace
@@ -15,7 +15,7 @@ from .base_actor_critic import AbstractActorCriticPolicy
 
 class MLPActorCriticPolicy[
     ActType: (Float[Array, " dims"], Integer[Array, ""]),
-    ObsType: Real[Array, "..."],
+    ObsType: PyTree[Real[Array, "..."]],
     MaskType,
 ](AbstractActorCriticPolicy[None, ActType, ObsType, MaskType]):
     """
