@@ -292,7 +292,7 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
         if self.num_envs == 1:
             step_state = OnPolicyStepState.initial(env, policy, callback, step_key)
         else:
-            step_state = jax.vmap(
+            step_state = eqx.filter_vmap(
                 OnPolicyStepState.initial, in_axes=(None, None, None, 0)
             )(env, policy, callback, jr.split(step_key, self.num_envs))
 
