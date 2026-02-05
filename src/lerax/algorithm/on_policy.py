@@ -3,7 +3,6 @@ from __future__ import annotations
 from abc import abstractmethod
 
 import equinox as eqx
-import jax
 import optax
 from jax import lax
 from jax import numpy as jnp
@@ -22,7 +21,7 @@ from lerax.callback import (
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.policy import AbstractActorCriticPolicy, AbstractPolicy, AbstractPolicyState
 from lerax.space import Box
-from lerax.utils import filter_scan
+from lerax.utils import filter_cond, filter_scan
 
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
 
@@ -190,12 +189,12 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
         )
 
         # Reset environment if done
-        next_env_state = lax.cond(
+        next_env_state = filter_cond(
             done, lambda: env.initial(key=env_reset_key), lambda: next_env_state
         )
 
         # Reset policy state if done
-        next_policy_state = lax.cond(
+        next_policy_state = filter_cond(
             done, lambda: policy.reset(key=policy_reset_key), lambda: next_policy_state
         )
 
