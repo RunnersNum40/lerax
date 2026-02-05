@@ -130,4 +130,4 @@ class Box(AbstractSpace[Float[Array, " ..."], None]):
 
     @property
     def flat_size(self) -> int:
-        return reduce(operator.mul, self._shape)
+        return reduce(operator.mul, self._shape, 1)

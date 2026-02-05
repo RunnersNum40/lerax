@@ -75,4 +75,4 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"], None]):
 
     @property
     def flat_size(self) -> int:
-        return reduce(operator.mul, self.n)
+        return reduce(operator.mul, self.n, 1)
