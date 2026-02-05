@@ -9,6 +9,56 @@ import jax
 import numpy as np
 from jax import lax
 from jax import numpy as jnp
+from jaxtyping import ArrayLike, Bool
+
+
+def filter_cond[**ParamType, RetType](
+    pred: Bool[ArrayLike, ""],
+    true_fun: Callable[ParamType, RetType],
+    false_fun: Callable[ParamType, RetType],
+    *args: ParamType.args,
+    **kwargs: ParamType.kwargs,
+) -> RetType:
+    """
+    Like `lax.cond` but handles non-array leaves (e.g. activation functions
+    inside Equinox modules).
+
+    Note:
+        The non-array leaves of the outputs of `true_fun` and `false_fun`
+        must be identical.
+
+    Args:
+        pred: A boolean scalar determining which branch to select.
+        true_fun: A callable to be executed if `pred` is True.
+        false_fun: A callable to be executed if `pred` is False.
+        args: Positional arguments to be passed to both `true_fun` and
+            `false_fun`.
+        kwargs: Keyword arguments to be passed to both `true_fun` and
+            `false_fun`.
+
+    Returns:
+        The result of `true_fun` if `pred` is True, else `false_fun`,
+        with array leaves selected via `lax.cond`.
+
+    Raises:
+        ValueError: If the non-array leaves of the outputs of `true_fun` and
+            `false_fun` are not identical.
+    """
+    true_result = true_fun(*args, **kwargs)
+    false_result = false_fun(*args, **kwargs)
+
+    result_arrays, result_static = eqx.partition(
+        (true_result, false_result), eqx.is_array
+    )
+
+    if not eqx.tree_equal(result_static[0], result_static[1]):
+        raise ValueError(
+            "Non-array leaves of true_fun and false_fun outputs must be identical."
+            f"Got\n{result_static[0]}\nand\n{result_static[1]}"
+        )
+
+    return_result = lax.cond(pred, lambda: result_arrays[0], lambda: result_arrays[1])
+    return eqx.combine(return_result, result_static[0])
 
 
 def filter_scan(
@@ -68,9 +118,9 @@ def filter_scan(
         carry = eqx.combine(carry_arr, static)
         carry, y = f(carry, x)
         new_carry_arr, new_static = eqx.partition(carry, eqx.is_array)
-        assert eqx.tree_equal(
-            static, new_static
-        ), "Non-array carry of filter_scan must not change."
+        assert eqx.tree_equal(static, new_static), (
+            "Non-array carry of filter_scan must not change."
+        )
         return new_carry_arr, y
 
     carry_arr, ys = lax.scan(
