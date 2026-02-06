@@ -189,6 +189,21 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy, StateType: AbstractAlgorithm
     def num_iterations(self, total_timesteps: int) -> int:
         """Number of iterations per training session."""
 
+    def consolidate_callbacks(
+        self,
+        callback: Sequence[AbstractCallback] | AbstractCallback | None = None,
+    ) -> AbstractCallback:
+        if callback is None:
+            callback = CallbackList(callbacks=[])
+        elif isinstance(callback, Sequence):
+            callback = CallbackList(callbacks=list(callback))
+        elif isinstance(callback, AbstractCallback):
+            callback = callback
+        else:
+            raise TypeError(f"Invalid callback type: {type(callback)}")
+
+        return callback
+
     @eqx.filter_jit
     def learn(
         self,
@@ -214,15 +229,7 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy, StateType: AbstractAlgorithm
         """
         callback_start_key, reset_key, learn_key, callback_end_key = jr.split(key, 4)
 
-        if callback is None:
-            callback = CallbackList(callbacks=[])
-        elif isinstance(callback, Sequence):
-            callback = CallbackList(callbacks=list(callback))
-        elif isinstance(callback, AbstractCallback):
-            callback = callback
-        else:
-            raise TypeError(f"Invalid callback type: {type(callback)}")
-
+        callback = self.consolidate_callbacks(callback)
         state = self.reset(env, policy, key=reset_key, callback=callback)
 
         state = state.with_callback_states(
