@@ -139,22 +139,26 @@ class TensorBoardCallbackStepState(AbstractCallbackStepState):
     def next(
         self, reward: Float[Array, ""], done: Bool[Array, ""], alpha: float
     ) -> TensorBoardCallbackStepState:
+        episode_return = (
+            self.episode_return * (1.0 - self.episode_done.astype(float)) + reward
+        )
+        episode_length = self.episode_length * (1 - self.episode_done.astype(int)) + 1
+
         average_return = lax.select(
             done,
-            alpha * self.episode_return + (1.0 - alpha) * self.average_return,
+            alpha * episode_return + (1.0 - alpha) * self.average_return,
             self.average_return,
         )
         average_length = lax.select(
             done,
-            alpha * self.episode_length.astype(float)
-            + (1.0 - alpha) * self.average_length,
+            alpha * episode_length.astype(float) + (1.0 - alpha) * self.average_length,
             self.average_length,
         )
 
         return TensorBoardCallbackStepState(
             self.step + 1,
-            self.episode_return * (1.0 - self.episode_done.astype(float)) + reward,
-            self.episode_length * (1 - self.episode_done.astype(int)) + 1,
+            episode_return,
+            episode_length,
             done,
             average_return,
             average_length,
