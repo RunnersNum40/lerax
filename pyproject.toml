@@ -48,6 +48,7 @@ dev = [
   "pytest-cov>=7.0.0",
   "pytest-xdist>=3.8.0",
   "ruff>=0.14.14",
+  "setuptools<71",
   "stable-baselines3>=2.7.1",
   "ty>=0.0.13",
   "zensical>=0.0.19",
