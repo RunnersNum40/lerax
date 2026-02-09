@@ -61,15 +61,15 @@ def filter_cond[**ParamType, RetType](
     return eqx.combine(return_result, result_static[0])
 
 
-def filter_scan(
-    f,
-    init,
-    xs=None,
-    length=None,
+def filter_scan[Carry, X, Y](
+    f: Callable[[Carry, X], tuple[Carry, Y]],
+    init: Carry,
+    xs: X | None = None,
+    length: int | None = None,
     reverse: bool = False,
     unroll: int | bool = 1,
     _split_transpose: bool = False,
-):
+) -> tuple[Carry, Y]:
     """
     An easier to use version of `lax.scan`. All JAX and Numpy arrays are
     traced, and only non-array parts of the carry are static.
