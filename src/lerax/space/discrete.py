@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
@@ -21,7 +22,7 @@ class Discrete(AbstractSpace[Int[Array, ""], Bool[Array, " n"]]):
         n: The number of discrete values.
     """
 
-    n: int
+    n: int = eqx.field(static=True)
 
     def __init__(self, n: int):
         assert n > 0, "n must be positive"

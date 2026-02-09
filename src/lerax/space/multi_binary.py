@@ -4,6 +4,7 @@ import operator
 from functools import reduce
 from typing import Any
 
+import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Key
@@ -26,7 +27,7 @@ class MultiBinary(AbstractSpace[Bool[Array, " n"], None]):
             then the shape will be (n,).
     """
 
-    n: tuple[int, ...]
+    n: tuple[int, ...] = eqx.field(static=True)
 
     def __init__(self, n: int | tuple[int, ...]):
         if isinstance(n, int):

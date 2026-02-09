@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
@@ -21,7 +22,7 @@ class MultiDiscrete(AbstractSpace[Int[Array, " n"], None]):
         nvec: The number of discrete values for each dimension.
     """
 
-    nvec: tuple[int, ...]
+    nvec: tuple[int, ...] = eqx.field(static=True)
 
     def __init__(self, nvec: tuple[int, ...]):
         assert len(nvec) > 0, "nvec must be non-empty"
