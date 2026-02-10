@@ -176,8 +176,11 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
             )
 
         policy, opt_state, log = self.dqn_train(
-            state.policy, state.opt_state, step_state.buffer,
-            state.target_policy, key=train_key,  # type: ignore[attr-defined]
+            state.policy,
+            state.opt_state,
+            step_state.buffer,
+            state.target_policy,  # type: ignore[attr-defined]
+            key=train_key,
         )
 
         state = state.next(step_state, policy, opt_state)
@@ -220,9 +223,7 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
         gamma: float,
     ) -> Float[Array, ""]:
         # Compute Q-values for current observations
-        _, q_values = jax.vmap(policy.q_values)(
-            batch.states, batch.observations
-        )
+        _, q_values = jax.vmap(policy.q_values)(batch.states, batch.observations)
 
         # Select Q-values for taken actions
         actions = batch.actions.astype(int)
@@ -246,9 +247,7 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
         loss = jnp.mean(jnp.square(q_selected - targets)) / 2
         return loss
 
-    dqn_loss_grad = staticmethod(
-        eqx.filter_value_and_grad(dqn_loss)
-    )
+    dqn_loss_grad = staticmethod(eqx.filter_value_and_grad(dqn_loss))
 
     def dqn_train(
         self,
@@ -261,8 +260,11 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
     ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
         batch = buffer.sample(self.batch_size, key=key)
 
-        loss, grads = self.dqn_loss_grad(
-            policy, batch, target_policy, self.gamma,
+        loss, grads = self.dqn_loss_grad(  # type: ignore[missing-argument]
+            policy,
+            batch,
+            target_policy,
+            self.gamma,
         )
 
         updates, opt_state = self.optimizer.update(

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 import equinox as eqx
-from jaxtyping import Array, Bool, Float, Integer, Key, Real
+from jaxtyping import Array, Float, Integer, Key, Real
 
 from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from lerax.space import AbstractSpace, Discrete
@@ -43,7 +43,7 @@ class MLPQPolicy[ObsType: Real[Array, "..."]](AbstractQPolicy[None, ObsType]):
 
     def __init__[StateType: AbstractEnvLikeState](
         self,
-        env: AbstractEnvLike[StateType, Integer[Array, ""], ObsType, Bool[Array, " n"]],
+        env: AbstractEnvLike[StateType, Integer[Array, ""], ObsType, Any],
         *,
         epsilon: float = 0.1,
         width_size: int = 64,

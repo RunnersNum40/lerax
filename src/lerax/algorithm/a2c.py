@@ -152,9 +152,7 @@ class A2C[PolicyType: AbstractActorCriticPolicy](
 
         return loss, A2CStats(loss, policy_loss, value_loss, entropy_loss)
 
-    a2c_loss_grad = staticmethod(
-        eqx.filter_value_and_grad(a2c_loss, has_aux=True)
-    )
+    a2c_loss_grad = staticmethod(eqx.filter_value_and_grad(a2c_loss, has_aux=True))
 
     def train(
         self,
@@ -166,7 +164,7 @@ class A2C[PolicyType: AbstractActorCriticPolicy](
     ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
         flat_buffer = buffer.flatten_axes()
 
-        (_, stats), grads = self.a2c_loss_grad(
+        (_, stats), grads = self.a2c_loss_grad(  # type: ignore[missing-argument]
             policy,
             flat_buffer,
             self.normalize_advantages,

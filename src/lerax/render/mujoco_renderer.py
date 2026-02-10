@@ -76,6 +76,7 @@ class HeadlessMujocoRenderer:
         mj_data = mjx.get_data(self.model, data)
         if isinstance(mj_data, list):
             mj_data = mj_data[0]
+        assert isinstance(mj_data, mujoco.MjData)
 
         mujoco.mjv_updateScene(
             self.model,
@@ -199,6 +200,7 @@ class WindowMujocoRenderer:
         mj_data = mjx.get_data(self.model, data)
         if isinstance(mj_data, list):
             mj_data = mj_data[0]
+        assert isinstance(mj_data, mujoco.MjData)
 
         mujoco.mjv_updateScene(
             self.model,
