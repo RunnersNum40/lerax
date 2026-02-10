@@ -329,7 +329,7 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
             )
         else:
             step_state = eqx.filter_vmap(
-                self.collect_rollout, in_axes=(None, None, 0, None, 0)
+                self.collect_rollout, in_axes=(None, None, eqx.if_array(0), None, 0)
             )(
                 state.env,
                 state.policy,
