@@ -11,7 +11,11 @@ from lerax.buffer import RolloutBuffer
 from lerax.policy import AbstractActorCriticPolicy
 from lerax.utils import filter_scan
 
-from .on_policy import AbstractOnPolicyAlgorithm, OnPolicyState, OnPolicyStepState
+from .on_policy import (
+    AbstractActorCriticOnPolicyAlgorithm,
+    OnPolicyState,
+    OnPolicyStepState,
+)
 
 
 class PPOStats(eqx.Module):
@@ -33,7 +37,9 @@ class PPOStats(eqx.Module):
     entropy_loss: Float[Array, ""]
 
 
-class PPO[PolicyType: AbstractActorCriticPolicy](AbstractOnPolicyAlgorithm[PolicyType]):
+class PPO[PolicyType: AbstractActorCriticPolicy](
+    AbstractActorCriticOnPolicyAlgorithm[PolicyType]
+):
     """
     Proximal Policy Optimization (PPO) algorithm.
 
@@ -102,8 +108,8 @@ class PPO[PolicyType: AbstractActorCriticPolicy](AbstractOnPolicyAlgorithm[Polic
         normalize_advantages: bool = True,
         learning_rate: optax.ScalarOrSchedule = 3e-4,
     ):
-        self.gae_lambda = gae_lambda
         self.gamma = gamma
+        self.gae_lambda = gae_lambda
 
         self.num_envs = num_envs
         self.num_steps = num_steps

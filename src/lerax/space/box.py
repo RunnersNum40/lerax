@@ -4,7 +4,6 @@ import operator
 from functools import reduce
 from typing import Any
 
-import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Key

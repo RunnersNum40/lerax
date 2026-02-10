@@ -28,7 +28,7 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
     timeouts: Bool[Array, " capacity"]
     states: StateType
     next_states: StateType
-    action_masks: MaskType
+    action_masks: MaskType | None
 
     def __init__(
         self,
@@ -54,6 +54,7 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
 
         self.states = jax.tree.map(init_leaf, state)
         self.next_states = jax.tree.map(init_leaf, state)
+        self.action_masks = None
 
     @property
     def shape(self) -> tuple[int, ...]:
@@ -92,36 +93,40 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
         rewards = self.rewards.at[idx].set(reward)
         dones = self.dones.at[idx].set(done)
         timeouts = self.timeouts.at[idx].set(timeout)
-        states = jax.tree.map(set_at_idx, self.states, state)
-        next_states = jax.tree.map(set_at_idx, self.next_states, next_state)
 
         new_position = self.position + 1
 
-        return eqx.tree_at(
-            lambda rb: (
-                rb.position,
-                rb.observations,
-                rb.next_observations,
-                rb.actions,
-                rb.rewards,
-                rb.dones,
-                rb.timeouts,
-                rb.states,
-                rb.next_states,
-            ),
-            self,
-            (
-                new_position,
-                observations,
-                next_observations,
-                actions,
-                rewards,
-                dones,
-                timeouts,
-                states,
-                next_states,
-            ),
-        )
+        where_fns = [
+            lambda rb: rb.position,
+            lambda rb: rb.observations,
+            lambda rb: rb.next_observations,
+            lambda rb: rb.actions,
+            lambda rb: rb.rewards,
+            lambda rb: rb.dones,
+            lambda rb: rb.timeouts,
+        ]
+        replacements = [
+            new_position,
+            observations,
+            next_observations,
+            actions,
+            rewards,
+            dones,
+            timeouts,
+        ]
+
+        if self.states is not None:
+            states = jax.tree.map(set_at_idx, self.states, state)
+            next_states = jax.tree.map(set_at_idx, self.next_states, next_state)
+            where_fns.append(lambda rb: rb.states)
+            where_fns.append(lambda rb: rb.next_states)
+            replacements.append(states)
+            replacements.append(next_states)
+
+        result = self
+        for where_fn, replacement in zip(where_fns, replacements):
+            result = eqx.tree_at(where_fn, result, replacement)
+        return result
 
     def batches(
         self,
