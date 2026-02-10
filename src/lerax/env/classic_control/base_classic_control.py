@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from dataclasses import replace
 from typing import Any
 
 import diffrax
@@ -68,7 +67,9 @@ class AbstractClassicControlEnv[
         )
         assert sol.ys is not None
 
-        return replace(state, y=self.clip(sol.ys[0]), t=state.t + self.dt)
+        y = self.clip(sol.ys[0])
+        t = state.t + self.dt
+        return eqx.tree_at(lambda s: (s.y, s.t), state, (y, t))
 
     def truncate(self, state: StateType) -> Bool[Array, ""]:
         return jnp.array(False)

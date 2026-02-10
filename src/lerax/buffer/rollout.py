@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import dataclasses
 from typing import Self
 
+import equinox as eqx
 import jax
 from jax import lax
 from jax import numpy as jnp
@@ -87,7 +87,9 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
         )
         returns = advantages + self.values
 
-        return dataclasses.replace(self, advantages=advantages, returns=returns)
+        return eqx.tree_at(
+            lambda x: (x.returns, x.advantages), self, (returns, advantages)
+        )
 
     def batches(
         self,

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import replace
-
 import equinox as eqx
 import jax
 
@@ -76,7 +74,9 @@ class AbstractMujocoEnv[
         data = state.sim_state.replace(ctrl=action)
         data, _ = lax.scan(step_once, data, None, length=self.frame_skip)
 
-        return replace(state, sim_state=data, t=state.t + self.dt)
+        return eqx.tree_at(
+            lambda s: (s.sim_state, s.t), state, (data, state.t + self.dt)
+        )
 
     def truncate(self, state: MujocoEnvState) -> Bool[Array, ""]:
         return jnp.array(False)
