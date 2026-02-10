@@ -180,11 +180,14 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
         # TODO: Check if a non-branched approach is faster
         bootstrapped_reward = lax.cond(
             truncation,
-            lambda: reward
-            + self.gamma
-            * policy.value(
-                next_policy_state, env.observation(next_env_state, key=bootstrap_key)
-            )[1],
+            lambda: (
+                reward
+                + self.gamma
+                * policy.value(
+                    next_policy_state,
+                    env.observation(next_env_state, key=bootstrap_key),
+                )[1]
+            ),
             lambda: reward,
         )
 
@@ -325,7 +328,7 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy](
             )
         else:
             step_state, rollout_buffer = eqx.filter_vmap(
-                self.collect_rollout, in_axes=(None, None, 0, None, 0)
+                self.collect_rollout, in_axes=(None, None, eqx.if_array(0), None, 0)
             )(
                 state.env,
                 state.policy,
