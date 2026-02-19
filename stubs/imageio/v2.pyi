@@ -1,0 +1,3 @@
+from typing import Any
+
+def get_writer(uri: str, fps: float = ..., **kwargs: Any) -> Any: ...
