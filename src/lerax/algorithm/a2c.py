@@ -84,13 +84,13 @@ class A2C[PolicyType: AbstractActorCriticPolicy](
         self,
         *,
         num_envs: int = 4,
-        num_steps: int = 512,
+        num_steps: int = 5,
         gae_lambda: float = 1.0,
         gamma: float = 0.99,
-        entropy_loss_coefficient: float = 0.01,
+        entropy_loss_coefficient: float = 0.0,
         value_loss_coefficient: float = 0.5,
         max_grad_norm: float = 0.5,
-        normalize_advantages: bool = True,
+        normalize_advantages: bool = False,
         learning_rate: optax.ScalarOrSchedule = 7e-4,
     ):
         self.gae_lambda = gae_lambda

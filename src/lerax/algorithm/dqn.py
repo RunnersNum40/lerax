@@ -89,13 +89,13 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
     def __init__(
         self,
         *,
-        buffer_size: int = 10000,
+        buffer_size: int = 1_000_000,
         gamma: float = 0.99,
-        learning_starts: int = 1000,
+        learning_starts: int = 100,
         num_envs: int = 1,
         num_steps: int = 4,
-        batch_size: int = 64,
-        target_update_interval: int = 100,
+        batch_size: int = 32,
+        target_update_interval: int = 10_000,
         max_grad_norm: float = 10.0,
         learning_rate: optax.ScalarOrSchedule = 1e-4,
     ):
