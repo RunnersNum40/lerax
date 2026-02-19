@@ -744,7 +744,6 @@ dependencies = [
     { name = "mujoco-mjx" },
     { name = "optax" },
     { name = "rich" },
-    { name = "stable-baselines3" },
     { name = "tensorboard" },
     { name = "tensorboardx" },
 ]
@@ -790,7 +789,6 @@ requires-dist = [
     { name = "optax", specifier = ">=0.2.6" },
     { name = "pygame", marker = "extra == 'render'", specifier = ">=2.6.1" },
     { name = "rich", specifier = ">=14.3.1" },
-    { name = "stable-baselines3", specifier = ">=2.7.1" },
     { name = "tensorboard", specifier = ">=2.20.0" },
     { name = "tensorboardx", specifier = ">=2.6.4" },
 ]
