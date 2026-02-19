@@ -17,7 +17,7 @@ pip install lerax
 from jax import random as jr
 
 from lerax.algorithm import PPO
-from lerax.env import CartPole
+from lerax.env.classic_control import CartPole
 from lerax.policy import MLPActorCriticPolicy
 
 env = CartPole()

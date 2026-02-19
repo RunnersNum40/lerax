@@ -3,7 +3,7 @@ import tempfile
 from stable_baselines3 import PPO
 
 from lerax.compatibility.gym import LeraxToGymEnv
-from lerax.env import CartPole
+from lerax.env.classic_control import CartPole
 
 
 def test_sb3_integration():

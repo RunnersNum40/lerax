@@ -12,7 +12,7 @@ A simple way to visualize an environment is to use its `default_renderer()` and 
 ```py
 from jax import random as jr
 
-from lerax.env import CartPole
+from lerax.env.classic_control import CartPole
 
 env = CartPole()
 
@@ -44,7 +44,7 @@ Notes:
 from jax import lax
 from jax import random as jr
 
-from lerax.env import CartPole
+from lerax.env.classic_control import CartPole
 
 env = CartPole()
 

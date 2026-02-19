@@ -3,7 +3,7 @@ from jax import random as jr
 
 from lerax.algorithm import REINFORCE
 from lerax.benchmark import average_reward
-from lerax.env import CartPole
+from lerax.env.classic_control import CartPole
 from lerax.policy import MLPActorCriticPolicy
 
 

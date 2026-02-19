@@ -2,7 +2,7 @@ from jax import random as jr
 
 from lerax.algorithm import PPO
 from lerax.callback import ProgressBarCallback, TensorBoardCallback
-from lerax.env import CartPole
+from lerax.env.classic_control import CartPole
 from lerax.policy import MLPActorCriticPolicy
 
 policy_key, learn_key = jr.split(jr.key(0), 2)

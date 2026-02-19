@@ -3,7 +3,7 @@ from jax import random as jr
 
 from lerax.algorithm import SAC
 from lerax.benchmark import average_reward
-from lerax.env import Pendulum
+from lerax.env.classic_control import Pendulum
 from lerax.policy import MLPSACPolicy
 
 

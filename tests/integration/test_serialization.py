@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 import jax
 from jax import random as jr
 
-from lerax.env import CartPole
+from lerax.env.classic_control import CartPole
 from lerax.policy import MLPActorCriticPolicy
 
 

@@ -18,7 +18,7 @@ All policies (`AbstractStatelessPolicy` / `AbstractStatefulPolicy` subclasses) a
 ```py
 from jax import random as jr
 
-from lerax.env import CartPole
+from lerax.env.classic_control import CartPole
 from lerax.policy import MLPActorCriticPolicy
 
 policy_key = jr.key(0)
@@ -36,7 +36,7 @@ Use the `deserialize` class method on the policy (or other `Serializable` subcla
 ```py
 from jax import random as jr
 
-from lerax.env import CartPole
+from lerax.env.classic_control import CartPole
 from lerax.policy import MLPActorCriticPolicy
 
 env = CartPole()

@@ -62,7 +62,7 @@ This is designed primarily for using Lerax environments with Gymnasium-style alg
 from stable_baselines3 import PPO
 
 from lerax.compatibility.gym import LeraxToGymEnv
-from lerax.env import CartPole
+from lerax.env.classic_control import CartPole
 
 env = LeraxToGymEnv(CartPole())
 model = PPO("MlpPolicy", env, tensorboard_log="logs")

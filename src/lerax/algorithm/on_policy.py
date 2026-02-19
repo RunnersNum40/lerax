@@ -71,7 +71,9 @@ class AbstractOnPolicyStepState[PolicyType: AbstractPolicy](AbstractStepState):
         return cls(env_state, policy_state, callback_states)
 
 
-class AbstractOnPolicyState[PolicyType: AbstractPolicy](AbstractAlgorithmState[PolicyType]):
+class AbstractOnPolicyState[PolicyType: AbstractPolicy](
+    AbstractAlgorithmState[PolicyType]
+):
     """
     State for on-policy algorithms.
 
@@ -246,7 +248,9 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractPolicy](
         step_key, callback_key = jr.split(key, 2)
 
         if self.num_envs == 1:
-            step_state = AbstractOnPolicyStepState.initial(env, policy, callback, step_key)
+            step_state = AbstractOnPolicyStepState.initial(
+                env, policy, callback, step_key
+            )
         else:
             step_state = eqx.filter_vmap(
                 AbstractOnPolicyStepState.initial, in_axes=(None, None, None, 0)
@@ -412,7 +416,9 @@ class AbstractActorCriticOnPolicyAlgorithm[PolicyType: AbstractActorCriticPolicy
         )
 
         return (
-            AbstractOnPolicyStepState(next_env_state, next_policy_state, callback_state),
+            AbstractOnPolicyStepState(
+                next_env_state, next_policy_state, callback_state
+            ),
             RolloutBuffer(
                 observations=observation,
                 actions=clipped_action,

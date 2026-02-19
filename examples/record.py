@@ -2,7 +2,7 @@ from jax import lax
 from jax import random as jr
 
 from lerax.algorithm import PPO
-from lerax.env import CartPole
+from lerax.env.classic_control import CartPole
 from lerax.policy import MLPActorCriticPolicy
 from lerax.render import VideoRenderer
 

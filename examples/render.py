@@ -1,7 +1,7 @@
 from jax import lax
 from jax import random as jr
 
-from lerax.env import CartPole
+from lerax.env.classic_control import CartPole
 
 env = CartPole()
 
