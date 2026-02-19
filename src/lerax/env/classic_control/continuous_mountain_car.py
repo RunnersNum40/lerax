@@ -118,16 +118,14 @@ class ContinuousMountainCar(
 
         self.dt = jnp.array(dt)
         self.solver = solver or diffrax.Tsit5()
-        is_adaptive = isinstance(self.solver, diffrax.AbstractAdaptiveSolver)
-        self.dt0 = None if is_adaptive else self.dt
-        if stepsize_controller is None:
-            self.stepsize_controller = (
-                diffrax.PIDController(rtol=1e-5, atol=1e-5)
-                if is_adaptive
-                else diffrax.ConstantStepSize()
+        self.stepsize_controller = stepsize_controller or diffrax.ConstantStepSize()
+        self.dt0 = (
+            None
+            if isinstance(
+                self.stepsize_controller, diffrax.AbstractAdaptiveStepSizeController
             )
-        else:
-            self.stepsize_controller = stepsize_controller
+            else self.dt
+        )
 
     def initial(self, *, key: Key[Array, ""]) -> ContinuousMountainCarState:
         return ContinuousMountainCarState(

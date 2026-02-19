@@ -66,16 +66,14 @@ class Pendulum(
         self.l = jnp.array(l)
 
         self.solver = solver or diffrax.Tsit5()
-        is_adaptive = isinstance(self.solver, diffrax.AbstractAdaptiveSolver)
-        self.dt0 = None if is_adaptive else self.dt
-        if stepsize_controller is None:
-            self.stepsize_controller = (
-                diffrax.PIDController(rtol=1e-5, atol=1e-5)
-                if is_adaptive
-                else diffrax.ConstantStepSize()
+        self.stepsize_controller = stepsize_controller or diffrax.ConstantStepSize()
+        self.dt0 = (
+            None
+            if isinstance(
+                self.stepsize_controller, diffrax.AbstractAdaptiveStepSizeController
             )
-        else:
-            self.stepsize_controller = stepsize_controller
+            else self.dt
+        )
 
         self.action_space = Box(-self.max_torque, self.max_torque)
         high = jnp.array([1.0, 1.0, self.max_speed])

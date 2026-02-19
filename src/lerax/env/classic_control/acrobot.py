@@ -143,15 +143,14 @@ class Acrobot(
 
         self.dt = jnp.array(dt)
         self.solver = solver or diffrax.Tsit5()
-        is_adaptive = isinstance(self.solver, diffrax.AbstractAdaptiveSolver)
-        self.dt0 = None if is_adaptive else self.dt
-        if stepsize_controller is None:
-            if is_adaptive:
-                self.stepsize_controller = diffrax.PIDController(rtol=1e-5, atol=1e-5)
-            else:
-                self.stepsize_controller = diffrax.ConstantStepSize()
-        else:
-            self.stepsize_controller = stepsize_controller
+        self.stepsize_controller = stepsize_controller or diffrax.ConstantStepSize()
+        self.dt0 = (
+            None
+            if isinstance(
+                self.stepsize_controller, diffrax.AbstractAdaptiveStepSizeController
+            )
+            else self.dt
+        )
 
         self.action_space = Discrete(3)
         state_high = jnp.array([1.0, 1.0, 1.0, 1.0, self.max_vel_1, self.max_vel_2])
