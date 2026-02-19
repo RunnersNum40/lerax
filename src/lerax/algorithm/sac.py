@@ -442,7 +442,6 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
         batch = buffer.sample(self.batch_size, key=sample_key)
         alpha = jnp.exp(log_alpha)
 
-        # Compute Q-network targets
         next_action_keys = jr.split(next_action_key, self.batch_size)
 
         def compute_target(next_obs, reward, done, timeout, action_key):
@@ -463,8 +462,7 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
             next_action_keys,
         )
 
-        # Q-network update
-        q_loss, q_grads = self.q_loss_grad(  # type: ignore[missing-argument]
+        q_loss, q_grads = self.q_loss_grad(
             (qf1, qf2),
             batch,
             targets,
@@ -480,12 +478,11 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
         )
         qf1, qf2 = eqx.apply_updates((qf1, qf2), q_updates)
 
-        # Actor update (delayed)
         should_update_actor = iteration_count % self.policy_frequency == 0
         actor_keys = jr.split(actor_key, self.batch_size)
 
         def update_actor():
-            a_loss, a_grads = self.actor_loss_grad(  # type: ignore[missing-argument]
+            a_loss, a_grads = self.actor_loss_grad(
                 policy,
                 batch,
                 qf1,
@@ -506,7 +503,6 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
 
         policy, opt_state = filter_cond(should_update_actor, update_actor, skip_actor)
 
-        # Alpha update (delayed, only if autotune)
         if self.autotune:
 
             def compute_log_probs(obs, action_key):
@@ -516,7 +512,7 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
             log_probs = jax.vmap(compute_log_probs)(batch.observations, actor_keys)
 
             def update_alpha():
-                al_loss, al_grads = self.alpha_loss_grad(  # type: ignore[missing-argument]
+                al_loss, al_grads = self.alpha_loss_grad(
                     log_alpha, log_probs, target_entropy
                 )
                 al_updates, new_alpha_opt_state = self.alpha_optimizer.update(

@@ -122,8 +122,6 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
     def per_iteration(
         self, state: AbstractOffPolicyState[PolicyType]
     ) -> AbstractOffPolicyState[PolicyType]:
-        # Update target network periodically
-        # state is always a DQNState at runtime
         should_update = state.iteration_count % self.target_update_interval == 0
         target_policy = filter_cond(
             should_update,
@@ -211,8 +209,6 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
         *,
         key: Key[Array, ""],
     ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
-        # Not used directly; DQN overrides iteration() to call dqn_train instead.
-        # This satisfies the abstract method requirement.
         return self.dqn_train(policy, opt_state, buffer, policy, key=key)
 
     @staticmethod
@@ -222,14 +218,11 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
         target_policy: PolicyType,
         gamma: float,
     ) -> Float[Array, ""]:
-        # Compute Q-values for current observations
         _, q_values = jax.vmap(policy.q_values)(batch.states, batch.observations)
 
-        # Select Q-values for taken actions
         actions = batch.actions.astype(int)
         q_selected = q_values[jnp.arange(actions.shape[0]), actions]
 
-        # Double DQN: online network selects actions, target network evaluates
         _, online_next_q = jax.vmap(policy.q_values)(
             batch.next_states, batch.next_observations
         )
@@ -240,7 +233,6 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
         )
         next_q_selected = target_next_q[jnp.arange(actions.shape[0]), best_actions]
 
-        # Compute targets: only bootstrap for non-terminal transitions
         not_terminal = (~batch.dones | batch.timeouts).astype(float)
         targets = batch.rewards + gamma * next_q_selected * not_terminal
 
@@ -260,7 +252,7 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
     ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
         batch = buffer.sample(self.batch_size, key=key)
 
-        loss, grads = self.dqn_loss_grad(  # type: ignore[missing-argument]
+        loss, grads = self.dqn_loss_grad(
             policy,
             batch,
             target_policy,

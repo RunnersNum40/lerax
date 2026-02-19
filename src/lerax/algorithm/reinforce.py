@@ -151,7 +151,7 @@ class REINFORCE[PolicyType: AbstractActorCriticPolicy](
     ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
         flat_buffer = buffer.flatten_axes()
 
-        (_, stats), grads = self.reinforce_loss_grad(  # type: ignore[missing-argument]
+        (_, stats), grads = self.reinforce_loss_grad(
             policy,
             flat_buffer,
             self.normalize_advantages,

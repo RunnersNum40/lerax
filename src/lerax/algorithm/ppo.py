@@ -220,7 +220,7 @@ class PPO[PolicyType: AbstractActorCriticPolicy](
         opt_state: optax.OptState,
         rollout_buffer: RolloutBuffer,
     ) -> tuple[PolicyType, optax.OptState, PPOStats]:
-        (_, stats), grads = self.ppo_loss_grad(  # type: ignore[missing-argument]
+        (_, stats), grads = self.ppo_loss_grad(
             policy,
             rollout_buffer,
             self.normalize_advantages,
