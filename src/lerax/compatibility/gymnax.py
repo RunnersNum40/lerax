@@ -12,6 +12,7 @@ except ModuleNotFoundError as e:
         "Install with `pip install lerax[compatibility]` or install "
         "`gymnax` and `flax` manually."
     ) from e
+import jax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
@@ -116,6 +117,7 @@ class GymnaxToLeraxEnv(AbstractEnv[GymnaxEnvState, Array, Array, None]):
 
     def initial(self, *, key: Key[Array, ""]) -> GymnaxEnvState:
         observation, env_state = self.env.reset_env(key, self.params)
+        env_state = jax.tree.map(jnp.asarray, env_state)
         return GymnaxEnvState(
             env_state=env_state,
             observation=observation,
