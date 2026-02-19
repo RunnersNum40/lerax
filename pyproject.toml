@@ -1,6 +1,6 @@
 [project]
 name = "lerax"
-version = "0.0.5"
+version = "0.0.6"
 description = "Deep Reinforcement Learning with JAX and Equinox."
 readme = "README.md"
 requires-python = ">=3.13"
