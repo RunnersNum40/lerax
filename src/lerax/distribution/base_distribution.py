@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from abc import abstractmethod
 from typing import Self
 
@@ -126,9 +125,6 @@ class AbstractTransformedDistribution[SampleType](AbstractDistreqxWrapper[Sample
         except NotImplementedError:
             # Computing the mode this way is not always correct, but it is a reasonable workaround for the
             # use cases of this library.
-            warnings.warn(
-                "Mode not implemented for base distribution; using bijector to compute mode."
-            )
             return self.distribution.bijector.forward(
                 self.distribution.distribution.mode()
             )
