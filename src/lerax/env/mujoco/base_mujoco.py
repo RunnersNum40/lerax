@@ -2,19 +2,11 @@ from __future__ import annotations
 
 import equinox as eqx
 import jax
-
-try:
-    import mujoco
-    from mujoco import mjx
-except ImportError as e:
-    raise ImportError(
-        "MuJoCo environments require the optional mujoco dependency. "
-        "Install it with: pip install 'lerax[mujoco]'"
-    ) from e
-
+import mujoco
 from jax import lax
 from jax import numpy as jnp
 from jaxtyping import Array, Bool, Float, Key, PyTree
+from mujoco import mjx
 
 from lerax.render import AbstractRenderer
 from lerax.render.mujoco_renderer import MujocoRenderer

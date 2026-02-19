@@ -2,14 +2,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Literal, cast
 
-try:
-    import gymnasium as gym
-except ModuleNotFoundError as e:
-    raise ImportError(
-        "Gymnasium compatibility requires optional dependencies. "
-        "Install with `pip install lerax[compatibility]` or install "
-        "`gymnasium` manually."
-    ) from e
+import gymnasium as gym
 import jax
 import numpy as np
 from jax import numpy as jnp
