@@ -91,26 +91,6 @@ class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
             lambda x: (x.returns, x.advantages), self, (returns, advantages)
         )
 
-    def batches(
-        self,
-        batch_size: int,
-        *,
-        key: Key[Array, ""] | None = None,
-        batch_axes: tuple[int, ...] | int | None = None,
-    ) -> Self:
-        flat_self = self.flatten_axes(batch_axes)
-
-        total = flat_self.rewards.shape[0]
-        indices = jnp.arange(total) if key is None else jr.permutation(key, total)
-
-        if total % batch_size != 0:
-            total_trim = total - (total % batch_size)
-            indices = indices[:total_trim]
-
-        indices = indices.reshape(-1, batch_size)
-
-        return jax.tree.map(lambda x: jnp.take(x, indices, axis=0), flat_self)
-
     def sample(
         self,
         batch_size: int,

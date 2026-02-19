@@ -128,37 +128,6 @@ class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
             result = eqx.tree_at(where_fn, result, replacement)
         return result
 
-    def batches(
-        self,
-        batch_size: int,
-        *,
-        key: Key[Array, ""] | None = None,
-        batch_axes: tuple[int, ...] | int | None = None,
-    ) -> Self:
-        _ = eqx.error_if(
-            self.current_size,
-            self.current_size < self.size,
-            "ReplayBuffer.batches assumes the buffer is full.",
-        )
-
-        flat_self = self.flatten_axes(batch_axes)
-
-        total = flat_self.rewards.shape[0]
-        indices = jnp.arange(total) if key is None else jr.permutation(key, total)
-
-        if total % batch_size != 0:
-            total_trim = total - (total % batch_size)
-            indices = indices[:total_trim]
-
-        indices = indices.reshape(-1, batch_size)
-
-        def take_batch(x):
-            if not isinstance(x, jnp.ndarray) or x.ndim == 0:
-                return x
-            return jnp.take(x, indices, axis=0)
-
-        return jax.tree.map(take_batch, flat_self)
-
     def sample(
         self,
         batch_size: int,

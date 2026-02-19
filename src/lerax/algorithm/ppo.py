@@ -245,21 +245,23 @@ class PPO[PolicyType: AbstractActorCriticPolicy](
         *,
         key: Key[Array, ""],
     ) -> tuple[PolicyType, optax.OptState, PPOStats]:
+        flat_buffer = rollout_buffer.flatten_axes()
+        indices = flat_buffer.batch_indices(self.batch_size, key=key)
+
         def batch_scan(
             carry: tuple[
                 PolicyType,
                 optax.OptState,
             ],
-            buffer: RolloutBuffer,
+            batch_indices: Array,
         ):
             policy, opt_state = carry
-            policy, opt_state, stats = self.train_batch(policy, opt_state, buffer)
+            batch = flat_buffer.gather(batch_indices)
+            policy, opt_state, stats = self.train_batch(policy, opt_state, batch)
             return (policy, opt_state), stats
 
         (policy, opt_state), stats = filter_scan(
-            batch_scan,
-            (policy, opt_state),
-            rollout_buffer.batches(self.batch_size, key=key),
+            batch_scan, (policy, opt_state), indices
         )
         stats = jax.tree.map(jnp.mean, stats)
         return policy, opt_state, stats
