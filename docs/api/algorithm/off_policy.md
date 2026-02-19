@@ -6,10 +6,10 @@ title: Off Policy Algorithm
     options:
         members: true
 
-::: lerax.algorithm.OffPolicyStepState
+::: lerax.algorithm.AbstractOffPolicyStepState
     options:
         members: true
 
-::: lerax.algorithm.OffPolicyState
+::: lerax.algorithm.AbstractOffPolicyState
     options:
         members: true

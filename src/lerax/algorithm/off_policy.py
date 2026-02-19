@@ -27,7 +27,7 @@ from lerax.utils import filter_scan
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
 
 
-class OffPolicyStepState[PolicyType: AbstractPolicy](AbstractStepState):
+class AbstractOffPolicyStepState[PolicyType: AbstractPolicy](AbstractStepState):
     """
     State object for off-policy algorithms steps.
 
@@ -38,10 +38,10 @@ class OffPolicyStepState[PolicyType: AbstractPolicy](AbstractStepState):
         buffer: The replay buffer storing experience.
     """
 
-    env_state: AbstractEnvLikeState
-    policy_state: AbstractPolicyState
-    callback_state: AbstractCallbackStepState
-    buffer: ReplayBuffer
+    env_state: eqx.AbstractVar[AbstractEnvLikeState]
+    policy_state: eqx.AbstractVar[AbstractPolicyState]
+    callback_state: eqx.AbstractVar[AbstractCallbackStepState]
+    buffer: eqx.AbstractVar[ReplayBuffer]
 
     @classmethod
     def initial(
@@ -51,7 +51,7 @@ class OffPolicyStepState[PolicyType: AbstractPolicy](AbstractStepState):
         policy: PolicyType,
         callback: AbstractCallback,
         key: Key[Array, ""],
-    ) -> OffPolicyStepState[PolicyType]:
+    ) -> AbstractOffPolicyStepState[PolicyType]:
         """
         Initialize the off-policy step state.
 
@@ -80,7 +80,9 @@ class OffPolicyStepState[PolicyType: AbstractPolicy](AbstractStepState):
         return cls(env_state, policy_state, callback_state, buffer)
 
 
-class OffPolicyState[PolicyType: AbstractPolicy](AbstractAlgorithmState[PolicyType]):
+class AbstractOffPolicyState[PolicyType: AbstractPolicy](
+    AbstractAlgorithmState[PolicyType]
+):
     """
     State for off-policy algorithms.
 
@@ -93,16 +95,16 @@ class OffPolicyState[PolicyType: AbstractPolicy](AbstractAlgorithmState[PolicyTy
         callback_state: The state of the callback for this iteration.
     """
 
-    iteration_count: Int[Array, ""]
-    step_state: OffPolicyStepState[PolicyType]
-    env: AbstractEnvLike
-    policy: PolicyType
-    opt_state: optax.OptState
-    callback_state: AbstractCallbackState
+    iteration_count: eqx.AbstractVar[Int[Array, ""]]
+    step_state: eqx.AbstractVar[AbstractOffPolicyStepState[PolicyType]]
+    env: eqx.AbstractVar[AbstractEnvLike]
+    policy: eqx.AbstractVar[PolicyType]
+    opt_state: eqx.AbstractVar[optax.OptState]
+    callback_state: eqx.AbstractVar[AbstractCallbackState]
 
 
 class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
-    AbstractAlgorithm[PolicyType, OffPolicyState[PolicyType]]
+    AbstractAlgorithm[PolicyType, AbstractOffPolicyState[PolicyType]]
 ):
     """
     Base class for off-policy algorithms.
@@ -134,19 +136,19 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
 
     @abstractmethod
     def per_step(
-        self, step_state: OffPolicyStepState[PolicyType]
-    ) -> OffPolicyStepState[PolicyType]:
+        self, step_state: AbstractOffPolicyStepState[PolicyType]
+    ) -> AbstractOffPolicyStepState[PolicyType]:
         """Process the step carry after each step."""
 
     def step(
         self,
         env: AbstractEnvLike,
         policy: PolicyType,
-        state: OffPolicyStepState[PolicyType],
+        state: AbstractOffPolicyStepState[PolicyType],
         *,
         key: Key[Array, ""],
         callback: AbstractCallback,
-    ) -> OffPolicyStepState[PolicyType]:
+    ) -> AbstractOffPolicyStepState[PolicyType]:
         (
             action_key,
             transition_key,
@@ -206,7 +208,7 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
             key=callback_key,
         )
 
-        return OffPolicyStepState(
+        return AbstractOffPolicyStepState(
             next_env_state, next_policy_state, callback_state, replay_buffer
         )
 
@@ -214,13 +216,13 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
         self,
         env: AbstractEnvLike,
         policy: PolicyType,
-        step_state: OffPolicyStepState[PolicyType],
+        step_state: AbstractOffPolicyStepState[PolicyType],
         callback: AbstractCallback,
         key: Key[Array, ""],
-    ) -> OffPolicyStepState[PolicyType]:
+    ) -> AbstractOffPolicyStepState[PolicyType]:
         def scan_step(
-            carry: OffPolicyStepState, key: Key[Array, ""]
-        ) -> tuple[OffPolicyStepState, None]:
+            carry: AbstractOffPolicyStepState, key: Key[Array, ""]
+        ) -> tuple[AbstractOffPolicyStepState, None]:
             carry = self.step(env, policy, carry, key=key, callback=callback)
             return carry, None
 
@@ -234,13 +236,13 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
         self,
         env: AbstractEnvLike,
         policy: PolicyType,
-        step_state: OffPolicyStepState[PolicyType],
+        step_state: AbstractOffPolicyStepState[PolicyType],
         callback: AbstractCallback,
         key: Key[Array, ""],
-    ) -> OffPolicyStepState[PolicyType]:
+    ) -> AbstractOffPolicyStepState[PolicyType]:
         def scan_step(
-            carry: OffPolicyStepState, key: Key[Array, ""]
-        ) -> tuple[OffPolicyStepState, None]:
+            carry: AbstractOffPolicyStepState, key: Key[Array, ""]
+        ) -> tuple[AbstractOffPolicyStepState, None]:
             carry = self.step(env, policy, carry, key=key, callback=callback)
             return self.per_step(carry), None
 
@@ -280,10 +282,10 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
         *,
         key: Key[Array, ""],
         callback: AbstractCallback,
-    ) -> OffPolicyState[PolicyType]:
+    ) -> AbstractOffPolicyState[PolicyType]:
         init_key, starts_key, callback_key = jr.split(key, 3)
         if self.num_envs == 1:
-            step_state = OffPolicyStepState.initial(
+            step_state = AbstractOffPolicyStepState.initial(
                 self.buffer_size, env, policy, callback, init_key
             )
             step_state = self.collect_learning_starts(
@@ -291,7 +293,7 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
             )
         else:
             step_state = jax.vmap(
-                OffPolicyStepState.initial, in_axes=(None, None, None, None, 0)
+                AbstractOffPolicyStepState.initial, in_axes=(None, None, None, None, 0)
             )(
                 self.buffer_size // self.num_envs,
                 env,
@@ -305,7 +307,7 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
 
         callback_state = callback.reset(ResetContext(locals()), key=callback_key)
 
-        return OffPolicyState(
+        return AbstractOffPolicyState(
             jnp.array(0, dtype=int),
             step_state,
             env,
@@ -316,11 +318,11 @@ class AbstractOffPolicyAlgorithm[PolicyType: AbstractPolicy](
 
     def iteration(
         self,
-        state: OffPolicyState[PolicyType],
+        state: AbstractOffPolicyState[PolicyType],
         *,
         key: Key[Array, ""],
         callback: AbstractCallback,
-    ) -> OffPolicyState[PolicyType]:
+    ) -> AbstractOffPolicyState[PolicyType]:
         rollout_key, train_key, callback_key = jr.split(key, 3)
 
         if self.num_envs == 1:

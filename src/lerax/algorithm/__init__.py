@@ -1,12 +1,16 @@
 from .a2c import A2C
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
 from .dqn import DQN, DQNState
-from .off_policy import AbstractOffPolicyAlgorithm, OffPolicyState, OffPolicyStepState
+from .off_policy import (
+    AbstractOffPolicyAlgorithm,
+    AbstractOffPolicyState,
+    AbstractOffPolicyStepState,
+)
 from .on_policy import (
     AbstractActorCriticOnPolicyAlgorithm,
     AbstractOnPolicyAlgorithm,
-    OnPolicyState,
-    OnPolicyStepState,
+    AbstractOnPolicyState,
+    AbstractOnPolicyStepState,
 )
 from .ppo import PPO
 from .reinforce import REINFORCE
@@ -22,10 +26,10 @@ __all__ = [
     "AbstractOnPolicyAlgorithm",
     "DQN",
     "DQNState",
-    "OffPolicyState",
-    "OffPolicyStepState",
-    "OnPolicyState",
-    "OnPolicyStepState",
+    "AbstractOffPolicyState",
+    "AbstractOffPolicyStepState",
+    "AbstractOnPolicyState",
+    "AbstractOnPolicyStepState",
     "PPO",
     "REINFORCE",
     "SAC",

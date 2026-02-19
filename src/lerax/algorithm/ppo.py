@@ -13,8 +13,8 @@ from lerax.utils import filter_scan
 
 from .on_policy import (
     AbstractActorCriticOnPolicyAlgorithm,
-    OnPolicyState,
-    OnPolicyStepState,
+    AbstractOnPolicyState,
+    AbstractOnPolicyStepState,
 )
 
 
@@ -128,13 +128,13 @@ class PPO[PolicyType: AbstractActorCriticPolicy](
         self.optimizer = optax.chain(clip, adam)
 
     def per_step(
-        self, step_state: OnPolicyStepState[PolicyType]
-    ) -> OnPolicyStepState[PolicyType]:
+        self, step_state: AbstractOnPolicyStepState[PolicyType]
+    ) -> AbstractOnPolicyStepState[PolicyType]:
         return step_state
 
     def per_iteration(
-        self, state: OnPolicyState[PolicyType]
-    ) -> OnPolicyState[PolicyType]:
+        self, state: AbstractOnPolicyState[PolicyType]
+    ) -> AbstractOnPolicyState[PolicyType]:
         return state
 
     # Needs to be static so the first argument can be a policy

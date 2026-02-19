@@ -15,12 +15,12 @@ from lerax.utils import filter_cond
 
 from .off_policy import (
     AbstractOffPolicyAlgorithm,
-    OffPolicyState,
-    OffPolicyStepState,
+    AbstractOffPolicyState,
+    AbstractOffPolicyStepState,
 )
 
 
-class DQNState[PolicyType: AbstractQPolicy](OffPolicyState[PolicyType]):
+class DQNState[PolicyType: AbstractQPolicy](AbstractOffPolicyState[PolicyType]):
     """
     State for DQN algorithms.
 
@@ -115,13 +115,13 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
         self.optimizer = optax.chain(clip, adam)
 
     def per_step(
-        self, step_state: OffPolicyStepState[PolicyType]
-    ) -> OffPolicyStepState[PolicyType]:
+        self, step_state: AbstractOffPolicyStepState[PolicyType]
+    ) -> AbstractOffPolicyStepState[PolicyType]:
         return step_state
 
     def per_iteration(
-        self, state: OffPolicyState[PolicyType]
-    ) -> OffPolicyState[PolicyType]:
+        self, state: AbstractOffPolicyState[PolicyType]
+    ) -> AbstractOffPolicyState[PolicyType]:
         # Update target network periodically
         # state is always a DQNState at runtime
         should_update = state.iteration_count % self.target_update_interval == 0
@@ -153,11 +153,11 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
 
     def iteration(
         self,
-        state: OffPolicyState[PolicyType],
+        state: AbstractOffPolicyState[PolicyType],
         *,
         key: Key[Array, ""],
         callback: AbstractCallback,
-    ) -> OffPolicyState[PolicyType]:
+    ) -> AbstractOffPolicyState[PolicyType]:
         rollout_key, train_key, callback_key = jr.split(key, 3)
 
         if self.num_envs == 1:

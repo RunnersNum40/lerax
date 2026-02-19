@@ -15,8 +15,8 @@ from lerax.utils import filter_cond
 
 from .off_policy import (
     AbstractOffPolicyAlgorithm,
-    OffPolicyState,
-    OffPolicyStepState,
+    AbstractOffPolicyState,
+    AbstractOffPolicyStepState,
 )
 
 
@@ -69,7 +69,7 @@ class SoftQNetwork(eqx.Module):
         return self.mlp(inputs)
 
 
-class SACState[PolicyType: AbstractSACPolicy](OffPolicyState[PolicyType]):
+class SACState[PolicyType: AbstractSACPolicy](AbstractOffPolicyState[PolicyType]):
     """
     State for SAC algorithms.
 
@@ -204,13 +204,13 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
         self.alpha_optimizer = optax.adam(q_lr)
 
     def per_step(
-        self, step_state: OffPolicyStepState[PolicyType]
-    ) -> OffPolicyStepState[PolicyType]:
+        self, step_state: AbstractOffPolicyStepState[PolicyType]
+    ) -> AbstractOffPolicyStepState[PolicyType]:
         return step_state
 
     def per_iteration(
-        self, state: OffPolicyState[PolicyType]
-    ) -> OffPolicyState[PolicyType]:
+        self, state: AbstractOffPolicyState[PolicyType]
+    ) -> AbstractOffPolicyState[PolicyType]:
         return _soft_update_targets(state, self.tau)
 
     def reset(
@@ -274,11 +274,11 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
 
     def iteration(
         self,
-        state: OffPolicyState[PolicyType],
+        state: AbstractOffPolicyState[PolicyType],
         *,
         key: Key[Array, ""],
         callback: AbstractCallback,
-    ) -> OffPolicyState[PolicyType]:
+    ) -> AbstractOffPolicyState[PolicyType]:
         rollout_key, train_key, callback_key = jr.split(key, 3)
 
         if self.num_envs == 1:
@@ -546,8 +546,8 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
 
 
 def _soft_update_targets[PolicyType: AbstractSACPolicy](
-    state: OffPolicyState[PolicyType], tau: float
-) -> OffPolicyState[PolicyType]:
+    state: AbstractOffPolicyState[PolicyType], tau: float
+) -> AbstractOffPolicyState[PolicyType]:
     """Apply Polyak averaging to update target Q-networks."""
 
     def polyak(online, target):

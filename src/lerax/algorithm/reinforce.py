@@ -11,8 +11,8 @@ from lerax.policy import AbstractActorCriticPolicy
 
 from .on_policy import (
     AbstractActorCriticOnPolicyAlgorithm,
-    OnPolicyState,
-    OnPolicyStepState,
+    AbstractOnPolicyState,
+    AbstractOnPolicyStepState,
 )
 
 
@@ -101,13 +101,13 @@ class REINFORCE[PolicyType: AbstractActorCriticPolicy](
         self.optimizer = optax.chain(clip, adam)
 
     def per_step(
-        self, step_state: OnPolicyStepState[PolicyType]
-    ) -> OnPolicyStepState[PolicyType]:
+        self, step_state: AbstractOnPolicyStepState[PolicyType]
+    ) -> AbstractOnPolicyStepState[PolicyType]:
         return step_state
 
     def per_iteration(
-        self, state: OnPolicyState[PolicyType]
-    ) -> OnPolicyState[PolicyType]:
+        self, state: AbstractOnPolicyState[PolicyType]
+    ) -> AbstractOnPolicyState[PolicyType]:
         return state
 
     @staticmethod

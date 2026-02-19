@@ -6,10 +6,10 @@ title: On Policy Algorithm
     options:
         members: true
 
-::: lerax.algorithm.OnPolicyStepState
+::: lerax.algorithm.AbstractOnPolicyStepState
     options:
         members: true
 
-::: lerax.algorithm.OnPolicyState
+::: lerax.algorithm.AbstractOnPolicyState
     options:
         members: true
