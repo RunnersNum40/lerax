@@ -10,6 +10,7 @@ from .on_policy import (
 )
 from .ppo import PPO
 from .reinforce import REINFORCE
+from .sac import SAC, SACState, SoftQNetwork
 
 __all__ = [
     "A2C",
@@ -27,4 +28,7 @@ __all__ = [
     "OnPolicyStepState",
     "PPO",
     "REINFORCE",
+    "SAC",
+    "SACState",
+    "SoftQNetwork",
 ]
