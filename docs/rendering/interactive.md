@@ -72,4 +72,4 @@ _, env_states = lax.scan(step, state0, jr.split(rollout_key, 1024))
 env.render_stacked(env_states, dt=1 / 60)
 ```
 
-Internally, `render_stacked` uses `lerax.utils.unstack_pytree` and forwards each unstacked state to `render_states`.
+Internally, `render_stacked` indexes into the stacked PyTree one frame at a time, avoiding expensive full-tree unstacking.

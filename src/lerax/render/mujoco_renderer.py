@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from abc import abstractmethod
+
 import glfw
+import imageio.v2 as imageio
 import mujoco
 import numpy as np
 from jax import numpy as jnp
@@ -11,9 +14,7 @@ from .base_renderer import Abstract3DRenderer
 
 
 class HeadlessMujocoRenderer:
-    """
-    MuJoCo renderer for headless (off-screen) rendering.
-    """
+    """MuJoCo renderer for headless (off-screen) rendering."""
 
     model: mujoco.MjModel
 
@@ -41,6 +42,11 @@ class HeadlessMujocoRenderer:
     ):
         self.width, self.height = width, height
 
+        glfw.init()
+        glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
+        self._window = glfw.create_window(width, height, "", None, None)
+        glfw.make_context_current(self._window)
+
         self.model = model
         self.markers = []
         self.overlays = {}
@@ -61,11 +67,10 @@ class HeadlessMujocoRenderer:
             self.model, mujoco.mjtFontScale.mjFONTSCALE_150
         )
 
-        mujoco.mjr_setBuffer(mujoco.mjtFramebuffer.mjFB_WINDOW, self.context)
+        mujoco.mjr_setBuffer(mujoco.mjtFramebuffer.mjFB_OFFSCREEN, self.context)
 
     def render(self, data: mjx.Data):
-        """
-        Render the current frame.
+        """Render the current frame to the offscreen buffer.
 
         Args:
             data: The MuJoCo simulation data to render.
@@ -90,13 +95,12 @@ class HeadlessMujocoRenderer:
 
         mujoco.mjr_render(self.viewport, self.scene, self.context)
 
-    def draw(self):
-        """
-        Read the rendered frame into arrays.
+    def read_pixels(self) -> tuple[np.ndarray, np.ndarray]:
+        """Read the rendered frame from the offscreen buffer.
 
         Returns:
-            rgb_array: The RGB image array of shape (height, width, 3).
-            depth_array: The depth image array of shape (height, width).
+            A tuple of (rgb_array, depth_array) where rgb_array has shape
+            (height, width, 3) and depth_array has shape (height, width).
         """
         rgb_array = np.zeros((self.height, self.width, 3), dtype=np.uint8).flatten()
         depth_array = np.zeros((self.height, self.width), dtype=np.float32).flatten()
@@ -108,11 +112,13 @@ class HeadlessMujocoRenderer:
 
         return rgb_array, depth_array
 
+    def close(self):
+        """Destroy the hidden GL window."""
+        glfw.destroy_window(self._window)
+
 
 class WindowMujocoRenderer:
-    """
-    On-screen MuJoCo renderer using GLFW.
-    """
+    """On-screen MuJoCo renderer using GLFW."""
 
     model: mujoco.MjModel
 
@@ -180,8 +186,7 @@ class WindowMujocoRenderer:
         glfw.swap_interval(1)
 
     def render(self, data: mjx.Data):
-        """
-        Render the current frame.
+        """Render the current frame.
 
         Args:
             data: The MuJoCo simulation data to render.
@@ -215,55 +220,81 @@ class WindowMujocoRenderer:
         mujoco.mjr_render(self.viewport, self.scene, self.context)
 
     def draw(self):
-        """
-        Draw the rendered frame to the window.
-        """
+        """Draw the rendered frame to the window."""
         glfw.swap_buffers(self.window)
         glfw.poll_events()
 
     def close(self):
-        """
-        Close the rendering window.
-        """
+        """Close the rendering window."""
         glfw.destroy_window(self.window)
         glfw.terminate()
 
 
-class MujocoRenderer(Abstract3DRenderer):
-    """
-    MuJoCo renderer that opens a window for on-screen rendering.
+class AbstractMujocoRenderer(Abstract3DRenderer):
+    """Base class for MuJoCo renderers.
 
-    Attributes:
-        renderer: The underlying WindowMujocoRenderer instance.
+    Extends the generic 3D renderer with the MuJoCo-specific
+    ``render(data)`` method for feeding simulation state.
+    """
+
+    @abstractmethod
+    def render(self, data: mjx.Data):
+        """Update the scene with simulation data.
+
+        Args:
+            data: MuJoCo simulation data to render.
+        """
+
+
+class MujocoRenderer(AbstractMujocoRenderer):
+    """MuJoCo renderer supporting both windowed and headless modes.
+
+    In windowed mode (default), opens an on-screen GLFW window for
+    interactive viewing. In headless mode, renders offscreen and supports
+    ``as_array()`` for capturing frames as numpy arrays.
 
     Args:
         model: The MuJoCo model to render.
-        width: The width of the rendering window in pixels.
-        height: The height of the rendering window in pixels.
-        max_geom: The maximum number of geometries to render.
-        visual_options: A dictionary of visual options for rendering.
-        name: The title of the rendering window.
+        headless: If True, use offscreen rendering instead of a window.
+        width: Width in pixels. Defaults to half monitor width (windowed)
+            or 800 (headless).
+        height: Height in pixels. Defaults to half monitor height (windowed)
+            or 600 (headless).
+        max_geom: Maximum number of geometries to render.
+        visual_options: Dictionary of MuJoCo visual option flags.
+        name: Window title (ignored in headless mode).
     """
 
-    renderer: WindowMujocoRenderer
+    renderer: WindowMujocoRenderer | HeadlessMujocoRenderer
 
     def __init__(
         self,
         model: mujoco.MjModel,
+        *,
+        headless: bool = False,
         width: int | None = None,
         height: int | None = None,
         max_geom: int = 1000,
         visual_options: dict[int, bool] = {},
         name: str = "MuJoCo",
     ):
-        self.renderer = WindowMujocoRenderer(
-            model,
-            width,
-            height,
-            max_geom,
-            visual_options,
-            name,
-        )
+        if headless:
+            self.renderer = HeadlessMujocoRenderer(
+                model,
+                width=width or 800,
+                height=height or 600,
+                max_geom=max_geom,
+                visual_options=visual_options,
+            )
+        else:
+            self.renderer = WindowMujocoRenderer(
+                model,
+                width=width,
+                height=height,
+                max_geom=max_geom,
+                visual_options=visual_options,
+                name=name,
+            )
 
     def open(self):
         pass
@@ -272,8 +303,7 @@ class MujocoRenderer(Abstract3DRenderer):
         self.renderer.close()
 
     def render(self, data: mjx.Data):
-        """
-        Update the renderer with the current simulation data.
+        """Update the renderer with the current simulation data.
 
         Args:
             data: The MuJoCo simulation data to render.
@@ -281,12 +311,117 @@ class MujocoRenderer(Abstract3DRenderer):
         self.renderer.render(data)
 
     def draw(self):
+        """Display the latest rendered frame.
+
+        In windowed mode, swaps the display buffers. In headless mode,
+        this is a no-op.
         """
-        Update the rendering window with the latest rendered frame.
-        """
-        self.renderer.draw()
+        if isinstance(self.renderer, WindowMujocoRenderer):
+            self.renderer.draw()
 
     def as_array(self) -> Float[ArrayLike, "H W 3"]:
+        """Return the current frame as an RGB array.
+
+        Only supported in headless mode.
+
+        Returns:
+            RGB image array of shape (height, width, 3).
+
+        Raises:
+            NotImplementedError: If called in windowed mode.
+        """
+        if isinstance(self.renderer, HeadlessMujocoRenderer):
+            rgb, _depth = self.renderer.read_pixels()
+            return rgb
         raise NotImplementedError(
-            "As-array rendering is not supported in windowed mode."
+            "as_array() is not supported in windowed mode. "
+            "Use headless=True for array-based rendering."
         )
+
+
+class MujocoVideoRenderer(AbstractMujocoRenderer):
+    """MuJoCo renderer that records frames to a video file.
+
+    Wraps a headless ``MujocoRenderer`` and captures each frame when
+    ``draw()`` is called. When ``close()`` is called, all accumulated
+    frames are written to the output video file.
+
+    Example::
+
+        renderer = MujocoVideoRenderer(env.mujoco_model, "rollout.mp4", fps=50.0)
+        env.render_stacked(states, renderer=renderer)
+
+    Args:
+        model: The MuJoCo model to render.
+        output_path: Path to the output video file.
+        fps: Frames per second for the output video.
+        width: Width of the rendered frames in pixels.
+        height: Height of the rendered frames in pixels.
+        max_geom: Maximum number of geometries to render.
+        visual_options: Dictionary of MuJoCo visual option flags.
+    """
+
+    inner: MujocoRenderer
+    output_path: str
+    fps: float
+    frames: list
+
+    def __init__(
+        self,
+        model: mujoco.MjModel,
+        output_path: str,
+        *,
+        fps: float = 50.0,
+        width: int = 800,
+        height: int = 600,
+        max_geom: int = 1000,
+        visual_options: dict[int, bool] = {},
+    ):
+        self.inner = MujocoRenderer(
+            model,
+            headless=True,
+            width=width,
+            height=height,
+            max_geom=max_geom,
+            visual_options=visual_options,
+        )
+        self.output_path = output_path
+        self.fps = fps
+        self.frames = []
+
+    def open(self):
+        self.inner.open()
+
+    def close(self):
+        if self.frames:
+            writer = imageio.get_writer(
+                self.output_path, fps=self.fps, macro_block_size=1
+            )
+            try:
+                for frame in self.frames:
+                    writer.append_data(frame)
+            finally:
+                writer.close()
+        self.inner.close()
+
+    def render(self, data: mjx.Data):
+        """Update the scene with simulation data.
+
+        Args:
+            data: MuJoCo simulation data to render.
+        """
+        self.inner.render(data)
+
+    def draw(self):
+        """Capture the current frame for video recording."""
+        self.inner.draw()
+        frame = self.inner.as_array()
+        self.frames.append(frame)
+
+    def as_array(self) -> Float[ArrayLike, "H W 3"]:
+        """Return the current frame as an RGB array.
+
+        Returns:
+            RGB image array of shape (height, width, 3).
+        """
+        return self.inner.as_array()

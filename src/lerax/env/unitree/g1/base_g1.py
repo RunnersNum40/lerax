@@ -21,7 +21,7 @@ from jaxtyping import Array, Bool, Float, Key
 from mujoco import mjx
 
 from lerax.render import AbstractRenderer
-from lerax.render.mujoco_renderer import MujocoRenderer
+from lerax.render.mujoco_renderer import AbstractMujocoRenderer, MujocoRenderer
 from lerax.space import Box
 
 from ...base_env import AbstractEnv, AbstractEnvState
@@ -215,7 +215,7 @@ class AbstractG1Env(
         return MujocoRenderer(self.mujoco_model)
 
     def render(self, state: G1EnvState, renderer: AbstractRenderer):
-        if not isinstance(renderer, MujocoRenderer):
+        if not isinstance(renderer, AbstractMujocoRenderer):
             raise TypeError("G1 environment requires a Mujoco renderer.")
         renderer.render(state.sim_state)
         renderer.draw()

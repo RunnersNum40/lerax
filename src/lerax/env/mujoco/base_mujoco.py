@@ -9,7 +9,7 @@ from jaxtyping import Array, Bool, Float, Key, PyTree
 from mujoco import mjx
 
 from lerax.render import AbstractRenderer
-from lerax.render.mujoco_renderer import MujocoRenderer
+from lerax.render.mujoco_renderer import AbstractMujocoRenderer, MujocoRenderer
 from lerax.space import Box
 
 from ..base_env import AbstractEnv, AbstractEnvState
@@ -80,7 +80,7 @@ class AbstractMujocoEnv[
         return MujocoRenderer(self.mujoco_model)
 
     def render(self, state: MujocoEnvState, renderer: AbstractRenderer):
-        if not isinstance(renderer, MujocoRenderer):
+        if not isinstance(renderer, AbstractMujocoRenderer):
             raise TypeError("Mujoco environment requires a Mujoco renderer.")
 
         renderer.render(state.sim_state)

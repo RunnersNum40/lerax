@@ -14,10 +14,13 @@ dependencies = [
   "flax>=0.12.2",
   "gymnasium>=1.2.3",
   "gymnax>=0.0.9",
+  "imageio>=2.37.2",
+  "imageio-ffmpeg>=0.6.0",
   "jax>=0.9.0",
   "jaxtyping>=0.3.6",
   "mujoco-mjx>=3.4.0",
   "optax>=0.2.6",
+  "pygame>=2.6.1",
   "rich>=14.3.1",
   "tensorboard>=2.20.0",
   "tensorboardX>=2.6.4",
@@ -28,9 +31,6 @@ documentation = "https://lerax.tedpinkerton.ca/"
 homepage = "https://lerax.tedpinkerton.ca/"
 issues = "https://github.com/RunnersNum40/lerax/issues"
 source = "https://github.com/RunnersNum40/lerax.git"
-
-[project.optional-dependencies]
-render = ["pygame>=2.6.1", "imageio>=2.37.2", "imageio-ffmpeg>=0.6.0"]
 
 [dependency-groups]
 dev = [
@@ -52,7 +52,7 @@ dev = [
 
 # Kept for contributors that use pyright rather than ty
 [tool.pyright]
-reportIncompatibleVariableOverride = false      # Incompatible with eqx.AbstractVar
+reportIncompatibleVariableOverride = false  # Incompatible with eqx.AbstractVar
 stubPath = "stubs"
 include = ["src/**", "examples/**", "tests/**"]
 

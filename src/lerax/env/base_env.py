@@ -5,13 +5,13 @@ from abc import abstractmethod
 from typing import Any, Literal, Self, Sequence
 
 import equinox as eqx
+import jax
 from jax import lax
 from jax import random as jr
 from jaxtyping import Array, Bool, Float, Key
 
 from lerax.render import AbstractRenderer
 from lerax.space import AbstractSpace
-from lerax.utils import unstack_pytree
 
 
 class AbstractEnvLikeState(eqx.Module):
@@ -220,7 +220,13 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType, MaskTyp
             renderer: The renderer to use for rendering. If "auto", uses the default renderer.
             dt: The time delay between rendering each frame, in seconds.
         """
-        self.render_states(unstack_pytree(states), renderer, dt)
+        renderer = self.default_renderer() if renderer == "auto" else renderer
+        renderer.open()
+        num_frames = jax.tree.leaves(states)[0].shape[0]
+        for i in range(num_frames):
+            self.render(jax.tree.map(lambda x: x[i], states), renderer)
+            time.sleep(dt)
+        renderer.close()
 
     @property
     @abstractmethod
