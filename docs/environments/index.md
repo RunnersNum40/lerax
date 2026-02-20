@@ -14,3 +14,11 @@ While this is a bit more verbose than traditional object-oriented APIs, it allow
 For those that prefer the Gymnasium-style API `reset` and `step` functions are also provided as convenience methods that internally call the functional components.
 These methods still follow the functional paradigm by returning new environment states rather than modifying the existing state in place.
 If you'd like an identical Gymnasium-style API, you can use the [GymWrapper]() to wrap any Lerax environment.
+
+## Environment Families
+
+| Family | Description |
+|---|---|
+| [MuJoCo](mujoco/index.md) | Gymnasium MuJoCo environments (Ant, Humanoid, etc.) |
+| [Classic Control](classic_control/index.md) | Gymnasium Classic Control environments (CartPole, etc.) |
+| [Unitree](unitree/index.md) | Unitree humanoid robots with domain randomization |
