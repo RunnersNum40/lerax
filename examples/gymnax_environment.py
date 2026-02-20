@@ -13,11 +13,10 @@ env = GymnaxToLeraxEnv(gymnax_env, params)
 
 policy = MLPActorCriticPolicy(env=env, key=policy_key)
 algo = PPO()
-callbacks = [
-    ProgressBarCallback(2**16),
-    LoggingCallback(TensorBoardBackend()),
-]
+logger = LoggingCallback(TensorBoardBackend(), env=env, policy=policy)
+callbacks = [ProgressBarCallback(2**16), logger]
 
 policy = algo.learn(
     env, policy, total_timesteps=2**16, key=learn_key, callback=callbacks
 )
+logger.close()

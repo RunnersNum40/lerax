@@ -10,13 +10,14 @@ It is JIT-safe through debug callbacks, but must be **constructed outside** any 
 
 ## Run naming
 
-By default a run name is generated from the algorithm, policy, and environment:
+When `env` and `policy` are passed to the constructor, a run name is generated
+automatically:
 
-    {Algorithm}_{PolicyName}_{EnvName}_{timestamp}
+    {PolicyName}_{EnvName}_{timestamp}
 
-For example: `PPO_MLPActorCriticPolicy_CartPole-v1_20260220_120000`.
+For example: `MLPActorCriticPolicy_CartPole-v1_20260220_120000`.
 
-Pass `name=` to `LoggingCallback` to override:
+Pass `name=` to override:
 
 ```py
 LoggingCallback(backend, name="my-experiment")
@@ -44,16 +45,21 @@ The smoothing factor for the exponential moving averages is controlled by `alpha
 ```py
 from lerax.callback import LoggingCallback, TensorBoardBackend
 
-callback = LoggingCallback(
+logger = LoggingCallback(
     backend=TensorBoardBackend(),
-    alpha=0.9,
+    env=env,
+    policy=policy,
 )
+
+# ... training ...
+
+logger.close()
 ```
 
 ## Backends
 
 All backends defer initialisation to their `open` method, which `LoggingCallback`
-calls automatically at training start with the run name.
+calls at construction time with the run name.
 
 ### TensorBoardBackend
 
@@ -95,14 +101,20 @@ backend = ConsoleBackend()
 `LoggingCallback` can periodically record evaluation videos and log them under `eval/video`. Set `video_interval` to a positive integer to enable it:
 
 ```py
-callback = LoggingCallback(
+logger = LoggingCallback(
     backend=TensorBoardBackend(),
+    env=env,
+    policy=policy,
     video_interval=10,      # record every 10 iterations
     video_num_steps=256,    # 256 environment steps per video
     video_width=640,        # render width in pixels
     video_height=480,       # render height in pixels
     video_fps=50.0,         # playback fps
 )
+
+# ... training ...
+
+logger.close()
 ```
 
 At each recording iteration the callback runs an eager eval rollout with the

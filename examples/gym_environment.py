@@ -12,11 +12,10 @@ gym_env = gym.make("CartPole-v1")
 env = GymToLeraxEnv(gym_env)
 policy = MLPActorCriticPolicy(env=env, key=policy_key)
 algo = PPO(num_envs=1)  # Vectorization is not supported for Gym environments
-callbacks = [
-    ProgressBarCallback(2**16),
-    LoggingCallback(TensorBoardBackend()),
-]
+logger = LoggingCallback(TensorBoardBackend(), env=env, policy=policy)
+callbacks = [ProgressBarCallback(2**16), logger]
 
 policy = algo.learn(
     env, policy, total_timesteps=2**16, key=learn_key, callback=callbacks
 )
+logger.close()

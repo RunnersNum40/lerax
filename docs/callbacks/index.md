@@ -41,9 +41,10 @@ env = CartPole()
 policy = MLPActorCriticPolicy(env=env, key=policy_key)
 algo = PPO()
 
+logger = LoggingCallback(TensorBoardBackend(), env=env, policy=policy)
 callbacks = [
     ProgressBarCallback(total_timesteps=2**16, env=env, policy=policy),
-    LoggingCallback(TensorBoardBackend()),
+    logger,
 ]
 
 policy = algo.learn(
@@ -53,6 +54,7 @@ policy = algo.learn(
     key=learn_key,
     callback=callbacks,
 )
+logger.close()
 ```
 
 ## Built-in callbacks

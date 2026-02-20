@@ -20,7 +20,9 @@ def test_ppo_with_callbacks():
     total_timesteps = 512
     progress_bar = ProgressBarCallback(total_timesteps)
     directory = TemporaryDirectory()
-    tensorboard = LoggingCallback(TensorBoardBackend(log_dir=directory.name))
+    tensorboard = LoggingCallback(
+        TensorBoardBackend(log_dir=directory.name), env=env, policy=policy
+    )
     callbacks = [progress_bar, tensorboard]
 
     trained_policy = algo.learn(
