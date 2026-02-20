@@ -14,8 +14,15 @@ from .base_callback import (
 )
 from .empty import EmptyCallback
 from .list import CallbackList
+from .logging import (
+    AbstractLoggingBackend,
+    ConsoleBackend,
+    LoggingCallback,
+    LoggingCallbackStepState,
+    TensorBoardBackend,
+    WandbBackend,
+)
 from .progress_bar import ProgressBarCallback
-from .tensorboard import TensorBoardCallback
 
 __all__ = [
     "AbstractCallback",
@@ -23,15 +30,20 @@ __all__ = [
     "AbstractCallbackStepState",
     "AbstractContinueTrainingCallback",
     "AbstractIterationCallback",
+    "AbstractLoggingBackend",
     "AbstractStatelessCallback",
     "AbstractStepCallback",
     "AbstractTrainingCallback",
+    "CallbackList",
+    "ConsoleBackend",
+    "EmptyCallback",
     "IterationContext",
+    "LoggingCallback",
+    "LoggingCallbackStepState",
+    "ProgressBarCallback",
     "ResetContext",
     "StepContext",
+    "TensorBoardBackend",
     "TrainingContext",
-    "EmptyCallback",
-    "CallbackList",
-    "ProgressBarCallback",
-    "TensorBoardCallback",
+    "WandbBackend",
 ]

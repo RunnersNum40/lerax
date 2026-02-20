@@ -311,6 +311,7 @@ class AbstractOnPolicyAlgorithm[PolicyType: AbstractPolicy](
                     state.iteration_count,
                     state.opt_state,
                     log,
+                    self,
                     locals(),
                 ),
                 key=callback_key,

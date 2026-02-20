@@ -25,6 +25,7 @@ dependencies = [
   "rich>=14.3.1",
   "tensorboard>=2.20.0",
   "tensorboardX>=2.6.4",
+  "wandb>=0.25.0",
 ]
 
 [project.urls]

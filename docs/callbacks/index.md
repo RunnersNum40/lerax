@@ -31,7 +31,7 @@ via the `callback` argument to `learn`.
 from jax import random as jr
 
 from lerax.algorithm import PPO
-from lerax.callback import ProgressBarCallback, TensorBoardCallback
+from lerax.callback import LoggingCallback, ProgressBarCallback, TensorBoardBackend
 from lerax.env.classic_control import CartPole
 from lerax.policy import MLPActorCriticPolicy
 
@@ -43,7 +43,7 @@ algo = PPO()
 
 callbacks = [
     ProgressBarCallback(total_timesteps=2**16, env=env, policy=policy),
-    TensorBoardCallback(env=env, policy=policy),
+    LoggingCallback(TensorBoardBackend()),
 ]
 
 policy = algo.learn(
@@ -60,8 +60,8 @@ policy = algo.learn(
 - [`ProgressBarCallback`](progress_bar.md):
   Rich-based progress bar showing iterations, elapsed/remaining time, and iterations per second.
 
-- [`TensorBoardCallback`](tensorboard.md):
-  Logs training metrics (learning rate, training log entries, episode return/length EMAs) to TensorBoard.
+- [`LoggingCallback`](logging.md):
+  Logs training metrics (learning rate, training log entries, episode return/length EMAs) to TensorBoard, Aim, or Weights & Biases via a pluggable backend.
 
 - `CallbackList`:
   Aggregates multiple callbacks and forwards all hooks to each one. Used automatically when you pass a list of callbacks.

@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 from jax import random as jr
 
 from lerax.algorithm import PPO
-from lerax.callback import ProgressBarCallback, TensorBoardCallback
+from lerax.callback import LoggingCallback, ProgressBarCallback, TensorBoardBackend
 from lerax.env.classic_control import CartPole
 from lerax.policy import MLPActorCriticPolicy
 
@@ -20,7 +20,7 @@ def test_ppo_with_callbacks():
     total_timesteps = 512
     progress_bar = ProgressBarCallback(total_timesteps)
     directory = TemporaryDirectory()
-    tensorboard = TensorBoardCallback(log_dir=directory.name, env=env, policy=policy)
+    tensorboard = LoggingCallback(TensorBoardBackend(log_dir=directory.name))
     callbacks = [progress_bar, tensorboard]
 
     trained_policy = algo.learn(

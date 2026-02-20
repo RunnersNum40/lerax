@@ -64,6 +64,7 @@ class IterationContext[
         iteration_count: The current training iteration count.
         opt_state: The current optimizer state.
         training_log: A dictionary containing training metrics.
+        algorithm: The algorithm performing the training.
         locals: A dictionary for storing additional information.
     """
 
@@ -74,6 +75,7 @@ class IterationContext[
     iteration_count: Int[Array, ""]
     opt_state: optax.OptState
     training_log: dict[str, Array]
+    algorithm: eqx.Module
     locals: dict
 
 
@@ -91,6 +93,7 @@ class TrainingContext[
         policy: The policy being used to interact with the environment.
         total_timesteps: Total number of timesteps for training.
         iteration_count: The current training iteration count.
+        algorithm: The algorithm performing the training.
         locals: A dictionary for storing additional information.
     """
 
@@ -101,6 +104,7 @@ class TrainingContext[
     total_timesteps: int
     iteration_count: Int[Array, ""]
     opt_state: optax.OptState
+    algorithm: eqx.Module
     locals: dict
 
 
