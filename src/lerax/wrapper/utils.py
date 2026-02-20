@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Callable, NamedTuple
 
 from jax import numpy as jnp

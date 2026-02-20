@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import time
 from abc import abstractmethod
 from typing import Any, Literal, Self, Sequence
@@ -17,7 +15,7 @@ from lerax.space import AbstractSpace
 class AbstractEnvLikeState(eqx.Module):
     @property
     @abstractmethod
-    def unwrapped(self) -> AbstractEnvState:
+    def unwrapped(self) -> "AbstractEnvState":
         """Return the unwrapped environment state"""
 
 
@@ -230,7 +228,7 @@ class AbstractEnvLike[StateType: AbstractEnvLikeState, ActType, ObsType, MaskTyp
 
     @property
     @abstractmethod
-    def unwrapped(self) -> AbstractEnv:
+    def unwrapped(self) -> "AbstractEnv":
         """
         Return the unwrapped environment.
 
@@ -292,7 +290,7 @@ class AbstractEnvState(AbstractEnvLikeState):
     """Base class for RL environment states."""
 
     @property
-    def unwrapped(self) -> AbstractEnvState:
+    def unwrapped(self) -> "AbstractEnvState":
         """Return the unwrapped environment state"""
         return self
 
