@@ -308,7 +308,7 @@ def _make_video_recorder(
 
             init_key, policy_key, rollout_key = jr.split(key, 3)
             env_states = run_rollout(env, policy, init_key, policy_key, rollout_key)
-            jax.block_until_ready(env_states)
+            env_states = jax.device_get(env_states)
 
             frames = [
                 render_frame(jax.tree.map(lambda x: x[i], env_states))
