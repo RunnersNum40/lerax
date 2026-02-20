@@ -157,6 +157,11 @@ class TimeLimit[StateType: AbstractEnvLikeState, ActType, ObsType, MaskType](
         env_state = self.env.initial(key=key)
         return TimeLimitState(step_count=0, env_state=env_state)
 
+    def action_mask(
+        self, state: TimeLimitState[StateType], *, key: Key[Array, ""]
+    ) -> MaskType | None:
+        return self.env.action_mask(state.env_state, key=key)
+
     def transition(
         self, state: TimeLimitState[StateType], action: ActType, *, key: Key[Array, ""]
     ) -> TimeLimitState[StateType]:
