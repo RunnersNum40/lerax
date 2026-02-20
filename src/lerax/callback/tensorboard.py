@@ -1,17 +1,21 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
+from functools import partial
 from pathlib import Path
 
+import equinox as eqx
 import optax
 from jax import lax
 from jax import numpy as jnp
+from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key, Scalar, ScalarLike
 from tensorboardX import SummaryWriter
 
 from lerax.env import AbstractEnvLike
 from lerax.policy import AbstractPolicy
-from lerax.utils import callback_with_numpy_wrapper
+from lerax.utils import callback_with_numpy_wrapper, callback_wrapper
 
 from .base_callback import (
     AbstractCallback,
@@ -165,6 +169,149 @@ class TensorBoardCallbackStepState(AbstractCallbackStepState):
         )
 
 
+def _make_video_recorder(
+    video_interval: int,
+    video_num_steps: int,
+    video_width: int,
+    video_height: int,
+    video_fps: float,
+    writer: SummaryWriter,
+) -> Callable[..., None]:
+    """Create a JIT-safe video recording callback function.
+
+    Returns a ``callback_wrapper``-decorated function that runs an eager eval
+    rollout and logs the resulting video to TensorBoard.
+
+    Both MuJoCo-based environments and PyGame-based environments (e.g. CartPole,
+    MountainCar) are supported. MuJoCo environments are detected by the presence
+    of a ``mujoco_model`` attribute on the unwrapped environment. For PyGame
+    environments, ``default_renderer()`` is called to extract the correct world
+    transform before constructing a ``HeadlessPygameRenderer``.
+
+    Args:
+        video_interval: Record a video every this many iterations.
+        video_num_steps: Number of environment steps per video.
+        video_width: Render width in pixels.
+        video_height: Render height in pixels.
+        video_fps: Playback frames per second.
+        writer: The underlying ``SummaryWriter`` to log videos to.
+    """
+
+    @partial(callback_wrapper, ordered=True)
+    def record_video(
+        env: AbstractEnvLike,
+        policy: AbstractPolicy,
+        step: Int[Array, ""],
+        iteration_count: Int[Array, ""],
+        key: Key[Array, ""],
+    ) -> None:
+        import numpy as np
+
+        if int(iteration_count) % video_interval != 0:
+            return
+
+        try:
+            unwrapped = env.unwrapped
+            mujoco_model = getattr(unwrapped, "mujoco_model", None)
+
+            if mujoco_model is not None:
+                from lerax.render.mujoco_renderer import HeadlessMujocoRenderer
+
+                mujoco_renderer = HeadlessMujocoRenderer(
+                    mujoco_model,
+                    width=video_width,
+                    height=video_height,
+                )
+                renderer = mujoco_renderer
+
+                def render_frame(env_state) -> np.ndarray:
+                    mujoco_renderer.render(env_state.data)
+                    rgb, _ = mujoco_renderer.read_pixels()
+                    return rgb
+
+            else:
+                import os
+
+                import pygame as pg
+
+                from lerax.render.pygame_renderer import (
+                    HeadlessPygameRenderer,
+                    PygameRenderer,
+                )
+
+                already_init = pg.get_init()
+                old_driver = os.environ.get("SDL_VIDEODRIVER")
+                if not already_init:
+                    os.environ["SDL_VIDEODRIVER"] = "dummy"
+
+                try:
+                    template = unwrapped.default_renderer()
+                except Exception:
+                    return
+
+                if not isinstance(template, PygameRenderer):
+                    template.close()
+                    return
+
+                pygame_renderer = HeadlessPygameRenderer(
+                    width=template.width,
+                    height=template.height,
+                    background_color=template.background_color,
+                    transform=template.transform,
+                )
+                renderer = pygame_renderer
+                template.close()
+
+                if not already_init:
+                    if old_driver is None:
+                        os.environ.pop("SDL_VIDEODRIVER", None)
+                    else:
+                        os.environ["SDL_VIDEODRIVER"] = old_driver
+
+                def render_frame(env_state) -> np.ndarray:
+                    env.render(env_state, pygame_renderer)
+                    return np.asarray(pygame_renderer.as_array())
+
+            init_key, policy_key, rollout_key = jr.split(key, 3)
+            env_state = env.initial(key=init_key)
+            policy_state = policy.reset(key=policy_key)
+
+            frames: list[np.ndarray] = []
+            for _ in range(video_num_steps):
+                obs_key, mask_key, step_key, reset_key, rollout_key = jr.split(
+                    rollout_key, 5
+                )
+                observation = env.observation(env_state, key=obs_key)
+                action_mask = env.action_mask(env_state, key=mask_key)
+                policy_state, action = policy(
+                    policy_state, observation, key=step_key, action_mask=action_mask
+                )
+                env_state = env.transition(env_state, action, key=step_key)
+
+                frames.append(render_frame(env_state))
+
+                done = env.terminal(env_state, key=step_key) | env.truncate(env_state)
+                if bool(done):
+                    env_state = env.initial(key=reset_key)
+                    policy_state = policy.reset(key=reset_key)
+
+            renderer.close()
+
+            video = np.stack(frames)
+            video = np.transpose(video, (0, 3, 1, 2))
+            video = video[np.newaxis, ...]
+            writer.add_video("eval/video", video, int(step), fps=video_fps)
+        except Exception as exc:
+            import warnings
+
+            warnings.warn(
+                f"Video recording failed at iteration {int(iteration_count)}: {exc}",
+                stacklevel=2,
+            )
+
+    return record_video
+
+
 class TensorBoardCallback(
     AbstractCallback[EmptyCallbackState, TensorBoardCallbackStepState]
 ):
@@ -177,6 +324,11 @@ class TensorBoardCallback(
         - train/:
             - learning_rate: The current learning rate.
             - ...: Any other statistics in the training log.
+
+    When ``video_interval`` is set to a positive integer, an evaluation video is
+    recorded every ``video_interval`` iterations and logged under ``eval/video``
+    in TensorBoard. Both MuJoCo-based environments and PyGame-based environments
+    (e.g. CartPole, MountainCar) are supported.
 
     Note:
         If the callback is instantiated inside a JIT-compiled function, it may
@@ -193,10 +345,17 @@ class TensorBoardCallback(
         policy: The policy being trained. Used for naming if `name` is None.
         alpha: Smoothing factor for exponential moving averages.
         log_dir: Base directory for TensorBoard logs.
+        video_interval: Record an evaluation video every this many iterations.
+            Set to 0 (default) to disable video recording.
+        video_num_steps: Number of environment steps per recorded video.
+        video_width: Width of the rendered video frames in pixels.
+        video_height: Height of the rendered video frames in pixels.
+        video_fps: Playback frames per second for the recorded video.
     """
 
     tb_writer: JITSummaryWriter
     alpha: float
+    _record_video_fn: Callable[..., None] | None = eqx.field(static=True)
 
     def __init__(
         self,
@@ -205,6 +364,11 @@ class TensorBoardCallback(
         policy: AbstractPolicy | None = None,
         alpha: float = 0.9,
         log_dir: str | Path = "logs",
+        video_interval: int = 0,
+        video_num_steps: int = 128,
+        video_width: int = 640,
+        video_height: int = 480,
+        video_fps: float = 50.0,
     ):
         log_dir = Path(log_dir)
         time = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -224,6 +388,18 @@ class TensorBoardCallback(
 
         self.tb_writer = JITSummaryWriter(log_dir=path)
         self.alpha = alpha
+
+        if video_interval > 0:
+            self._record_video_fn = _make_video_recorder(
+                video_interval,
+                video_num_steps,
+                video_width,
+                video_height,
+                video_fps,
+                self.tb_writer.summary_writer,
+            )
+        else:
+            self._record_video_fn = None
 
     def reset(self, ctx: ResetContext, *, key: Key[Array, ""]) -> EmptyCallbackState:
         return EmptyCallbackState()
@@ -262,6 +438,12 @@ class TensorBoardCallback(
         self.tb_writer.add_scalar(
             "episode/length", step_state.average_length.mean(), last_step
         )
+
+        if self._record_video_fn is not None:
+            video_key, key = jr.split(key)
+            self._record_video_fn(
+                ctx.env, ctx.policy, last_step, ctx.iteration_count, video_key
+            )
 
         return ctx.state
 

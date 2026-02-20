@@ -11,7 +11,7 @@ from .base_renderer import (
     Color,
     Transform,
 )
-from .pygame_renderer import PygameRenderer
+from .pygame_renderer import HeadlessPygameRenderer, PygameRenderer
 from .video import VideoRenderer
 
 __all__ = [
@@ -27,5 +27,6 @@ __all__ = [
     "GREEN",
     "BLUE",
     "PygameRenderer",
+    "HeadlessPygameRenderer",
     "VideoRenderer",
 ]
