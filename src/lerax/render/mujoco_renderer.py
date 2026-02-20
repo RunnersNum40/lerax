@@ -14,7 +14,11 @@ from .base_renderer import Abstract3DRenderer
 
 
 class HeadlessMujocoRenderer:
-    """MuJoCo renderer for headless (off-screen) rendering."""
+    """MuJoCo renderer for headless (off-screen) rendering.
+
+    Uses ``mujoco.GLContext`` (EGL/OSMesa) to create a GPU-accelerated
+    OpenGL context without requiring a display server or GLFW.
+    """
 
     model: mujoco.MjModel
 
@@ -42,10 +46,8 @@ class HeadlessMujocoRenderer:
     ):
         self.width, self.height = width, height
 
-        glfw.init()
-        glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
-        self._window = glfw.create_window(width, height, "", None, None)
-        glfw.make_context_current(self._window)
+        self._gl_context = mujoco.GLContext(width, height)
+        self._gl_context.make_current()
 
         self.model = model
         self.markers = []
@@ -113,8 +115,8 @@ class HeadlessMujocoRenderer:
         return rgb_array, depth_array
 
     def close(self):
-        """Destroy the hidden GL window."""
-        glfw.destroy_window(self._window)
+        """Free the GL context."""
+        self._gl_context.free()
 
 
 class WindowMujocoRenderer:
