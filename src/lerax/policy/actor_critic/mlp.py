@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, ClassVar
 
 import equinox as eqx
+import jax
 from jax import random as jr
 from jaxtyping import Array, Float, Integer, Key, PyTree, Real
 
@@ -44,6 +46,7 @@ class MLPActorCriticPolicy[
         value_depth: Depth of the hidden layers in the value head.
         action_width: Width of the hidden layers in the action head.
         action_depth: Depth of the hidden layers in the action head.
+        activation: Activation function for all MLP hidden layers.
         log_std_init: Initial log standard deviation for continuous action spaces.
         key: JAX PRNG key for parameter initialization.
     """
@@ -68,6 +71,7 @@ class MLPActorCriticPolicy[
         value_depth: int = 2,
         action_width: int = 64,
         action_depth: int = 2,
+        activation: Callable = jax.nn.relu,
         log_std_init: float = 0.0,
         key: Key[Array, ""],
     ):
@@ -81,6 +85,7 @@ class MLPActorCriticPolicy[
             out_size=feature_size,
             width_size=feature_width,
             depth=feature_depth,
+            activation=activation,
             key=feat_key,
         )
 
@@ -89,6 +94,7 @@ class MLPActorCriticPolicy[
             out_size="scalar",
             width_size=value_width,
             depth=value_depth,
+            activation=activation,
             key=val_key,
         )
 
@@ -98,6 +104,7 @@ class MLPActorCriticPolicy[
             action_width,
             action_depth,
             key=act_key,
+            activation=activation,
             log_std_init=log_std_init,
         )
 

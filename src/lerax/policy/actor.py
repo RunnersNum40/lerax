@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections.abc import Callable
 from typing import cast, overload
 
 import equinox as eqx
+import jax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
@@ -186,11 +188,11 @@ def make_action_layer(
 
 
 class ActionLayer[ActType, MaskType](eqx.Module):
-    """
-    Model that produces action distributions from features.
+    """Model that produces action distributions from features.
 
-    An optional MLP processes the features before passing them to the action distribution layer.
-    If depth is set to 1, no MLP is used and the features are affine-mapped directly to the action parameters.
+    An optional MLP processes the features before passing them to the action
+    distribution layer. If depth is set to 1, no MLP is used and the features
+    are affine-mapped directly to the action parameters.
 
     Attributes:
         mlp: Optional MLP to process features before action distribution.
@@ -200,7 +202,8 @@ class ActionLayer[ActType, MaskType](eqx.Module):
         action_space: The action space defining the type of actions.
         latent_dim: Dimension of the input features.
         width_size: Width of the hidden layers in the MLP.
-        depth: Depth of the MLP. If set to 1, no MLP is
+        depth: Depth of the MLP. If set to 1, no MLP is used.
+        activation: Activation function for the MLP hidden layers.
         log_std_init: Initial log standard deviation for continuous action spaces.
         key: JAX PRNG key for parameter initialization.
     """
@@ -216,6 +219,7 @@ class ActionLayer[ActType, MaskType](eqx.Module):
         depth: int,
         *,
         key: Key[Array, ""],
+        activation: Callable = jax.nn.relu,
         log_std_init: float = 0.0,
     ):
         mlp_key, action_key = jr.split(key, 2)
@@ -229,6 +233,7 @@ class ActionLayer[ActType, MaskType](eqx.Module):
                 out_size=latent_dim,
                 width_size=width_size,
                 depth=depth,
+                activation=activation,
                 key=mlp_key,
             )
         self.action_dist = make_action_layer(
