@@ -335,7 +335,6 @@ def _make_video_recorder(
                     env.render(env_state, pygame_renderer)
                     return np.asarray(pygame_renderer.as_array())
 
-            print(f"Collecting video at step {step}...")
             init_key, policy_key, rollout_key = jr.split(key, 3)
             env = _restore_callback_scalars(env)
             policy = _restore_callback_scalars(policy)
