@@ -19,7 +19,12 @@ from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
 
 from lerax.env import AbstractEnvLike
 from lerax.policy import AbstractPolicy
-from lerax.utils import callback_with_numpy_wrapper, callback_wrapper, filter_cond
+from lerax.utils import (
+    callback_with_numpy_wrapper,
+    callback_wrapper,
+    filter_cond,
+    filter_scan,
+)
 
 from ..base_callback import (
     AbstractCallback,
@@ -170,6 +175,30 @@ class LoggingCallbackStepState(AbstractCallbackStepState):
         )
 
 
+def _restore_callback_scalars[T](pytree: T) -> T:
+    """Restore Python scalar types that ``jax.debug.callback`` converts to arrays.
+
+    When pytrees pass through ``jax.debug.callback``, Python ``bool`` and ``int``
+    leaves are silently promoted to 0-d JAX arrays.  If those leaves are later
+    traced by ``filter_jit`` they become abstract tracers, breaking any code that
+    uses them in Python control flow (``if``, ``for length=``, etc.).
+
+    This helper walks a pytree and converts every 0-d boolean or integer JAX
+    array back to the corresponding Python scalar so that ``filter_jit``
+    correctly places them in the static partition.
+    """
+
+    def _maybe_restore(leaf: Any) -> Any:
+        if isinstance(leaf, jax.Array) and leaf.ndim == 0:
+            if jnp.issubdtype(leaf.dtype, jnp.bool_):
+                return bool(leaf)
+            if jnp.issubdtype(leaf.dtype, jnp.integer):
+                return int(leaf)
+        return leaf
+
+    return jax.tree.map(_maybe_restore, pytree)
+
+
 def _make_video_recorder(
     video_interval: int,
     video_num_steps: int,
@@ -232,7 +261,7 @@ def _make_video_recorder(
             )
             return (carry_env, carry_policy, rollout_key), new_env_state
 
-        _, env_states = lax.scan(
+        _, env_states = filter_scan(
             step_fn,
             (env_state, policy_state, rollout_key),
             None,
@@ -261,7 +290,7 @@ def _make_video_recorder(
                 renderer = mujoco_renderer
 
                 def render_frame(env_state) -> np.ndarray:
-                    mujoco_renderer.render(env_state.data)
+                    mujoco_renderer.render(env_state.sim_state)
                     rgb, _ = mujoco_renderer.read_pixels()
                     return rgb
 
@@ -306,7 +335,10 @@ def _make_video_recorder(
                     env.render(env_state, pygame_renderer)
                     return np.asarray(pygame_renderer.as_array())
 
+            print(f"Collecting video at step {step}...")
             init_key, policy_key, rollout_key = jr.split(key, 3)
+            env = _restore_callback_scalars(env)
+            policy = _restore_callback_scalars(policy)
             env_states = run_rollout(env, policy, init_key, policy_key, rollout_key)
             env_states = jax.device_get(env_states)
 
