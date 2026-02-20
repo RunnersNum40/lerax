@@ -290,7 +290,7 @@ def _make_video_recorder(
                 renderer = mujoco_renderer
 
                 def render_frame(env_state) -> np.ndarray:
-                    mujoco_renderer.render(env_state.sim_state)
+                    mujoco_renderer.render(env_state.unwrapped.sim_state)
                     rgb, _ = mujoco_renderer.read_pixels()
                     return rgb
 
