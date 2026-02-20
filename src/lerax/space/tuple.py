@@ -70,7 +70,7 @@ class Tuple(AbstractSpace[tuple[Any, ...], None]):
             return jnp.array(False)
 
         return jnp.array(
-            space.contains(x_i) for space, x_i in zip(self.spaces, x)
+            [space.contains(x_i) for space, x_i in zip(self.spaces, x)]
         ).all()
 
     def __eq__(self, other: object) -> bool:
