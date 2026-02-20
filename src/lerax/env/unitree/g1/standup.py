@@ -168,6 +168,7 @@ class G1Standup(AbstractG1Env):
         data = mjx.make_data(model)
         data = data.replace(qpos=qpos, qvel=qvel, ctrl=qpos[7:])
         data = mjx.forward(model, data)
+        data = self._correct_ground_penetration(model, data)
 
         return G1EnvState(
             sim_state=data,

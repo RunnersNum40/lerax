@@ -42,6 +42,7 @@ class G1EnvState(AbstractEnvState):
         t: Simulation time in seconds.
         model: Per-episode randomized MJX model.
         last_action: Previous action for action rate penalty.
+        last_last_action: Action from two steps ago for smoothness penalty.
         gait_phase: Gait phase for [left, right] feet in [-pi, pi).
         gait_frequency: Gait frequency in Hz, sampled per episode.
         command: Velocity command [vx, vy, yaw_rate].
@@ -54,6 +55,7 @@ class G1EnvState(AbstractEnvState):
     t: Float[Array, ""]
     model: mjx.Model
     last_action: Float[Array, "29"]
+    last_last_action: Float[Array, "29"]
     gait_phase: Float[Array, "2"]
     gait_frequency: Float[Array, ""]
     command: Float[Array, "3"]
@@ -130,6 +132,10 @@ class AbstractG1Env(
     feet_site_ids: eqx.AbstractVar[tuple[int, int]]
     foot_linvel_sensor_slices: eqx.AbstractVar[tuple[tuple[int, int], tuple[int, int]]]
 
+    relative_actions: eqx.AbstractVar[bool]
+    pulling_force_magnitude: eqx.AbstractVar[Float[Array, ""]]
+    unactuated_steps: eqx.AbstractVar[int]
+
     def action_mask(self, state: G1EnvState, *, key: Key[Array, ""]) -> None:
         return None
 
@@ -139,14 +145,22 @@ class AbstractG1Env(
         """Step physics with domain-randomized model.
 
         Computes motor targets from the action, optionally applies push
-        perturbations, steps physics via ``lax.scan`` using the per-episode
-        randomized model on the state, then updates gait phase and tracking.
+        perturbations or pulling forces, steps physics via ``lax.scan``
+        using the per-episode randomized model on the state, then updates
+        gait phase and tracking.
         """
         from .gait import advance_gait_phase
 
         push_key, key = jr.split(key)
 
-        motor_targets = self.default_joint_positions + action * self.action_scale
+        if self.relative_actions:
+            motor_targets = state.sim_state.qpos[7:] + action * self.action_scale
+        else:
+            motor_targets = self.default_joint_positions + action * self.action_scale
+
+        if self.unactuated_steps > 0:
+            settling = state.step_count < self.unactuated_steps
+            motor_targets = jnp.where(settling, state.sim_state.qpos[7:], motor_targets)
 
         data = state.sim_state.replace(ctrl=motor_targets)
 
@@ -171,6 +185,17 @@ class AbstractG1Env(
             qvel = data.qvel.at[:2].add(push)
             data = data.replace(qvel=qvel)
 
+        # Pulling force: upward assist on torso, gated by uprightness.
+        # When pulling_force_magnitude is 0.0, the force is zero (no-op).
+        gravity_in_torso = (
+            data.site_xmat[self.torso_imu_site_id].reshape(3, 3).T
+            @ jnp.array([0.0, 0.0, -1.0])
+        )
+        upright_enough = gravity_in_torso[2] < -0.5
+        force_z = self.pulling_force_magnitude * upright_enough.astype(float)
+        xfrc = data.xfrc_applied.at[self.torso_body_id, 2].set(force_z)
+        data = data.replace(xfrc_applied=xfrc)
+
         model = state.model
 
         def step_once(sim_data: mjx.Data, _: None) -> tuple[mjx.Data, None]:
@@ -189,6 +214,7 @@ class AbstractG1Env(
             t=state.t + self.dt,
             model=model,
             last_action=action,
+            last_last_action=state.last_action,
             gait_phase=new_phase,
             gait_frequency=state.gait_frequency,
             command=state.command,
@@ -304,6 +330,17 @@ class AbstractG1Env(
         left_vel = data.sensordata[l_start:l_end]
         right_vel = data.sensordata[r_start:r_end]
         return jnp.stack([left_vel, right_vel])
+
+    def _correct_ground_penetration(
+        self, model: mjx.Model, data: mjx.Data
+    ) -> mjx.Data:
+        """Shift the robot upward if foot sites penetrate the ground plane."""
+        foot_positions = self._foot_positions(data)
+        min_foot_z = jnp.min(foot_positions[:, 2])
+        z_correction = jnp.maximum(-min_foot_z + 0.005, 0.0)
+        qpos = data.qpos.at[2].add(z_correction)
+        data = data.replace(qpos=qpos)
+        return mjx.forward(model, data)
 
     @abstractmethod
     def sample_command(self, *, key: Key[Array, ""]) -> Float[Array, "3"]:
