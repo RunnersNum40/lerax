@@ -89,6 +89,10 @@ class G1Locomotion(AbstractG1Env):
     feet_site_ids: tuple[int, int]
     foot_linvel_sensor_slices: tuple[tuple[int, int], tuple[int, int]]
 
+    relative_actions: bool
+    pulling_force_magnitude: Float[Array, ""]
+    unactuated_steps: int
+
     lin_vel_x_range: Float[Array, "2"]
     lin_vel_y_range: Float[Array, "2"]
     ang_vel_yaw_range: Float[Array, "2"]
@@ -276,7 +280,7 @@ class G1Locomotion(AbstractG1Env):
         data = mjx.make_data(model)
         data = data.replace(qpos=qpos, qvel=qvel, ctrl=qpos[7:])
         data = mjx.forward(model, data)
-        data = self._correct_ground_penetration(model, data)
+        data = self._snap_to_ground(model, data)
 
         command = self.sample_command(key=cmd_key)
         gait_frequency = jr.uniform(
@@ -290,6 +294,7 @@ class G1Locomotion(AbstractG1Env):
             t=jnp.array(0.0),
             model=model,
             last_action=jnp.zeros(NUM_ACTUATED_DOFS),
+            last_last_action=jnp.zeros(NUM_ACTUATED_DOFS),
             gait_phase=gait.initial_gait_phase(),
             gait_frequency=gait_frequency,
             command=command,

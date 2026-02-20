@@ -187,10 +187,9 @@ class AbstractG1Env(
 
         # Pulling force: upward assist on torso, gated by uprightness.
         # When pulling_force_magnitude is 0.0, the force is zero (no-op).
-        gravity_in_torso = (
-            data.site_xmat[self.torso_imu_site_id].reshape(3, 3).T
-            @ jnp.array([0.0, 0.0, -1.0])
-        )
+        gravity_in_torso = data.site_xmat[self.torso_imu_site_id].reshape(
+            3, 3
+        ).T @ jnp.array([0.0, 0.0, -1.0])
         upright_enough = gravity_in_torso[2] < -0.5
         force_z = self.pulling_force_magnitude * upright_enough.astype(float)
         xfrc = data.xfrc_applied.at[self.torso_body_id, 2].set(force_z)
@@ -331,13 +330,17 @@ class AbstractG1Env(
         right_vel = data.sensordata[r_start:r_end]
         return jnp.stack([left_vel, right_vel])
 
-    def _correct_ground_penetration(
-        self, model: mjx.Model, data: mjx.Data
-    ) -> mjx.Data:
-        """Shift the robot upward if foot sites penetrate the ground plane."""
-        foot_positions = self._foot_positions(data)
-        min_foot_z = jnp.min(foot_positions[:, 2])
-        z_correction = jnp.maximum(-min_foot_z + 0.005, 0.0)
+    def _snap_to_ground(self, model: mjx.Model, data: mjx.Data) -> mjx.Data:
+        """Shift the robot vertically so its lowest point just touches the ground.
+
+        Checks both body positions and foot site positions to find the
+        true lowest point, then adjusts ``qpos[2]`` so that point sits
+        at a small clearance above ``z = 0``.
+        """
+        min_body_z = jnp.min(data.xpos[1:, 2])
+        min_foot_z = jnp.min(self._foot_positions(data)[:, 2])
+        min_z = jnp.minimum(min_body_z, min_foot_z)
+        z_correction = -min_z + 0.005
         qpos = data.qpos.at[2].add(z_correction)
         data = data.replace(qpos=qpos)
         return mjx.forward(model, data)
@@ -363,6 +366,9 @@ class AbstractG1Env(
         armature_scale_range: tuple[float, float] = (1.0, 1.05),
         mass_scale_range: tuple[float, float] = (0.9, 1.1),
         torso_offset_range: tuple[float, float] = (-1.0, 1.0),
+        relative_actions: bool = False,
+        pulling_force_magnitude: float = 0.0,
+        unactuated_steps: int = 0,
     ):
         """Shared initialization for all G1 environments."""
         asset_path = Path(__file__).resolve().parent / "assets" / xml_file
@@ -443,5 +449,9 @@ class AbstractG1Env(
             _sensor_slice("left_foot_global_linvel"),
             _sensor_slice("right_foot_global_linvel"),
         )
+
+        self.relative_actions = relative_actions
+        self.pulling_force_magnitude = jnp.array(pulling_force_magnitude)
+        self.unactuated_steps = unactuated_steps
 
         self.action_space = Box(low=-1.0, high=1.0, shape=(NUM_ACTUATED_DOFS,))

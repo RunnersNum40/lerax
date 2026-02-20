@@ -85,6 +85,10 @@ class G1Standing(AbstractG1Env):
     feet_site_ids: tuple[int, int]
     foot_linvel_sensor_slices: tuple[tuple[int, int], tuple[int, int]]
 
+    relative_actions: bool
+    pulling_force_magnitude: Float[Array, ""]
+    unactuated_steps: int
+
     reward_orientation_weight: Float[Array, ""]
     reward_joint_vel_weight: Float[Array, ""]
     reward_pose_weight: Float[Array, ""]
@@ -174,12 +178,14 @@ class G1Standing(AbstractG1Env):
         data = mjx.make_data(model)
         data = data.replace(qpos=qpos, qvel=qvel, ctrl=qpos[7:])
         data = mjx.forward(model, data)
+        data = self._snap_to_ground(model, data)
 
         return G1EnvState(
             sim_state=data,
             t=jnp.array(0.0),
             model=model,
             last_action=jnp.zeros(NUM_ACTUATED_DOFS),
+            last_last_action=jnp.zeros(NUM_ACTUATED_DOFS),
             gait_phase=initial_gait_phase(),
             gait_frequency=jnp.array(0.0),
             command=jnp.zeros(3),
