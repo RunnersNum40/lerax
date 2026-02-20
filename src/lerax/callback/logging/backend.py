@@ -8,15 +8,14 @@ import numpy as np
 
 
 class AbstractLoggingBackend(eqx.Module):
-    """
-    Abstract base class for logging backends.
+    """Abstract base class for logging backends.
 
     Implementations receive already-converted Python/numpy values; the
-    `LoggingCallback` handles the JIT-to-numpy boundary.
+    ``LoggingCallback`` handles the JIT-to-numpy boundary.
 
-    The lifecycle is ``open`` -> ``log_*`` / ``close``. The ``open`` method is
-    called by ``LoggingCallback.on_training_start`` with an auto-generated or
-    user-provided run name before any logging methods are called.
+    The lifecycle is ``open`` -> ``log_*`` -> ``close``. The ``open`` method
+    is called by ``LoggingCallback.__init__`` with the run name at
+    construction time. ``close`` is called by ``LoggingCallback.close()``.
     """
 
     @abstractmethod

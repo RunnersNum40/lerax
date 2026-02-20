@@ -26,6 +26,7 @@ def test_ppo_with_callbacks():
     trained_policy = algo.learn(
         env, policy, total_timesteps=total_timesteps, key=learn_key, callback=callbacks
     )
+    tensorboard.close()
 
     assert trained_policy is not None
     assert os.path.exists(directory.name)

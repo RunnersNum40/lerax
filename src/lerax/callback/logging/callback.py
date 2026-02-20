@@ -374,8 +374,12 @@ def _make_video_recorder(
 
 
 class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepState]):
-    """
-    Callback that logs training metrics to a pluggable logging backend.
+    """Callback that logs training metrics to a pluggable logging backend.
+
+    The backend is opened immediately at construction, so a single
+    ``LoggingCallback`` instance can be reused across multiple
+    ``learn()`` calls and all metrics will be logged to the same run.
+    Call ``close()`` when finished to flush data and release resources.
 
     At the end of each iteration the following metrics are logged:
 
@@ -389,10 +393,11 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
     every ``video_interval`` iterations and forwarded to the backend as
     ``eval/video``.
 
-    At training start, hyperparameters are logged via `log_hparams`. Policy
-    scalar fields (prefixed ``policy.``) and algorithm scalar fields (prefixed
-    ``algorithm.``) are extracted automatically; any extra entries provided in
-    ``hparams`` are merged on top (explicit values take precedence).
+    At each training start, hyperparameters are logged via ``log_hparams``.
+    Policy scalar fields (prefixed ``policy.``) and algorithm scalar fields
+    (prefixed ``algorithm.``) are extracted automatically; any extra entries
+    provided in ``hparams`` are merged on top (explicit values take
+    precedence).
 
     Note:
         This callback must be constructed **outside** any JIT-compiled
@@ -403,8 +408,11 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
 
     Args:
         backend: Logging backend to send metrics to.
-        name: Explicit run name. When ``None`` a name is generated from the
-            algorithm class name, policy name, and environment name.
+        name: Explicit run name. When ``None``, a name is generated from the
+            environment name, policy name, and a timestamp. If neither ``env``
+            nor ``policy`` are provided, falls back to a plain timestamp.
+        env: Environment used to derive the run name when ``name`` is ``None``.
+        policy: Policy used to derive the run name when ``name`` is ``None``.
         alpha: EMA smoothing factor (higher = more weight on recent episodes).
         hparams: Additional explicit hyperparameters. Merged last so these
             values take precedence over auto-extracted ones.
@@ -428,6 +436,8 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
         self,
         backend: AbstractLoggingBackend,
         name: str | None = None,
+        env: AbstractEnvLike | None = None,
+        policy: AbstractPolicy | None = None,
         alpha: float = 0.9,
         hparams: dict[str, Any] | None = None,
         video_interval: int = 0,
@@ -437,9 +447,21 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
         video_fps: float = 50.0,
     ) -> None:
         self._backend = backend
-        self._name = name
         self._hparams = hparams
         self.alpha = alpha
+
+        if name is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            parts = []
+            if policy is not None:
+                parts.append(policy.name)
+            if env is not None:
+                parts.append(env.name)
+            parts.append(timestamp)
+            name = "_".join(parts)
+        self._name = name
+
+        backend.open(name)
 
         if video_interval > 0:
             executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
@@ -506,13 +528,6 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
     def on_training_start(
         self, ctx: TrainingContext, *, key: Key[Array, ""]
     ) -> EmptyCallbackState:
-        if self._name is not None:
-            name = self._name
-        else:
-            algo_name = type(ctx.algorithm).__name__
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            name = f"{algo_name}_{ctx.policy.name}_{ctx.env.name}_{timestamp}"
-
         hparams: dict[str, Any] = {}
         hparams.update(
             {f"policy.{k}": v for k, v in _extract_hparams(ctx.policy).items()}
@@ -522,21 +537,24 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
         )
         hparams.update(self._hparams or {})
 
-        def _open_and_log() -> None:
-            self._backend.open(name)
-            self._backend.log_hparams(hparams)
-
-        callback_wrapper(_open_and_log, ordered=True)()
+        callback_wrapper(lambda: self._backend.log_hparams(hparams), ordered=True)()
         return ctx.state
 
     def on_training_end(
         self, ctx: TrainingContext, *, key: Key[Array, ""]
     ) -> EmptyCallbackState:
-        if self._video_executor is not None:
-            executor = self._video_executor
-            callback_wrapper(lambda: executor.shutdown(wait=True), ordered=True)()
-        callback_wrapper(self._backend.close, ordered=True)()
         return ctx.state
+
+    def close(self) -> None:
+        """Flush pending data and release backend resources.
+
+        Call this after all ``learn()`` calls are complete. The backend
+        remains open between ``learn()`` calls so that metrics from
+        multiple stages are logged to the same run.
+        """
+        if self._video_executor is not None:
+            self._video_executor.shutdown(wait=True)
+        self._backend.close()
 
     def continue_training(
         self, ctx: IterationContext, *, key: Key[Array, ""]
