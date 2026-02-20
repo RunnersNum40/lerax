@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from jax import numpy as jnp
 from jaxtyping import Array, Bool, Int, Key
-from rich import progress, text
+from rich import console, progress, text
 
 from lerax.env import AbstractEnvLike
 from lerax.policy import AbstractPolicy
@@ -84,6 +84,7 @@ class JITProgressBar:
             progress.TimeRemainingColumn(),
             progress.TextColumn("]"),
             SpeedColumn(),
+            console=console.Console(force_terminal=True),
             transient=transient,
         )
         self.task = self.progress_bar.add_task(f"[yellow]{name}", total=total)
