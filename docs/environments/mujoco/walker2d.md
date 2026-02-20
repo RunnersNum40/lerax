@@ -7,4 +7,4 @@ description: Documentation for the Walker2d environment in Lerax.
 
 ::: lerax.env.mujoco.Walker2d
     options:
-        members: [null]
+        members: false

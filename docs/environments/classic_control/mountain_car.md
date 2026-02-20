@@ -5,6 +5,6 @@ description: Documentation for the Mountain Car environment in Lerax.
 
 # Mountain Car
 
-::: lerax.env.MountainCar
+::: lerax.env.classic_control.MountainCar
     options:
-        members: [null]
+        members: false

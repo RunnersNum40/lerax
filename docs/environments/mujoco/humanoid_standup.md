@@ -7,4 +7,4 @@ description: Documentation for the Humanoid Standup environment in Lerax.
 
 ::: lerax.env.mujoco.HumanoidStandup
     options:
-        members: [null]
+        members: false

@@ -7,4 +7,4 @@ description: Documentation for the Hopper environment in Lerax.
 
 ::: lerax.env.mujoco.Hopper
     options:
-        members: [null]
+        members: false

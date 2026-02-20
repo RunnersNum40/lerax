@@ -7,4 +7,4 @@ description: Documentation for the Half Cheetah environment in Lerax.
 
 ::: lerax.env.mujoco.HalfCheetah
     options:
-        members: [null]
+        members: false

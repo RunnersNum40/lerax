@@ -7,4 +7,4 @@ description: Documentation for the Swimmer environment in Lerax.
 
 ::: lerax.env.mujoco.Swimmer
     options:
-        members: [null]
+        members: false

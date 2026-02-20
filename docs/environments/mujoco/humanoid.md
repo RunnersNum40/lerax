@@ -7,4 +7,4 @@ description: Documentation for the Humanoid environment in Lerax.
 
 ::: lerax.env.mujoco.Humanoid
     options:
-        members: [null]
+        members: false

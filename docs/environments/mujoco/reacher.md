@@ -7,4 +7,4 @@ description: Documentation for the Reacher environment in Lerax.
 
 ::: lerax.env.mujoco.Reacher
     options:
-        members: [null]
+        members: false

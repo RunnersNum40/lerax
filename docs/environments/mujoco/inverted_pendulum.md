@@ -7,4 +7,4 @@ description: Documentation for the Inverted Pendulum environment in Lerax.
 
 ::: lerax.env.mujoco.InvertedPendulum
     options:
-        members: [null]
+        members: false

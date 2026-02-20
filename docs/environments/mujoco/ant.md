@@ -7,4 +7,4 @@ description: Documentation for the Ant environment in Lerax.
 
 ::: lerax.env.mujoco.Ant
     options:
-        members: [null]
+        members: false

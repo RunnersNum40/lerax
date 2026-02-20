@@ -7,4 +7,4 @@ description: Documentation for the Pusher environment in Lerax.
 
 ::: lerax.env.mujoco.Pusher
     options:
-        members: [null]
+        members: false
