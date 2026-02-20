@@ -139,8 +139,10 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
         policy_frequency: How often to update the actor.
         autotune: Whether to automatically tune entropy coefficient.
         initial_alpha: Initial entropy coefficient value.
-        policy_lr: Learning rate for the actor.
-        q_lr: Learning rate for Q-networks.
+        policy_lr: Learning rate or schedule for the actor.
+        q_lr: Learning rate or schedule for Q-networks.
+        alpha_lr: Learning rate or schedule for the entropy coefficient.
+            Defaults to ``q_lr`` when ``None``.
         q_width_size: Width of Q-network hidden layers.
         q_depth: Depth of Q-network hidden layers.
     """
@@ -178,8 +180,9 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
         policy_frequency: int = 2,
         autotune: bool = True,
         initial_alpha: float = 0.2,
-        policy_lr: float = 3e-4,
-        q_lr: float = 3e-4,
+        policy_lr: optax.ScalarOrSchedule = 3e-4,
+        q_lr: optax.ScalarOrSchedule = 3e-4,
+        alpha_lr: optax.ScalarOrSchedule | None = None,
         q_width_size: int = 256,
         q_depth: int = 2,
     ):
@@ -199,9 +202,11 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
         self.q_width_size = q_width_size
         self.q_depth = q_depth
 
-        self.optimizer = optax.adam(policy_lr)
-        self.q_optimizer = optax.adam(q_lr)
-        self.alpha_optimizer = optax.adam(q_lr)
+        self.optimizer = optax.inject_hyperparams(optax.adam)(policy_lr)
+        self.q_optimizer = optax.inject_hyperparams(optax.adam)(q_lr)
+        self.alpha_optimizer = optax.inject_hyperparams(optax.adam)(
+            alpha_lr if alpha_lr is not None else q_lr
+        )
 
     def per_step(
         self, step_state: AbstractOffPolicyStepState[PolicyType]
@@ -529,7 +534,21 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
                 should_update_actor, update_alpha, skip_alpha
             )
 
-        log: dict[str, Scalar] = {"q_loss": q_loss}
+        def _get_lr(state: optax.OptState) -> Float[Array, ""]:
+            return optax.tree_utils.tree_get(
+                state,
+                "learning_rate",
+                jnp.nan,
+                filtering=lambda _, value: isinstance(value, jnp.ndarray),
+            )
+
+        log = {
+            "q_loss": q_loss,
+            "actor_learning_rate": _get_lr(opt_state),
+            "q_learning_rate": _get_lr(q_opt_state),
+            "alpha_learning_rate": _get_lr(alpha_opt_state),
+        }
+
         return (
             policy,
             opt_state,
