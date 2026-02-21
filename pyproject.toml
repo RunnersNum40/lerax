@@ -29,14 +29,14 @@ dependencies = [
   "wandb>=0.25.0",
 ]
 
-[project.optional-dependencies]
-onnx = ["jax2onnx>=0.12.0", "onnx>=1.17.0"]
-
 [project.urls]
 documentation = "https://lerax.tedpinkerton.ca/"
 homepage = "https://lerax.tedpinkerton.ca/"
 issues = "https://github.com/RunnersNum40/lerax/issues"
 source = "https://github.com/RunnersNum40/lerax.git"
+
+[project.optional-dependencies]
+onnx = ["jax2onnx>=0.12.0", "onnx>=1.17.0"]
 
 [dependency-groups]
 dev = [
