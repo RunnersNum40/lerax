@@ -20,21 +20,32 @@ class WandbBackend(AbstractLoggingBackend):
     Args:
         project: W&B project name.
         config: Hyperparameter dictionary passed to ``wandb.init``.
+        quiet: Suppress W&B console output. Useful when combined with
+            other logging backends like ``ConsoleBackend``.
     """
 
     _project: str | None = eqx.field(static=True)
     _config: dict[str, Any] | None = eqx.field(static=True)
+    _quiet: bool = eqx.field(static=True)
 
     def __init__(
         self,
         project: str | None = None,
         config: dict[str, Any] | None = None,
+        quiet: bool = False,
     ) -> None:
         self._project = project
         self._config = config
+        self._quiet = quiet
 
     def open(self, name: str) -> None:
-        wandb.init(project=self._project, name=name, config=self._config)
+        settings = wandb.Settings(quiet=self._quiet)
+        wandb.init(
+            project=self._project,
+            name=name,
+            config=self._config,
+            settings=settings,
+        )
         wandb.define_metric("eval/*", step_metric="eval_step")
 
     def log_hparams(self, hparams: dict[str, Any]) -> None:
