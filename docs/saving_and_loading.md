@@ -72,3 +72,47 @@ m = MyModule.deserialize("my_module.eqx", 0.0, 0.0)
 ```
 
 This works for policies, algorithms, or any other Equinox module that you want to persist.
+
+## ONNX Export
+
+Lerax policies can be exported to the [ONNX](https://onnx.ai/) format for deployment in production runtimes (ONNX Runtime, TensorRT, etc.) that do not require JAX.
+
+### Installation
+
+ONNX export requires additional dependencies:
+
+```bash
+pip install lerax[onnx]
+```
+
+### Exporting a Policy
+
+Use [`to_onnx`][lerax.export.to_onnx] to export a trained policy's deterministic inference path:
+
+```py
+from jax import random as jr
+
+from lerax.env.classic_control import CartPole
+from lerax.export import to_onnx
+from lerax.policy import MLPActorCriticPolicy
+
+env = CartPole()
+policy = MLPActorCriticPolicy(env=env, key=jr.key(0))
+
+to_onnx(policy, output_path="policy.onnx")
+```
+
+The exported model maps a flat observation array to an action. It uses the deterministic mode of the policy (equivalent to calling ``policy(None, observation)`` with no random key).
+
+### Running the Exported Model
+
+```py
+import numpy as np
+import onnxruntime as ort
+
+session = ort.InferenceSession("policy.onnx")
+input_name = session.get_inputs()[0].name
+
+observation = np.zeros(4, dtype=np.float32)  # CartPole has 4-dim observations
+action = session.run(None, {input_name: observation})[0]
+```
