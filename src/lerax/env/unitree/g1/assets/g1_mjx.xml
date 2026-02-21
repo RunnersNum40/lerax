@@ -140,6 +140,7 @@
       <freejoint name="floating_base_joint"/>
       <geom class="visual" material="black" mesh="pelvis"/>
       <geom class="visual" mesh="pelvis_contour_link"/>
+      <geom name="pelvis_collision" class="collision" type="capsule" size="0.08" fromto="0 -0.08 -0.08 0 0.08 -0.08"/>
       <site name="imu_in_pelvis" size="0.01" pos="0.04525 0 -0.08339"/>
       <body name="left_hip_pitch_link" pos="0 0.064452 -0.1027">
         <inertial pos="0.002741 0.047791 -0.02606" quat="0.954862 0.293964 0.0302556 0.030122" mass="1.35"
@@ -237,6 +238,7 @@
             <geom class="visual" mesh="torso_link"/>
             <geom pos="0.0039635 0 -0.044" quat="1 0 0 0" class="visual" material="black" mesh="logo_link"/>
             <geom pos="0.0039635 0 -0.044" class="visual" material="black" mesh="head_link"/>
+            <geom name="torso_collision" class="collision" type="capsule" size="0.12" fromto="0 0 0.02 0 0 0.30"/>
 
             <site name="imu_in_torso" size="0.01" pos="-0.03959 -0.00224 0.14792"/>
             <body name="left_shoulder_pitch_link" pos="0.0039563 0.10022 0.24778"
@@ -342,9 +344,31 @@
   <contact>
     <pair name="left_foot_floor" geom1="left_foot" geom2="floor" condim="3" friction="0.6 0.6"/>
     <pair name="right_foot_floor" geom1="right_foot" geom2="floor" condim="3" friction="0.6 0.6"/>
+    <pair name="left_shin_floor" geom1="left_shin" geom2="floor" condim="3" friction="0.6 0.6"/>
+    <pair name="right_shin_floor" geom1="right_shin" geom2="floor" condim="3" friction="0.6 0.6"/>
+    <pair name="left_thigh_floor" geom1="left_thigh" geom2="floor" condim="3" friction="0.6 0.6"/>
+    <pair name="right_thigh_floor" geom1="right_thigh" geom2="floor" condim="3" friction="0.6 0.6"/>
+    <pair name="pelvis_floor" geom1="pelvis_collision" geom2="floor" condim="3" friction="0.6 0.6"/>
+    <pair name="torso_floor" geom1="torso_collision" geom2="floor" condim="3" friction="0.6 0.6"/>
+    <pair name="left_hand_floor" geom1="left_hand_collision" geom2="floor" condim="3" friction="0.6 0.6"/>
+    <pair name="right_hand_floor" geom1="right_hand_collision" geom2="floor" condim="3" friction="0.6 0.6"/>
     <pair name="left_hand_thigh" geom1="left_hand_collision" geom2="left_thigh" condim="1"/>
     <pair name="right_hand_thigh" geom1="right_hand_collision" geom2="right_thigh" condim="1"/>
+    <pair name="left_hand_right_thigh" geom1="left_hand_collision" geom2="right_thigh" condim="1"/>
+    <pair name="right_hand_left_thigh" geom1="right_hand_collision" geom2="left_thigh" condim="1"/>
+    <pair name="left_hand_torso" geom1="left_hand_collision" geom2="torso_collision" condim="1"/>
+    <pair name="right_hand_torso" geom1="right_hand_collision" geom2="torso_collision" condim="1"/>
+    <pair name="left_hand_pelvis" geom1="left_hand_collision" geom2="pelvis_collision" condim="1"/>
+    <pair name="right_hand_pelvis" geom1="right_hand_collision" geom2="pelvis_collision" condim="1"/>
+    <pair name="left_shin_torso" geom1="left_shin" geom2="torso_collision" condim="1"/>
+    <pair name="right_shin_torso" geom1="right_shin" geom2="torso_collision" condim="1"/>
+    <pair name="left_thigh_torso" geom1="left_thigh" geom2="torso_collision" condim="1"/>
+    <pair name="right_thigh_torso" geom1="right_thigh" geom2="torso_collision" condim="1"/>
     <pair name="left_foot_right_foot" geom1="left_foot" geom2="right_foot" condim="1"/>
+    <pair name="left_foot_right_shin" geom1="left_foot" geom2="right_shin" condim="1"/>
+    <pair name="right_foot_left_shin" geom1="right_foot" geom2="left_shin" condim="1"/>
+    <pair name="left_shin_right_shin" geom1="left_shin" geom2="right_shin" condim="1"/>
+    <pair name="left_thigh_right_thigh" geom1="left_thigh" geom2="right_thigh" condim="1"/>
   </contact>
 
   <actuator>
