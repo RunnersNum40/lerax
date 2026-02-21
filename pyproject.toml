@@ -20,6 +20,7 @@ dependencies = [
   "jaxtyping>=0.3.6",
   "moviepy>=2.2.1",
   "mujoco-mjx>=3.4.0",
+  "once-py>=0.0.8",
   "optax>=0.2.6",
   "pygame>=2.6.1",
   "rich>=14.3.1",
@@ -27,6 +28,9 @@ dependencies = [
   "tensorboardX>=2.6.4",
   "wandb>=0.25.0",
 ]
+
+[project.optional-dependencies]
+onnx = ["jax2onnx>=0.12.0", "onnx>=1.17.0"]
 
 [project.urls]
 documentation = "https://lerax.tedpinkerton.ca/"
@@ -38,8 +42,11 @@ source = "https://github.com/RunnersNum40/lerax.git"
 dev = [
   "gymnasium>=1.2.3",
   "gymnax>=0.0.9",
+  "jax2onnx>=0.12.0",
   "mkdocstrings-python>=2.0.1",
   "mujoco-mjx>=3.4.0",
+  "onnx>=1.17.0",
+  "onnxruntime>=1.19.0",
   "prek>=0.3.0",
   "pygame>=2.6.1",
   "pytest>=9.0.2",
