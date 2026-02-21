@@ -3,7 +3,7 @@ from __future__ import annotations
 import concurrent.futures
 import dataclasses
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import datetime
 from functools import partial
 from typing import Any
@@ -205,7 +205,7 @@ def _make_video_recorder(
     video_width: int,
     video_height: int,
     video_fps: float,
-    backend: AbstractLoggingBackend,
+    backends: list[AbstractLoggingBackend],
     executor: concurrent.futures.ThreadPoolExecutor,
 ) -> Callable[..., None]:
     """
@@ -224,7 +224,7 @@ def _make_video_recorder(
         video_width: Render width in pixels.
         video_height: Render height in pixels.
         video_fps: Playback frames per second.
-        backend: Logging backend to forward video frames to.
+        backends: Logging backends to forward video frames to.
         executor: Thread pool to run the recording work in.
     """
 
@@ -349,7 +349,8 @@ def _make_video_recorder(
             renderer.close()
 
             frames_arr = np.stack(frames).astype(np.uint8)
-            backend.log_video("eval/video", frames_arr, step, fps=video_fps)
+            for b in backends:
+                b.log_video("eval/video", frames_arr, step, fps=video_fps)
         except Exception as exc:
             import warnings
 
@@ -407,7 +408,7 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
         alpha: EMA smoothing factor for episode statistics.
 
     Args:
-        backend: Logging backend to send metrics to.
+        backend: Logging backend (or list of backends) to send metrics to.
         name: Explicit run name. When ``None``, a name is generated from the
             environment name, policy name, and a timestamp. If neither ``env``
             nor ``policy`` are provided, falls back to a plain timestamp.
@@ -423,7 +424,7 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
         video_fps: Playback frames per second.
     """
 
-    _backend: AbstractLoggingBackend = eqx.field(static=True)
+    _backends: list[AbstractLoggingBackend] = eqx.field(static=True)
     _name: str | None = eqx.field(static=True)
     _hparams: dict[str, Any] | None = eqx.field(static=True)
     alpha: float
@@ -434,7 +435,7 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
 
     def __init__(
         self,
-        backend: AbstractLoggingBackend,
+        backend: AbstractLoggingBackend | Sequence[AbstractLoggingBackend],
         name: str | None = None,
         env: AbstractEnvLike | None = None,
         policy: AbstractPolicy | None = None,
@@ -446,7 +447,11 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
         video_height: int = 480,
         video_fps: float = 50.0,
     ) -> None:
-        self._backend = backend
+        if isinstance(backend, AbstractLoggingBackend):
+            self._backends = [backend]
+        else:
+            self._backends = list(backend)
+
         self._hparams = hparams
         self.alpha = alpha
 
@@ -461,7 +466,8 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
             name = "_".join(parts)
         self._name = name
 
-        backend.open(name)
+        for b in self._backends:
+            b.open(name)
 
         if video_interval > 0:
             executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
@@ -472,7 +478,7 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
                 video_width,
                 video_height,
                 video_fps,
-                backend,
+                self._backends,
                 executor,
             )
         else:
@@ -513,9 +519,8 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
         scalars["episode/return"] = step_state.average_return.mean()
         scalars["episode/length"] = step_state.average_length.mean()
 
-        callback_with_numpy_wrapper(self._backend.log_scalars, ordered=True)(
-            scalars, last_step
-        )
+        for b in self._backends:
+            callback_with_numpy_wrapper(b.log_scalars, ordered=True)(scalars, last_step)
 
         if self._record_video_fn is not None:
             video_key, key = jr.split(key)
@@ -537,7 +542,8 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
         )
         hparams.update(self._hparams or {})
 
-        callback_wrapper(lambda: self._backend.log_hparams(hparams), ordered=True)()
+        for b in self._backends:
+            callback_wrapper(lambda b=b: b.log_hparams(hparams), ordered=True)()
         return ctx.state
 
     def on_training_end(
@@ -548,13 +554,14 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
     def close(self) -> None:
         """Flush pending data and release backend resources.
 
-        Call this after all ``learn()`` calls are complete. The backend
-        remains open between ``learn()`` calls so that metrics from
+        Call this after all ``learn()`` calls are complete. The backends
+        remain open between ``learn()`` calls so that metrics from
         multiple stages are logged to the same run.
         """
         if self._video_executor is not None:
             self._video_executor.shutdown(wait=True)
-        self._backend.close()
+        for b in self._backends:
+            b.close()
 
     def continue_training(
         self, ctx: IterationContext, *, key: Key[Array, ""]

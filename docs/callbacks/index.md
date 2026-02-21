@@ -31,7 +31,7 @@ via the `callback` argument to `learn`.
 from jax import random as jr
 
 from lerax.algorithm import PPO
-from lerax.callback import LoggingCallback, ProgressBarCallback, TensorBoardBackend
+from lerax.callback import ConsoleBackend, LoggingCallback, TensorBoardBackend
 from lerax.env.classic_control import CartPole
 from lerax.policy import MLPActorCriticPolicy
 
@@ -41,29 +41,29 @@ env = CartPole()
 policy = MLPActorCriticPolicy(env=env, key=policy_key)
 algo = PPO()
 
-logger = LoggingCallback(TensorBoardBackend(), env=env, policy=policy)
-callbacks = [
-    ProgressBarCallback(total_timesteps=2**16, env=env, policy=policy),
-    logger,
-]
+logger = LoggingCallback(
+    [TensorBoardBackend(), ConsoleBackend(total_timesteps=2**16)],
+    env=env,
+    policy=policy,
+)
 
 policy = algo.learn(
     env,
     policy,
     total_timesteps=2**16,
     key=learn_key,
-    callback=callbacks,
+    callback=logger,
 )
 logger.close()
 ```
 
 ## Built-in callbacks
 
-- [`ProgressBarCallback`](progress_bar.md):
-  Rich-based progress bar showing iterations, elapsed/remaining time, and iterations per second.
-
 - [`LoggingCallback`](logging.md):
-  Logs training metrics (learning rate, training log entries, episode return/length EMAs) to TensorBoard, Aim, or Weights & Biases via a pluggable backend.
+  Logs training metrics (learning rate, training log entries, episode return/length EMAs) to one or more pluggable backends. Use `ConsoleBackend` for a live terminal display with progress bar and metrics table, `TensorBoardBackend` for TensorBoard, or `WandbBackend` for Weights & Biases.
+
+- [`ProgressBarCallback`](progress_bar.md):
+  Standalone Rich progress bar callback. For most use cases prefer `ConsoleBackend` inside `LoggingCallback` instead, which provides both a progress bar and a live metrics table.
 
 - `CallbackList`:
   Aggregates multiple callbacks and forwards all hooks to each one. Used automatically when you pass a list of callbacks.

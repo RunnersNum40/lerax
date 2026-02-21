@@ -5,6 +5,11 @@ description: Display a live Rich progress bar during training.
 
 # ProgressBarCallback
 
+!!! tip "Prefer ConsoleBackend"
+    For most use cases, prefer [`ConsoleBackend`](logging.md#consolebackend) inside
+    `LoggingCallback` instead. It provides the same progress bar plus a live
+    metrics table, and avoids needing a separate callback.
+
 `ProgressBarCallback` displays a terminal progress bar using [Rich](https://rich.readthedocs.io/).
 It shows:
 

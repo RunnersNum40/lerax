@@ -88,11 +88,18 @@ backend = WandbBackend(
 
 ### ConsoleBackend
 
-Prints metrics to the terminal using Rich. Useful for quick debugging without a logging server.
+Displays a live metrics table and progress bar in the terminal using [Rich](https://rich.readthedocs.io/).
+On each iteration the metrics table is updated in-place (not appended), keeping the display compact, with a progress bar rendered below it.
+
+When `total_timesteps` is provided, the progress bar shows completion, elapsed/remaining time, and throughput. Without it, metrics are printed as simple key=value lines.
 
 ```py
 from lerax.callback import ConsoleBackend
 
+# With progress bar and live metrics table
+backend = ConsoleBackend(total_timesteps=2**16)
+
+# Without progress bar (plain text output)
 backend = ConsoleBackend()
 ```
 
