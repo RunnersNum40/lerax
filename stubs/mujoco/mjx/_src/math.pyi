@@ -1,13 +1,43 @@
 """
 Some useful math functions.
 """
+
 from __future__ import annotations
 
 import jax as jax
 import mujoco as mujoco
 from jax import numpy as jp
 
-__all__: list[str] = ['axis_angle_to_quat', 'closest_segment_point', 'closest_segment_point_and_dist', 'closest_segment_to_segment_points', 'inert_mul', 'jax', 'jp', 'make_frame', 'matmul_unroll', 'motion_cross', 'motion_cross_force', 'mujoco', 'norm', 'normalize', 'normalize_with_norm', 'orthogonals', 'quat_integrate', 'quat_inv', 'quat_mul', 'quat_mul_axis', 'quat_sub', 'quat_to_axis_angle', 'quat_to_mat', 'rotate', 'safe_div', 'sign', 'transform_motion']
+__all__: list[str] = [
+    "axis_angle_to_quat",
+    "closest_segment_point",
+    "closest_segment_point_and_dist",
+    "closest_segment_to_segment_points",
+    "inert_mul",
+    "jax",
+    "jp",
+    "make_frame",
+    "matmul_unroll",
+    "motion_cross",
+    "motion_cross_force",
+    "mujoco",
+    "norm",
+    "normalize",
+    "normalize_with_norm",
+    "orthogonals",
+    "quat_integrate",
+    "quat_inv",
+    "quat_mul",
+    "quat_mul_axis",
+    "quat_sub",
+    "quat_to_axis_angle",
+    "quat_to_mat",
+    "rotate",
+    "safe_div",
+    "sign",
+    "transform_motion",
+]
+
 def axis_angle_to_quat(axis: jax.Array, angle: jax.Array) -> jax.Array:
     """
     Provides a quaternion that describes rotating around axis by angle.
@@ -19,18 +49,26 @@ def axis_angle_to_quat(axis: jax.Array, angle: jax.Array) -> jax.Array:
     Returns:
       A quaternion that rotates around axis by angle
     """
+
 def closest_segment_point(a: jax.Array, b: jax.Array, pt: jax.Array) -> jax.Array:
     """
     Returns the closest point on the a-b line segment to a point pt.
     """
-def closest_segment_point_and_dist(a: jax.Array, b: jax.Array, pt: jax.Array) -> typing.Tuple[jax.Array, jax.Array]:
+
+def closest_segment_point_and_dist(
+    a: jax.Array, b: jax.Array, pt: jax.Array
+) -> typing.Tuple[jax.Array, jax.Array]:
     """
     Returns closest point on the line segment and the distance squared.
     """
-def closest_segment_to_segment_points(a0: jax.Array, a1: jax.Array, b0: jax.Array, b1: jax.Array) -> typing.Tuple[jax.Array, jax.Array]:
+
+def closest_segment_to_segment_points(
+    a0: jax.Array, a1: jax.Array, b0: jax.Array, b1: jax.Array
+) -> typing.Tuple[jax.Array, jax.Array]:
     """
     Returns closest points between two line segments.
     """
+
 def inert_mul(i: jax.Array, v: jax.Array) -> jax.Array:
     """
     Multiply inertia by motion, producing force.
@@ -42,10 +80,12 @@ def inert_mul(i: jax.Array, v: jax.Array) -> jax.Array:
     Returns:
       resultant force
     """
+
 def make_frame(a: jax.Array) -> jax.Array:
     """
     Makes a right-handed 3D frame given a direction.
     """
+
 def matmul_unroll(a: jax.Array, b: jax.Array) -> jax.Array:
     """
     Calculates a @ b via explicit cell value operations.
@@ -59,6 +99,7 @@ def matmul_unroll(a: jax.Array, b: jax.Array) -> jax.Array:
     Returns:
       the matrix product of the inputs.
     """
+
 def motion_cross(u, v):
     """
     Cross product of two motions.
@@ -70,6 +111,7 @@ def motion_cross(u, v):
     Returns:
       resultant spatial motion
     """
+
 def motion_cross_force(v, f):
     """
     Cross product of a motion and force.
@@ -81,7 +123,10 @@ def motion_cross_force(v, f):
     Returns:
       resultant force
     """
-def norm(x: jax.Array, axis: typing.Union[typing.Tuple[int, ...], int, NoneType] = None) -> jax.Array:
+
+def norm(
+    x: jax.Array, axis: typing.Union[typing.Tuple[int, ...], int, NoneType] = None
+) -> jax.Array:
     """
     Calculates a linalg.norm(x) that's safe for gradients at x=0.
 
@@ -94,7 +139,10 @@ def norm(x: jax.Array, axis: typing.Union[typing.Tuple[int, ...], int, NoneType]
     Returns:
       Norm of the array x.
     """
-def normalize(x: jax.Array, axis: typing.Union[typing.Tuple[int, ...], int, NoneType] = None) -> jax.Array:
+
+def normalize(
+    x: jax.Array, axis: typing.Union[typing.Tuple[int, ...], int, NoneType] = None
+) -> jax.Array:
     """
     Normalizes an array.
 
@@ -105,7 +153,10 @@ def normalize(x: jax.Array, axis: typing.Union[typing.Tuple[int, ...], int, None
     Returns:
       normalized array x
     """
-def normalize_with_norm(x: jax.Array, axis: typing.Union[typing.Tuple[int, ...], int, NoneType] = None) -> typing.Tuple[jax.Array, jax.Array]:
+
+def normalize_with_norm(
+    x: jax.Array, axis: typing.Union[typing.Tuple[int, ...], int, NoneType] = None
+) -> typing.Tuple[jax.Array, jax.Array]:
     """
     Normalizes an array.
 
@@ -116,14 +167,17 @@ def normalize_with_norm(x: jax.Array, axis: typing.Union[typing.Tuple[int, ...],
     Returns:
       A tuple of (normalized array x, the norm).
     """
+
 def orthogonals(a: jax.Array) -> typing.Tuple[jax.Array, jax.Array]:
     """
     Returns orthogonal vectors `b` and `c`, given a vector `a`.
     """
+
 def quat_integrate(q: jax.Array, v: jax.Array, dt: jax.Array) -> jax.Array:
     """
     Integrates a quaternion given angular velocity and dt.
     """
+
 def quat_inv(q: jax.Array) -> jax.Array:
     """
     Calculates the inverse of quaternion q.
@@ -134,6 +188,7 @@ def quat_inv(q: jax.Array) -> jax.Array:
     Returns:
       The inverse of q, where qmult(q, inv_quat(q)) = [1, 0, 0, 0].
     """
+
 def quat_mul(u: jax.Array, v: jax.Array) -> jax.Array:
     """
     Multiplies two quaternions.
@@ -145,6 +200,7 @@ def quat_mul(u: jax.Array, v: jax.Array) -> jax.Array:
     Returns:
       A quaternion u * v.
     """
+
 def quat_mul_axis(q: jax.Array, axis: jax.Array) -> jax.Array:
     """
     Multiplies a quaternion and an axis.
@@ -156,18 +212,22 @@ def quat_mul_axis(q: jax.Array, axis: jax.Array) -> jax.Array:
     Returns:
       A quaternion q * axis
     """
+
 def quat_sub(u: jax.Array, v: jax.Array) -> jax.Array:
     """
     Subtracts two quaternions (u - v) as a 3D velocity.
     """
+
 def quat_to_axis_angle(q: jax.Array) -> typing.Tuple[jax.Array, jax.Array]:
     """
     Converts a quaternion into axis and angle.
     """
+
 def quat_to_mat(q: jax.Array) -> jax.Array:
     """
     Converts a quaternion into a 9-dimensional rotation matrix.
     """
+
 def rotate(vec: jax.Array, quat: jax.Array) -> jax.Array:
     """
     Rotates a vector vec by a unit quaternion quat.
@@ -179,14 +239,19 @@ def rotate(vec: jax.Array, quat: jax.Array) -> jax.Array:
     Returns:
       ndarray(3) containing vec rotated by quat.
     """
-def safe_div(num: typing.Union[float, jax.Array], den: typing.Union[float, jax.Array]) -> typing.Union[float, jax.Array]:
+
+def safe_div(
+    num: typing.Union[float, jax.Array], den: typing.Union[float, jax.Array]
+) -> typing.Union[float, jax.Array]:
     """
     Safe division for case where denominator is zero.
     """
+
 def sign(x: jax.Array) -> jax.Array:
     """
     Returns the sign of x in the set {-1, 1}.
     """
+
 def transform_motion(vel: jax.Array, offset: jax.Array, rotmat: jax.Array):
     """
     Transform spatial motion.

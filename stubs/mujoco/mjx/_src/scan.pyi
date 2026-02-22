@@ -1,6 +1,7 @@
 """
 Scan across data ordered by body joint types and kinematic tree order.
 """
+
 from __future__ import annotations
 
 import typing
@@ -13,19 +14,37 @@ import numpy as np
 from jax import numpy as jp
 from mujoco.mjx._src.types import JointType, Model, TrnType
 
-__all__: list[str] = ['Any', 'JointType', 'Model', 'TrnType', 'TypeVar', 'Y', 'body_tree', 'flat', 'jax', 'jp', 'np']
-def _check_input(m: mujoco.mjx._src.types.Model, args: typing.Any, in_types: str) -> None:
+__all__: list[str] = [
+    "Any",
+    "JointType",
+    "Model",
+    "TrnType",
+    "TypeVar",
+    "Y",
+    "body_tree",
+    "flat",
+    "jax",
+    "jp",
+    "np",
+]
+
+def _check_input(
+    m: mujoco.mjx._src.types.Model, args: typing.Any, in_types: str
+) -> None:
     """
     Checks that scan input has the right shape.
     """
+
 def _check_output(y: jax.Array, take_ids: numpy.ndarray, typ: str, idx: int) -> None:
     """
     Checks that scan output has the right shape.
     """
+
 def _index(haystack: numpy.ndarray, needle: numpy.ndarray) -> numpy.ndarray:
     """
     Returns indexes in haystack for elements in needle.
     """
+
 def _nvmap(f: typing.Callable[..., ~Y], *args) -> ~Y:
     """
     A vmap that accepts numpy arrays.
@@ -44,14 +63,17 @@ def _nvmap(f: typing.Callable[..., ~Y], *args) -> ~Y:
     Raises:
       RuntimeError: if numpy arg elements do not match
     """
+
 def _q_bodyid(m: mujoco.mjx._src.types.Model) -> numpy.ndarray:
     """
     Returns the bodyid for each qpos adress.
     """
+
 def _q_jointid(m: mujoco.mjx._src.types.Model) -> numpy.ndarray:
     """
     Returns the jointid for each qpos adress.
     """
+
 def _take(obj: ~Y, idx: numpy.ndarray) -> ~Y:
     """
     Takes idxs on any pytree given to it.
@@ -66,7 +88,15 @@ def _take(obj: ~Y, idx: numpy.ndarray) -> ~Y:
     Returns:
       obj pytree with leaves taken by idxs
     """
-def body_tree(m: mujoco.mjx._src.types.Model, f: typing.Callable[..., ~Y], in_types: str, out_types: str, *args, reverse: bool = False) -> ~Y:
+
+def body_tree(
+    m: mujoco.mjx._src.types.Model,
+    f: typing.Callable[..., ~Y],
+    in_types: str,
+    out_types: str,
+    *args,
+    reverse: bool = False,
+) -> ~Y:
     """
     Scan ``f`` across bodies in tree order, carrying results up/down the tree.
 
@@ -96,7 +126,15 @@ def body_tree(m: mujoco.mjx._src.types.Model, f: typing.Callable[..., ~Y], in_ty
     Raises:
         IndexError: if function output shape does not match out_types shape
     """
-def flat(m: mujoco.mjx._src.types.Model, f: typing.Callable[..., ~Y], in_types: str, out_types: str, *args, group_by: str = 'j') -> ~Y:
+
+def flat(
+    m: mujoco.mjx._src.types.Model,
+    f: typing.Callable[..., ~Y],
+    in_types: str,
+    out_types: str,
+    *args,
+    group_by: str = "j",
+) -> ~Y:
     """
     Scan a function across bodies or actuators.
 
@@ -128,4 +166,5 @@ def flat(m: mujoco.mjx._src.types.Model, f: typing.Callable[..., ~Y], in_types: 
     Raises:
         IndexError: if function output shape does not match out_types shape
     """
+
 Y: typing.TypeVar  # value = ~Y

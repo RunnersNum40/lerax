@@ -1,6 +1,7 @@
 """
 Convex collisions.
 """
+
 from __future__ import annotations
 
 import functools as functools
@@ -18,16 +19,50 @@ from mujoco.mjx._src.collision_types import (
 )
 from mujoco.mjx._src.types import Data, DataJAX, GeomType, Model, ModelJAX
 
-__all__: list[str] = ['Collision', 'ConvexInfo', 'Data', 'DataJAX', 'FunctionKey', 'GeomInfo', 'GeomType', 'HFieldInfo', 'Model', 'ModelJAX', 'collider', 'functools', 'jax', 'jp', 'math', 'mesh']
-def _arcs_intersect(a: jax.Array, b: jax.Array, c: jax.Array, d: jax.Array) -> jax.Array:
+__all__: list[str] = [
+    "Collision",
+    "ConvexInfo",
+    "Data",
+    "DataJAX",
+    "FunctionKey",
+    "GeomInfo",
+    "GeomType",
+    "HFieldInfo",
+    "Model",
+    "ModelJAX",
+    "collider",
+    "functools",
+    "jax",
+    "jp",
+    "math",
+    "mesh",
+]
+
+def _arcs_intersect(
+    a: jax.Array, b: jax.Array, c: jax.Array, d: jax.Array
+) -> jax.Array:
     """
     Tests if arcs AB and CD on the unit sphere intersect.
     """
-def _box_box(b1: mujoco.mjx._src.collision_types.ConvexInfo, b2: mujoco.mjx._src.collision_types.ConvexInfo) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
+
+def _box_box(
+    b1: mujoco.mjx._src.collision_types.ConvexInfo,
+    b2: mujoco.mjx._src.collision_types.ConvexInfo,
+) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
     """
     Calculates contacts between two boxes.
     """
-def _box_box_impl(faces_a: jax.Array, faces_b: jax.Array, vertices_a: jax.Array, vertices_b: jax.Array, normals_a: jax.Array, normals_b: jax.Array, unique_edges_a: jax.Array, unique_edges_b: jax.Array) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
+
+def _box_box_impl(
+    faces_a: jax.Array,
+    faces_b: jax.Array,
+    vertices_a: jax.Array,
+    vertices_b: jax.Array,
+    normals_a: jax.Array,
+    normals_b: jax.Array,
+    unique_edges_a: jax.Array,
+    unique_edges_b: jax.Array,
+) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
     """
     Runs the Separating Axis Test for two boxes.
 
@@ -44,11 +79,21 @@ def _box_box_impl(faces_a: jax.Array, faces_b: jax.Array, vertices_a: jax.Array,
     Returns:
       tuple of dist, pos, and normal
     """
-def _capsule_convex(cap: mujoco.mjx._src.collision_types.GeomInfo, convex: mujoco.mjx._src.collision_types.ConvexInfo) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
+
+def _capsule_convex(
+    cap: mujoco.mjx._src.collision_types.GeomInfo,
+    convex: mujoco.mjx._src.collision_types.ConvexInfo,
+) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
     """
     Calculates contacts between a capsule and a convex object.
     """
-def _clip(clipping_poly: jax.Array, subject_poly: jax.Array, clipping_normal: jax.Array, subject_normal: jax.Array) -> typing.Tuple[jax.Array, jax.Array]:
+
+def _clip(
+    clipping_poly: jax.Array,
+    subject_poly: jax.Array,
+    clipping_normal: jax.Array,
+    subject_normal: jax.Array,
+) -> typing.Tuple[jax.Array, jax.Array]:
     """
     Clips a subject polygon against a clipping polygon.
 
@@ -65,7 +110,13 @@ def _clip(clipping_poly: jax.Array, subject_poly: jax.Array, clipping_normal: ja
       clipped_pts: points on the clipped polygon
       mask: True if a point is in the clipping polygon, False otherwise
     """
-def _clip_edge_to_planes(edge_p0: jax.Array, edge_p1: jax.Array, plane_pts: jax.Array, plane_normals: jax.Array) -> typing.Tuple[jax.Array, jax.Array]:
+
+def _clip_edge_to_planes(
+    edge_p0: jax.Array,
+    edge_p1: jax.Array,
+    plane_pts: jax.Array,
+    plane_normals: jax.Array,
+) -> typing.Tuple[jax.Array, jax.Array]:
     """
     Clips an edge against side planes.
 
@@ -82,7 +133,10 @@ def _clip_edge_to_planes(edge_p0: jax.Array, edge_p1: jax.Array, plane_pts: jax.
       mask: a boolean mask, True if an edge point is a valid clipped point and
       False otherwise
     """
-def _closest_segment_point_plane(a: jax.Array, b: jax.Array, p0: jax.Array, plane_normal: jax.Array) -> jax.Array:
+
+def _closest_segment_point_plane(
+    a: jax.Array, b: jax.Array, p0: jax.Array, plane_normal: jax.Array
+) -> jax.Array:
     """
     Gets the closest point between a line segment and a plane.
 
@@ -95,11 +149,22 @@ def _closest_segment_point_plane(a: jax.Array, b: jax.Array, p0: jax.Array, plan
     Returns:
       closest point between the line segment and the plane
     """
-def _convex_convex(c1: mujoco.mjx._src.collision_types.ConvexInfo, c2: mujoco.mjx._src.collision_types.ConvexInfo) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
+
+def _convex_convex(
+    c1: mujoco.mjx._src.collision_types.ConvexInfo,
+    c2: mujoco.mjx._src.collision_types.ConvexInfo,
+) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
     """
     Calculates contacts between two convex meshes.
     """
-def _create_contact_manifold(clipping_poly: jax.Array, subject_poly: jax.Array, clipping_norm: jax.Array, subject_norm: jax.Array, sep_axis: jax.Array) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
+
+def _create_contact_manifold(
+    clipping_poly: jax.Array,
+    subject_poly: jax.Array,
+    clipping_norm: jax.Array,
+    subject_norm: jax.Array,
+    sep_axis: jax.Array,
+) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
     """
     Creates a contact manifold between two convex polygons.
 
@@ -116,31 +181,81 @@ def _create_contact_manifold(clipping_poly: jax.Array, subject_poly: jax.Array, 
     Returns:
       tuple of dist, pos, and normal
     """
-def _hfield_collision(collider_fn: typing.Callable[[typing.Union[mujoco.mjx._src.collision_types.GeomInfo, mujoco.mjx._src.collision_types.ConvexInfo], typing.Union[mujoco.mjx._src.collision_types.GeomInfo, mujoco.mjx._src.collision_types.ConvexInfo]], typing.Tuple[jax.Array, jax.Array, jax.Array]], h: mujoco.mjx._src.collision_types.HFieldInfo, obj: typing.Union[mujoco.mjx._src.collision_types.GeomInfo, mujoco.mjx._src.collision_types.ConvexInfo], obj_rbound: jax.Array, subgrid_size: typing.Tuple[int, int]) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
+
+def _hfield_collision(
+    collider_fn: typing.Callable[
+        [
+            typing.Union[
+                mujoco.mjx._src.collision_types.GeomInfo,
+                mujoco.mjx._src.collision_types.ConvexInfo,
+            ],
+            typing.Union[
+                mujoco.mjx._src.collision_types.GeomInfo,
+                mujoco.mjx._src.collision_types.ConvexInfo,
+            ],
+        ],
+        typing.Tuple[jax.Array, jax.Array, jax.Array],
+    ],
+    h: mujoco.mjx._src.collision_types.HFieldInfo,
+    obj: typing.Union[
+        mujoco.mjx._src.collision_types.GeomInfo,
+        mujoco.mjx._src.collision_types.ConvexInfo,
+    ],
+    obj_rbound: jax.Array,
+    subgrid_size: typing.Tuple[int, int],
+) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
     """
     Collides an object with prisms in a height field.
     """
-def _manifold_points(poly: jax.Array, poly_mask: jax.Array, poly_norm: jax.Array) -> jax.Array:
+
+def _manifold_points(
+    poly: jax.Array, poly_mask: jax.Array, poly_norm: jax.Array
+) -> jax.Array:
     """
     Chooses four points on the polygon with approximately maximal area.
     """
-def _point_in_front_of_plane(plane_pt: jax.Array, plane_normal: jax.Array, pt: jax.Array) -> jax.Array:
+
+def _point_in_front_of_plane(
+    plane_pt: jax.Array, plane_normal: jax.Array, pt: jax.Array
+) -> jax.Array:
     """
     Checks if a point is strictly in front of a plane.
     """
-def _project_poly_onto_plane(poly: jax.Array, plane_pt: jax.Array, plane_normal: jax.Array) -> jax.Array:
+
+def _project_poly_onto_plane(
+    poly: jax.Array, plane_pt: jax.Array, plane_normal: jax.Array
+) -> jax.Array:
     """
     Projects a polygon onto a plane using the plane normal.
     """
-def _project_poly_onto_poly_plane(poly1: jax.Array, norm1: jax.Array, poly2: jax.Array, norm2: jax.Array) -> jax.Array:
+
+def _project_poly_onto_poly_plane(
+    poly1: jax.Array, norm1: jax.Array, poly2: jax.Array, norm2: jax.Array
+) -> jax.Array:
     """
     Projects poly1 onto the poly2 plane along poly1's normal.
     """
-def _project_pt_onto_plane(pt: jax.Array, plane_pt: jax.Array, plane_normal: jax.Array) -> jax.Array:
+
+def _project_pt_onto_plane(
+    pt: jax.Array, plane_pt: jax.Array, plane_normal: jax.Array
+) -> jax.Array:
     """
     Projects a point onto a plane along the plane normal.
     """
-def _sat_gaussmap(centroid_a: jax.Array, faces_a: jax.Array, faces_b: jax.Array, vertices_a: jax.Array, vertices_b: jax.Array, normals_a: jax.Array, normals_b: jax.Array, edges_a: jax.Array, edges_b: jax.Array, edge_face_normals_a: jax.Array, edge_face_normals_b: jax.Array) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
+
+def _sat_gaussmap(
+    centroid_a: jax.Array,
+    faces_a: jax.Array,
+    faces_b: jax.Array,
+    vertices_a: jax.Array,
+    vertices_b: jax.Array,
+    normals_a: jax.Array,
+    normals_b: jax.Array,
+    edges_a: jax.Array,
+    edges_b: jax.Array,
+    edge_face_normals_a: jax.Array,
+    edge_face_normals_b: jax.Array,
+) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
     """
     Runs the Separating Axis Test for a pair of hulls.
 
@@ -164,13 +279,19 @@ def _sat_gaussmap(centroid_a: jax.Array, faces_a: jax.Array, faces_b: jax.Array,
     Returns:
       tuple of dist, pos, and normal
     """
-def _sphere_convex(sphere: mujoco.mjx._src.collision_types.GeomInfo, convex: mujoco.mjx._src.collision_types.ConvexInfo) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
+
+def _sphere_convex(
+    sphere: mujoco.mjx._src.collision_types.GeomInfo,
+    convex: mujoco.mjx._src.collision_types.ConvexInfo,
+) -> typing.Tuple[jax.Array, jax.Array, jax.Array]:
     """
     Calculates contact between a sphere and a convex mesh.
     """
+
 def collider(ncon: int):
     """
     Wraps collision functions for use by collision_driver.
     """
+
 Collision: typing._GenericAlias  # value = typing.Tuple[jax.Array, jax.Array, jax.Array]
 _GeomInfo: typing._UnionGenericAlias  # value = typing.Union[mujoco.mjx._src.collision_types.GeomInfo, mujoco.mjx._src.collision_types.ConvexInfo]
