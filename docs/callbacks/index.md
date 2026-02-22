@@ -42,7 +42,7 @@ policy = MLPActorCriticPolicy(env=env, key=policy_key)
 algo = PPO()
 
 logger = LoggingCallback(
-    [TensorBoardBackend(), ConsoleBackend(total_timesteps=2**16)],
+    [TensorBoardBackend(), ConsoleBackend()],
     env=env,
     policy=policy,
 )

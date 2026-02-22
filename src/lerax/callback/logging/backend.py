@@ -30,6 +30,18 @@ class AbstractLoggingBackend(eqx.Module):
             name: Human-readable run name.
         """
 
+    def on_training_start(self, total_timesteps: int, total_iterations: int) -> None:
+        """
+        Called when training starts.
+
+        Override this method to initialize resources that depend on training
+        duration, such as progress bars. The default implementation does nothing.
+
+        Args:
+            total_timesteps: Total number of environment steps for this training run.
+            total_iterations: Total number of training iterations for this run.
+        """
+
     @abstractmethod
     def log_hparams(self, hparams: dict[str, Any]) -> None:
         """

@@ -8,6 +8,7 @@ license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "Theodore Pinkerton", email = "ted@tedpinkerton.ca" }]
 dependencies = [
+  "asciichartpy>=1.5.25",
   "diffrax>=0.7.0",
   "distreqx>=0.0.2",
   "equinox>=0.13.3",

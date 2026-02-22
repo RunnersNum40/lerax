@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from typing import TYPE_CHECKING
 
 import equinox as eqx
 import optax
@@ -9,6 +10,9 @@ from jaxtyping import Array, Bool, Float, Int, Key
 
 from lerax.env import AbstractEnvLike
 from lerax.policy import AbstractPolicy
+
+if TYPE_CHECKING:
+    from lerax.algorithm import AbstractAlgorithm
 
 
 class AbstractCallbackStepState(eqx.Module):
@@ -75,7 +79,7 @@ class IterationContext[
     iteration_count: Int[Array, ""]
     opt_state: optax.OptState
     training_log: dict[str, Array]
-    algorithm: eqx.Module
+    algorithm: AbstractAlgorithm
     locals: dict
 
 
@@ -104,7 +108,7 @@ class TrainingContext[
     total_timesteps: int
     iteration_count: Int[Array, ""]
     opt_state: optax.OptState
-    algorithm: eqx.Module
+    algorithm: AbstractAlgorithm
     locals: dict
 
 

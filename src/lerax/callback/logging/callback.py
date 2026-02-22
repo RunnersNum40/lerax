@@ -533,6 +533,10 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
     def on_training_start(
         self, ctx: TrainingContext, *, key: Key[Array, ""]
     ) -> EmptyCallbackState:
+        total_iterations = ctx.algorithm.num_iterations(ctx.total_timesteps)
+        for b in self._backends:
+            b.on_training_start(ctx.total_timesteps, total_iterations)
+
         hparams: dict[str, Any] = {}
         hparams.update(
             {f"policy.{k}": v for k, v in _extract_hparams(ctx.policy).items()}

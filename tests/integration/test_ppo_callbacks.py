@@ -22,7 +22,7 @@ def test_ppo_with_callbacks():
     logger = LoggingCallback(
         [
             TensorBoardBackend(log_dir=directory.name),
-            ConsoleBackend(total_timesteps=total_timesteps),
+            ConsoleBackend(),
         ],
         env=env,
         policy=policy,

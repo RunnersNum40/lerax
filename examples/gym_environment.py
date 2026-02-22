@@ -13,9 +13,7 @@ env = GymToLeraxEnv(gym_env)
 policy = MLPActorCriticPolicy(env=env, key=policy_key)
 algo = PPO(num_envs=1)  # Vectorization is not supported for Gym environments
 logger = LoggingCallback(
-    [TensorBoardBackend(), ConsoleBackend(total_timesteps=2**16)],
-    env=env,
-    policy=policy,
+    [TensorBoardBackend(), ConsoleBackend()], env=env, policy=policy
 )
 
 policy = algo.learn(env, policy, total_timesteps=2**16, key=learn_key, callback=logger)
