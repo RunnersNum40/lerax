@@ -19,7 +19,6 @@ All G1 environments support:
 
 | Environment | Description |
 |---|---|
-| [G1HoST](host.md) | Stand up from fallen postures (supine/prone) |
 | [G1Locomotion](locomotion.md) | Track velocity commands with a natural gait |
 | [G1Standing](standing.md) | Maintain upright balance at default pose |
 | [G1Standup](standup.md) | Stand up from a crouched position |
