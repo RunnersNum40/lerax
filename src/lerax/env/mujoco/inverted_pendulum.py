@@ -39,11 +39,7 @@ class InvertedPendulum(AbstractMujocoEnv[Float[Array, "..."], Float[Array, "..."
         frame_skip: int = 2,
         reset_noise_scale: float = 0.01,
     ):
-        asset_path = Path(__file__).resolve().parent / "assets" / xml_file
-        if not asset_path.exists():
-            raise FileNotFoundError(f"InvertedPendulum asset not found: {asset_path}")
-
-        mj_model = mujoco.MjModel.from_xml_path(str(asset_path))
+        mj_model = self.model_from_path(xml_file)
         mj_data = mujoco.MjData(mj_model)
 
         self.model = mjx.put_model(mj_model)

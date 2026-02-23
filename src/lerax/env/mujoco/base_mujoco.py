@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import equinox as eqx
 import jax
 import mujoco
@@ -52,6 +54,19 @@ class AbstractMujocoEnv[
     mujoco_model: eqx.AbstractVar[mujoco.MjModel]
     frame_skip: eqx.AbstractVar[int]
     dt: eqx.AbstractVar[float]
+
+    @staticmethod
+    def model_from_path(xml_file: str | Path) -> mujoco.MjModel:
+        direct_path = Path(xml_file)
+        asset_path = Path(__file__).resolve().parent / "assets" / xml_file
+
+        if direct_path.exists():
+            return mujoco.MjModel.from_xml_path(str(direct_path))
+
+        elif asset_path.exists():
+            return mujoco.MjModel.from_xml_path(str(asset_path))
+        else:
+            raise FileNotFoundError(f"Asset not found: {xml_file}")
 
     def action_mask(self, state: MujocoEnvState, *, key: Key[Array, ""]) -> None:
         return None

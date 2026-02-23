@@ -54,11 +54,7 @@ class Walker2d(AbstractMujocoEnv[Float[Array, "..."], Float[Array, "..."]]):
         reset_noise_scale: float = 5e-3,
         exclude_current_positions_from_observation: bool = True,
     ):
-        asset_path = Path(__file__).resolve().parent / "assets" / xml_file
-        if not asset_path.exists():
-            raise FileNotFoundError(f"Walker2d asset not found: {asset_path}")
-
-        mj_model = mujoco.MjModel.from_xml_path(str(asset_path))
+        mj_model = self.model_from_path(xml_file)
         mj_data = mujoco.MjData(mj_model)
 
         self.model = mjx.put_model(mj_model)

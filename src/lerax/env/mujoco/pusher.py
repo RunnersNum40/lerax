@@ -48,11 +48,7 @@ class Pusher(AbstractMujocoEnv[Float[Array, "..."], Float[Array, "..."]]):
         reward_dist_weight: float = 1.0,
         reward_control_weight: float = 0.1,
     ):
-        asset_path = Path(__file__).resolve().parent / "assets" / xml_file
-        if not asset_path.exists():
-            raise FileNotFoundError(f"Pusher asset not found: {asset_path}")
-
-        mj_model = mujoco.MjModel.from_xml_path(str(asset_path))
+        mj_model = self.model_from_path(xml_file)
         mj_data = mujoco.MjData(mj_model)
 
         self.model = mjx.put_model(mj_model)
