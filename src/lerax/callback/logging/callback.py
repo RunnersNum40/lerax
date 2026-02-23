@@ -176,7 +176,8 @@ class LoggingCallbackStepState(AbstractCallbackStepState):
 
 
 def _restore_callback_scalars[T](pytree: T) -> T:
-    """Restore Python scalar types that ``jax.debug.callback`` converts to arrays.
+    """
+    Restore Python scalar types that ``jax.debug.callback`` converts to arrays.
 
     When pytrees pass through ``jax.debug.callback``, Python ``bool`` and ``int``
     leaves are silently promoted to 0-d JAX arrays.  If those leaves are later
@@ -375,30 +376,8 @@ def _make_video_recorder(
 
 
 class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepState]):
-    """Callback that logs training metrics to a pluggable logging backend.
-
-    The backend is opened immediately at construction, so a single
-    ``LoggingCallback`` instance can be reused across multiple
-    ``learn()`` calls and all metrics will be logged to the same run.
-    Call ``close()`` when finished to flush data and release resources.
-
-    At the end of each iteration the following metrics are logged:
-
-    - ``episode/return``: EMA of per-episode returns across all environments.
-    - ``episode/length``: EMA of per-episode lengths.
-    - ``train/*``: All entries in the algorithm ``training_log``.
-    - ``train/learning_rate``: Current learning rate from the Optax state
-      (``NaN`` when not available).
-
-    When ``video_interval`` is positive an evaluation rollout is recorded
-    every ``video_interval`` iterations and forwarded to the backend as
-    ``eval/video``.
-
-    At each training start, hyperparameters are logged via ``log_hparams``.
-    Policy scalar fields (prefixed ``policy.``) and algorithm scalar fields
-    (prefixed ``algorithm.``) are extracted automatically; any extra entries
-    provided in ``hparams`` are merged on top (explicit values take
-    precedence).
+    """
+    Callback that collects training metrics and progress and logs to a backend.
 
     Note:
         This callback must be constructed **outside** any JIT-compiled
@@ -470,7 +449,7 @@ class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepSt
             b.open(name)
 
         if video_interval > 0:
-            executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+            executor = concurrent.futures.ThreadPoolExecutor()
             self._video_executor = executor
             self._record_video_fn = _make_video_recorder(
                 video_interval,
