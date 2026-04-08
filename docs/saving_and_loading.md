@@ -68,7 +68,7 @@ class MyModule(Serializable):
 m = MyModule(1.0, 2.0)
 m.serialize("my_module.eqx")
 
-m = MyModule.deserialize("my_module.eqx", 0.0, 0.0)
+m = MyModule.deserialize("my_module.eqx", a=0.0, b=0.0)
 ```
 
 This works for policies, algorithms, or any other Equinox module that you want to persist.

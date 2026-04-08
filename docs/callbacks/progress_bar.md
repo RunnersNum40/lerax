@@ -45,6 +45,4 @@ If `name` is not provided, a default description is generated:
 - `on_iteration` updates the bar with the total steps taken in that iteration.
 - `continue_training` always returns `True` (does not perform early stopping).
 
-!!! warning
-    `on_training_end` currently does not stop the bar explicitly due to ordering issues; the bar is typically cleared automatically when the process exits or the `Progress` object is collected.
-    To manually stop the bar, you can call `callback._progress.stop()`.
+The bar is cleared automatically when the process exits or the underlying `Progress` object is garbage-collected; there is no public `close()` to call.

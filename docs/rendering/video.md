@@ -28,7 +28,7 @@ env.render_stacked(env_states, renderer=renderer, dt=1 / 60)
 
 `MujocoVideoRenderer` renders MuJoCo scenes headlessly and records frames
 to a video file. It works with any MuJoCo-based environment (standard MuJoCo
-envs and Unitree G1 envs). It may take a concernable amount of time to JIT the rendering code, once it's JITted, rendering is very fast (much faster than real-time).
+envs and Unitree G1 envs). It may take a considerable amount of time to JIT the rendering code, once it's JITted, rendering is very fast (much faster than real-time).
 
 ```py
 from lerax.render.mujoco_renderer import MujocoVideoRenderer
