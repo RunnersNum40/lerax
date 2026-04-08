@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from functools import partial, wraps
 from pathlib import Path
 from typing import Any, Callable, Sequence
@@ -268,27 +269,38 @@ def unstack_pytree[T](tree: T, *, axis: int = 0) -> Sequence[T]:
     return transposed
 
 
+def _structure_hash(tree: Any) -> bytes:
+    """
+    Return a 32-byte digest of the static (non-array) structure of *tree*.
+
+    Two PyTrees produce the same digest iff they have the same `jax.tree`
+    structure and the same static leaves (class identity, hyperparameters,
+    activation functions, etc.). Array values do not affect the digest.
+    """
+    return hashlib.sha256(repr(jax.tree.structure(tree)).encode()).digest()
+
+
 class Serializable(eqx.Module):
-    @callback_wrapper
-    def serialize(
-        self,
-        path: str | Path,
-        no_suffix: bool = False,
-    ) -> None:
+    def serialize(self, path: str | Path) -> None:
         """
         Serialize the model to the specified path.
 
+        Writes a 32-byte structural fingerprint followed by the Equinox
+        leaf data, so `deserialize` can verify that the skeleton it builds
+        matches what was saved.
+
         Args:
-            path: The path to serialize to.
-            no_suffix: If True, do not append the ".eqx" suffix
+            path: The path to serialize to. The ``.eqx`` suffix is appended
+                if missing.
         """
         path = Path(path)
-        if not path.parent.exists():
-            path.parent.mkdir(parents=True, exist_ok=True)
-        if path.suffix != ".eqx" and not no_suffix:
+        if path.suffix != ".eqx":
             path = path.with_suffix(".eqx")
+        path.parent.mkdir(parents=True, exist_ok=True)
 
-        eqx.tree_serialise_leaves(path, self)
+        with open(path, "wb") as f:
+            f.write(_structure_hash(self))
+            eqx.tree_serialise_leaves(f, self)
 
     @classmethod
     def deserialize[**Params, ClassType](
@@ -299,16 +311,34 @@ class Serializable(eqx.Module):
     ) -> ClassType:
         """
         Deserialize the model from the specified path.
-        Must provide any additional arguments required by the class constructor.
+
+        The constructor arguments must reproduce the same static structure
+        (class, hyperparameters, network shapes, activations, ...) that the
+        model had when it was serialized. A 32-byte fingerprint stored in
+        the file is verified before loading; mismatches raise `ValueError`
+        instead of silently loading arrays into the wrong skeleton.
 
         Args:
             path: The path to deserialize from.
-            *args: Additional arguments to pass to the class constructor
-            **kwargs: Additional keyword arguments to pass to the class constructor
+            *args: Additional arguments to pass to the class constructor.
+            **kwargs: Additional keyword arguments to pass to the class
+                constructor.
 
         Returns:
             The deserialized model.
+
+        Raises:
+            ValueError: If the structural fingerprint of the rebuilt
+                skeleton does not match the one stored in the file.
         """
-        return eqx.tree_deserialise_leaves(
-            path, eqx.filter_eval_shape(cls, *args, **kwargs)
-        )
+        skeleton = eqx.filter_eval_shape(cls, *args, **kwargs)
+        expected = _structure_hash(skeleton)
+        with open(path, "rb") as f:
+            stored = f.read(32)
+            if stored != expected:
+                raise ValueError(
+                    f"Structural fingerprint mismatch loading {path}: the "
+                    "constructor arguments produce a different skeleton than "
+                    "the one that was serialized."
+                )
+            return eqx.tree_deserialise_leaves(f, skeleton)
