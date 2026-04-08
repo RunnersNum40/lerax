@@ -1,20 +1,17 @@
 ---
 title: Getting Started
-description: Documentation for Lerax, Jax based reinforcement learning library.
+description: A JAX-native reinforcement learning library.
 ---
-
-# Getting Started with Lerax
-
-Do you want to leverage the power of JAX for high performance reinforcement learning?
-Lerax is a reinforcement learning library built on top of JAX, designed to make it easy to implement and experiment with RL algorithms while taking advantage of JAX's speed and scalability.
-
-Lerax provides **environments**, **policies**, and **training algorithms**. All with a modular design that makes it easy to compose different components together.
 
 !!! warning "Work in Progress"
 
-    Lerax is very much a work in progress, but it is already usable for training simple RL agents.
-    The API is still evolving, and there are many features that are yet to be implemented.
-    Additionally, the documentation is still being written, so please bear with me as I continue to improve it.
+    Lerax is usable for training simple RL agents, but the API is still
+    evolving and the documentation is incomplete. Expect rough edges.
+
+# Getting Started with Lerax
+
+Lerax is a reinforcement learning library built on [JAX](https://docs.jax.dev/) and [Equinox](https://github.com/patrick-kidger/equinox).
+It provides functional **environments**, **policies**, and **training algorithms** that compose cleanly under `jax.jit` and `jax.vmap`.
 
 ## Installation
 
@@ -24,13 +21,23 @@ pip install lerax
 
 ## Train a policy
 
+The example below trains a PPO agent on CartPole and streams metrics to both the terminal and TensorBoard:
+
 ```py title="examples/ppo.py"
 --8<-- "examples/ppo.py"
 ```
 
+That's a complete training run — no separate config file, no custom training loop. The same shape works for any combination of environment, policy, and algorithm in the library.
+
+## Next steps
+
+- [Environments](environments/index.md) — built-in environments and how to write your own.
+- [Compatibility](compatibility.md) — using Gymnasium, Gymnax, and Stable Baselines3 environments and algorithms with Lerax.
+- [Callbacks](callbacks/index.md) — logging, progress bars, and custom training hooks.
+- [Saving & Loading](saving_and_loading.md) — serializing policies and exporting to ONNX.
+
 ## Acknowledgements
 
-A ton of the code is a slight translation of the code found in the [Stable Baselines 3](https://github.com/DLR-RM/stable-baselines3) and [Gymnasium](https://github.com/Farama-Foundation/Gymnasium) libraries.
-The developers of these excellent libraries have done a great job of creating a solid foundation for reinforcement learning in Python, and I have learned a lot from their design decisions.
+A large amount of the code is a translation of patterns from [Stable Baselines 3](https://github.com/DLR-RM/stable-baselines3) and [Gymnasium](https://github.com/Farama-Foundation/Gymnasium); both libraries are excellent foundations for RL in Python and Lerax owes a lot to their design.
 
-In addition, the NDE code is heavily inspired by the work of [Patrick Kidger](https://kidger.site/publications/) and the entire library is based on his excellent [Equinox library](https://github.com/patrick-kidger/equinox) along with some use of [Diffrax](https://github.com/patrick-kidger/diffrax) and [jaxtyping](https://github.com/patrick-kidger/jaxtyping).
+The NDE code is heavily inspired by the work of [Patrick Kidger](https://kidger.site/publications/), and the entire library is built on his [Equinox](https://github.com/patrick-kidger/equinox), [Diffrax](https://github.com/patrick-kidger/diffrax), and [jaxtyping](https://github.com/patrick-kidger/jaxtyping) libraries.
