@@ -3,21 +3,27 @@ from __future__ import annotations
 import equinox as eqx
 import jax
 import optax
+from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, Float, Int, Key, Scalar
 
 from lerax.buffer import ReplayBuffer
-from lerax.callback import AbstractCallback, IterationContext
-from lerax.env import AbstractEnvLike
-from lerax.policy.sac import AbstractSACPolicy
-from lerax.utils import filter_cond
-
-from .off_policy import (
-    AbstractOffPolicyAlgorithm,
-    AbstractOffPolicyState,
-    AbstractOffPolicyStepState,
+from lerax.callback import (
+    AbstractCallback,
+    AbstractCallbackState,
+    AbstractCallbackStepState,
+    IterationContext,
+    ResetContext,
+    StepContext,
 )
+from lerax.env import AbstractEnvLike, AbstractEnvLikeState
+from lerax.policy import AbstractPolicyState
+from lerax.policy.sac import AbstractSACPolicy
+from lerax.space import Box
+from lerax.utils import filter_cond, filter_scan, polyak_average
+
+from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
 
 
 class SoftQNetwork(eqx.Module):
@@ -69,16 +75,49 @@ class SoftQNetwork(eqx.Module):
         return self.mlp(inputs)
 
 
-class SACState[PolicyType: AbstractSACPolicy](AbstractOffPolicyState[PolicyType]):
+class SACStepState[PolicyType: AbstractSACPolicy](AbstractStepState):
     """
-    State for SAC algorithms.
+    Step-level state for SAC.
 
-    Extends the off-policy state with twin Q-networks, target Q-networks,
-    and entropy coefficient state.
+    Attributes:
+        env_state: The state of the environment.
+        policy_state: The state of the policy.
+        callback_state: The state of the callback for this step.
+        buffer: The replay buffer storing experience.
+    """
+
+    env_state: AbstractEnvLikeState
+    policy_state: AbstractPolicyState
+    callback_state: AbstractCallbackStepState
+    buffer: ReplayBuffer
+
+    @classmethod
+    def initial(
+        cls,
+        size: int,
+        env: AbstractEnvLike,
+        policy: PolicyType,
+        callback: AbstractCallback,
+        key: Key[Array, ""],
+    ) -> SACStepState[PolicyType]:
+        """Initialize the step state with an empty replay buffer."""
+        env_key, policy_key = jr.split(key, 2)
+        env_state = env.initial(key=env_key)
+        policy_state = policy.reset(key=policy_key)
+        callback_state = callback.step_reset(ResetContext(locals()), key=key)
+        buffer = ReplayBuffer(
+            size, env.observation_space, env.action_space, policy_state
+        )
+        return cls(env_state, policy_state, callback_state, buffer)
+
+
+class SACState[PolicyType: AbstractSACPolicy](AbstractAlgorithmState[PolicyType]):
+    """
+    Iteration-level state for SAC.
 
     Attributes:
         iteration_count: The current iteration count.
-        step_state: The current step state.
+        step_state: The step-level state.
         env: The environment being used.
         policy: The policy being trained.
         opt_state: The actor optimizer state.
@@ -93,6 +132,12 @@ class SACState[PolicyType: AbstractSACPolicy](AbstractOffPolicyState[PolicyType]
         target_entropy: Target entropy value.
     """
 
+    iteration_count: Int[Array, ""]
+    step_state: SACStepState[PolicyType]
+    env: AbstractEnvLike
+    policy: PolicyType
+    opt_state: optax.OptState
+    callback_state: AbstractCallbackState
     qf1: SoftQNetwork
     qf2: SoftQNetwork
     qf1_target: SoftQNetwork
@@ -103,7 +148,9 @@ class SACState[PolicyType: AbstractSACPolicy](AbstractOffPolicyState[PolicyType]
     target_entropy: Float[Array, ""]
 
 
-class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
+class SAC[PolicyType: AbstractSACPolicy](
+    AbstractAlgorithm[PolicyType, SACState[PolicyType]]
+):
     """
     Soft Actor-Critic (SAC) algorithm.
 
@@ -208,15 +255,127 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
             alpha_lr if alpha_lr is not None else q_lr
         )
 
-    def per_step(
-        self, step_state: AbstractOffPolicyStepState[PolicyType]
-    ) -> AbstractOffPolicyStepState[PolicyType]:
+    def num_iterations(self, total_timesteps: int) -> int:
+        return total_timesteps // (self.num_envs * self.num_steps)
+
+    # ── Step & rollout collection ──────────────────────────────────────
+
+    def step(
+        self,
+        env: AbstractEnvLike,
+        policy: PolicyType,
+        state: SACStepState[PolicyType],
+        *,
+        key: Key[Array, ""],
+        callback: AbstractCallback,
+    ) -> SACStepState[PolicyType]:
+        """Perform a single environment step and store in replay buffer."""
+        (
+            action_key,
+            transition_key,
+            observation_key,
+            reward_key,
+            terminal_key,
+            next_observation_key,
+            env_reset_key,
+            policy_reset_key,
+            callback_key,
+        ) = jr.split(key, 9)
+
+        observation = env.observation(state.env_state, key=observation_key)
+        policy_state, action = policy(state.policy_state, observation, key=action_key)
+
+        if isinstance(env.action_space, Box):
+            clipped_action = jnp.clip(
+                action,
+                env.action_space.low,
+                env.action_space.high,
+            )
+        else:
+            clipped_action = action
+
+        next_env_state = env.transition(
+            state.env_state, clipped_action, key=transition_key
+        )
+
+        reward = env.reward(state.env_state, action, next_env_state, key=reward_key)
+        termination = env.terminal(next_env_state, key=terminal_key)
+        truncation = env.truncate(next_env_state)
+        done = termination | truncation
+        timeout = truncation & ~termination
+        next_observation = env.observation(next_env_state, key=next_observation_key)
+
+        next_env_state = lax.cond(
+            done, lambda: env.initial(key=env_reset_key), lambda: next_env_state
+        )
+
+        next_policy_state = lax.cond(
+            done, lambda: policy.reset(key=policy_reset_key), lambda: policy_state
+        )
+
+        replay_buffer = state.buffer.add(
+            observation,
+            next_observation,
+            action,
+            reward,
+            done,
+            timeout,
+            state.policy_state,
+            policy_state,
+        )
+
+        callback_state = callback.on_step(
+            StepContext(state.callback_state, env, policy, done, reward, locals()),
+            key=callback_key,
+        )
+
+        return SACStepState(
+            next_env_state, next_policy_state, callback_state, replay_buffer
+        )
+
+    def collect_learning_starts(
+        self,
+        env: AbstractEnvLike,
+        policy: PolicyType,
+        step_state: SACStepState[PolicyType],
+        callback: AbstractCallback,
+        key: Key[Array, ""],
+    ) -> SACStepState[PolicyType]:
+        """Collect random initial experience before training begins."""
+
+        def scan_step(
+            carry: SACStepState, key: Key[Array, ""]
+        ) -> tuple[SACStepState, None]:
+            carry = self.step(env, policy, carry, key=key, callback=callback)
+            return carry, None
+
+        step_state, _ = filter_scan(
+            scan_step, step_state, jr.split(key, self.learning_starts)
+        )
         return step_state
 
-    def per_iteration(
-        self, state: AbstractOffPolicyState[PolicyType]
-    ) -> AbstractOffPolicyState[PolicyType]:
-        return _soft_update_targets(state, self.tau)
+    def collect_rollout(
+        self,
+        env: AbstractEnvLike,
+        policy: PolicyType,
+        step_state: SACStepState[PolicyType],
+        callback: AbstractCallback,
+        key: Key[Array, ""],
+    ) -> SACStepState[PolicyType]:
+        """Collect a rollout of experience into the replay buffer."""
+
+        def scan_step(
+            carry: SACStepState, key: Key[Array, ""]
+        ) -> tuple[SACStepState, None]:
+            carry = self.step(env, policy, carry, key=key, callback=callback)
+            return carry, None
+
+        step_state, _ = filter_scan(
+            scan_step, step_state, jr.split(key, self.num_steps)
+        )
+        return step_state
+
+    # ── Reset & iteration ──────────────────────────────────────────────
 
     def reset(
         self,
@@ -226,8 +385,30 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
         key: Key[Array, ""],
         callback: AbstractCallback,
     ) -> SACState[PolicyType]:
-        base_key, qf1_key, qf2_key = jr.split(key, 3)
-        base_state = super().reset(env, policy, key=base_key, callback=callback)
+        init_key, starts_key, callback_key, qf1_key, qf2_key = jr.split(key, 5)
+
+        if self.num_envs == 1:
+            step_state = SACStepState.initial(
+                self.buffer_size, env, policy, callback, init_key
+            )
+            step_state = self.collect_learning_starts(
+                env, policy, step_state, callback, starts_key
+            )
+        else:
+            step_state = jax.vmap(
+                SACStepState.initial, in_axes=(None, None, None, None, 0)
+            )(
+                self.buffer_size // self.num_envs,
+                env,
+                policy,
+                callback,
+                jr.split(init_key, self.num_envs),
+            )
+            step_state = jax.vmap(
+                self.collect_learning_starts, in_axes=(None, None, 0, None, 0)
+            )(env, policy, step_state, callback, jr.split(starts_key, self.num_envs))
+
+        callback_state = callback.reset(ResetContext(locals()), key=callback_key)
 
         observation_size = env.observation_space.flat_size
         action_size = max(env.action_space.flat_size, 1)
@@ -247,9 +428,6 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
             key=qf2_key,
         )
 
-        qf1_target = qf1
-        qf2_target = qf2
-
         q_params = (
             eqx.filter(qf1, eqx.is_inexact_array),
             eqx.filter(qf2, eqx.is_inexact_array),
@@ -261,16 +439,16 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
         target_entropy = jnp.array(-float(action_size))
 
         return SACState(
-            base_state.iteration_count,
-            base_state.step_state,
-            base_state.env,
-            base_state.policy,
-            base_state.opt_state,
-            base_state.callback_state,
+            jnp.array(0, dtype=int),
+            step_state,
+            env,
+            policy,
+            self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array)),
+            callback_state,
             qf1=qf1,
             qf2=qf2,
-            qf1_target=qf1_target,
-            qf2_target=qf2_target,
+            qf1_target=qf1,
+            qf2_target=qf2,
             q_opt_state=q_opt_state,
             log_alpha=log_alpha,
             alpha_opt_state=alpha_opt_state,
@@ -279,11 +457,11 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
 
     def iteration(
         self,
-        state: AbstractOffPolicyState[PolicyType],
+        state: SACState[PolicyType],
         *,
         key: Key[Array, ""],
         callback: AbstractCallback,
-    ) -> AbstractOffPolicyState[PolicyType]:
+    ) -> SACState[PolicyType]:
         rollout_key, train_key, callback_key = jr.split(key, 3)
 
         if self.num_envs == 1:
@@ -314,14 +492,14 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
             state.policy,
             state.opt_state,
             step_state.buffer,
-            state.qf1,  # type: ignore[attr-defined]
-            state.qf2,  # type: ignore[attr-defined]
-            state.qf1_target,  # type: ignore[attr-defined]
-            state.qf2_target,  # type: ignore[attr-defined]
-            state.q_opt_state,  # type: ignore[attr-defined]
-            state.log_alpha,  # type: ignore[attr-defined]
-            state.alpha_opt_state,  # type: ignore[attr-defined]
-            state.target_entropy,  # type: ignore[attr-defined]
+            state.qf1,
+            state.qf2,
+            state.qf1_target,
+            state.qf2_target,
+            state.q_opt_state,
+            state.log_alpha,
+            state.alpha_opt_state,
+            state.target_entropy,
             state.iteration_count,
             key=train_key,
         )
@@ -353,15 +531,18 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
 
         return self.per_iteration(state)
 
-    def train(
-        self,
-        policy: PolicyType,
-        opt_state: optax.OptState,
-        buffer: ReplayBuffer,
-        *,
-        key: Key[Array, ""],
-    ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
-        return policy, opt_state, {}
+    def per_iteration(self, state: SACState[PolicyType]) -> SACState[PolicyType]:
+        """Apply Polyak averaging to update target Q-networks."""
+        return eqx.tree_at(
+            lambda s: (s.qf1_target, s.qf2_target),
+            state,
+            (
+                polyak_average(state.qf1, state.qf1_target, self.tau),
+                polyak_average(state.qf2, state.qf2_target, self.tau),
+            ),
+        )
+
+    # ── Training ───────────────────────────────────────────────────────
 
     @staticmethod
     def q_loss(
@@ -559,29 +740,3 @@ class SAC[PolicyType: AbstractSACPolicy](AbstractOffPolicyAlgorithm[PolicyType])
             alpha_opt_state,
             log,
         )
-
-
-def _soft_update_targets[PolicyType: AbstractSACPolicy](
-    state: AbstractOffPolicyState[PolicyType], tau: float
-) -> AbstractOffPolicyState[PolicyType]:
-    """Apply Polyak averaging to update target Q-networks."""
-
-    def polyak(online, target):
-        online_arrays, online_static = eqx.partition(online, eqx.is_inexact_array)
-        target_arrays, _ = eqx.partition(target, eqx.is_inexact_array)
-
-        updated_arrays = jax.tree.map(
-            lambda o, t: tau * o + (1 - tau) * t,
-            online_arrays,
-            target_arrays,
-        )
-        return eqx.combine(updated_arrays, online_static)
-
-    new_qf1_target = polyak(state.qf1, state.qf1_target)  # type: ignore[attr-defined]
-    new_qf2_target = polyak(state.qf2, state.qf2_target)  # type: ignore[attr-defined]
-
-    return eqx.tree_at(
-        lambda s: (s.qf1_target, s.qf2_target),
-        state,
-        (new_qf1_target, new_qf2_target),
-    )

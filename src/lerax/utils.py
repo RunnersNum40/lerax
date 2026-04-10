@@ -269,6 +269,32 @@ def unstack_pytree[T](tree: T, *, axis: int = 0) -> Sequence[T]:
     return transposed
 
 
+def polyak_average[T: eqx.Module](online: T, target: T, tau: float) -> T:
+    """
+    Polyak-average the parameters of two modules.
+
+    Returns a new module whose inexact-array leaves are
+    ``tau * online + (1 - tau) * target``, with all other leaves
+    taken from ``online``.
+
+    Args:
+        online: The online (source) module.
+        target: The target module to update towards.
+        tau: Interpolation coefficient in ``[0, 1]``.
+
+    Returns:
+        The updated target module.
+    """
+    online_arrays, online_static = eqx.partition(online, eqx.is_inexact_array)
+    target_arrays, _ = eqx.partition(target, eqx.is_inexact_array)
+    updated = jax.tree.map(
+        lambda o, t: tau * o + (1 - tau) * t,
+        online_arrays,
+        target_arrays,
+    )
+    return eqx.combine(updated, online_static)
+
+
 def _structure_hash(tree: Any) -> bytes:
     """
     Return a 32-byte digest of the static (non-array) structure of *tree*.
@@ -331,6 +357,9 @@ class Serializable(eqx.Module):
             ValueError: If the structural fingerprint of the rebuilt
                 skeleton does not match the one stored in the file.
         """
+        path = Path(path)
+        if path.suffix != ".eqx":
+            path = path.with_suffix(".eqx")
         skeleton = eqx.filter_eval_shape(cls, *args, **kwargs)
         expected = _structure_hash(skeleton)
         with open(path, "rb") as f:
