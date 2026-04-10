@@ -8,4 +8,5 @@ title: Utils
 ::: lerax.utils.callback_with_numpy_wrapper
 ::: lerax.utils.callback_with_list_wrapper
 ::: lerax.utils.unstack_pytree
+::: lerax.utils.polyak_average
 ::: lerax.utils.Serializable

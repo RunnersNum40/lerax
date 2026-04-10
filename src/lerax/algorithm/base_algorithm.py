@@ -151,12 +151,12 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy, StateType: AbstractAlgorithm
             The initial algorithm state.
         """
 
-    @abstractmethod
     def per_iteration(self, state: StateType) -> StateType:
         """
         Process the algorithm state after each iteration.
 
-        Used for algorithm-specific bookkeeping.
+        Used for algorithm-specific bookkeeping. Default is identity.
+        Override for target network updates, etc.
 
         Args:
             state: The current algorithm state.
@@ -164,6 +164,7 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy, StateType: AbstractAlgorithm
         Returns:
             The updated algorithm state.
         """
+        return state
 
     @abstractmethod
     def iteration(

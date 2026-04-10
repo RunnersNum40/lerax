@@ -3,33 +3,72 @@ from __future__ import annotations
 import equinox as eqx
 import jax
 import optax
+from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
-from jaxtyping import Array, Float, Key, Scalar
+from jaxtyping import Array, Float, Int, Key, Scalar
 
 from lerax.buffer import ReplayBuffer
-from lerax.callback import AbstractCallback, IterationContext
-from lerax.env import AbstractEnvLike
-from lerax.policy import AbstractQPolicy
-from lerax.utils import filter_cond
-
-from .off_policy import (
-    AbstractOffPolicyAlgorithm,
-    AbstractOffPolicyState,
-    AbstractOffPolicyStepState,
+from lerax.callback import (
+    AbstractCallback,
+    AbstractCallbackState,
+    AbstractCallbackStepState,
+    IterationContext,
+    ResetContext,
+    StepContext,
 )
+from lerax.env import AbstractEnvLike, AbstractEnvLikeState
+from lerax.policy import AbstractPolicyState
+from lerax.policy.q import AbstractQPolicy
+from lerax.space import Box
+from lerax.utils import filter_cond, filter_scan
+
+from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
 
 
-class DQNState[PolicyType: AbstractQPolicy](AbstractOffPolicyState[PolicyType]):
+class DQNStepState[PolicyType: AbstractQPolicy](AbstractStepState):
     """
-    State for DQN algorithms.
+    Step-level state for DQN.
 
-    Extends the off-policy state with a target policy network that is
-    periodically updated from the online policy.
+    Attributes:
+        env_state: The state of the environment.
+        policy_state: The state of the policy.
+        callback_state: The state of the callback for this step.
+        buffer: The replay buffer storing experience.
+    """
+
+    env_state: AbstractEnvLikeState
+    policy_state: AbstractPolicyState
+    callback_state: AbstractCallbackStepState
+    buffer: ReplayBuffer
+
+    @classmethod
+    def initial(
+        cls,
+        size: int,
+        env: AbstractEnvLike,
+        policy: PolicyType,
+        callback: AbstractCallback,
+        key: Key[Array, ""],
+    ) -> DQNStepState[PolicyType]:
+        """Initialize the step state with an empty replay buffer."""
+        env_key, policy_key = jr.split(key, 2)
+        env_state = env.initial(key=env_key)
+        policy_state = policy.reset(key=policy_key)
+        callback_state = callback.step_reset(ResetContext(locals()), key=key)
+        buffer = ReplayBuffer(
+            size, env.observation_space, env.action_space, policy_state
+        )
+        return cls(env_state, policy_state, callback_state, buffer)
+
+
+class DQNState[PolicyType: AbstractQPolicy](AbstractAlgorithmState[PolicyType]):
+    """
+    Iteration-level state for DQN.
 
     Attributes:
         iteration_count: The current iteration count.
-        step_state: The current step state.
+        step_state: The step-level state.
         env: The environment being used.
         policy: The online policy being trained.
         opt_state: The optimizer state.
@@ -37,10 +76,18 @@ class DQNState[PolicyType: AbstractQPolicy](AbstractOffPolicyState[PolicyType]):
         target_policy: The target policy for stable Q-value estimation.
     """
 
+    iteration_count: Int[Array, ""]
+    step_state: DQNStepState[PolicyType]
+    env: AbstractEnvLike
+    policy: PolicyType
+    opt_state: optax.OptState
+    callback_state: AbstractCallbackState
     target_policy: PolicyType
 
 
-class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
+class DQN[PolicyType: AbstractQPolicy](
+    AbstractAlgorithm[PolicyType, DQNState[PolicyType]]
+):
     """
     Double Deep Q-Network (Double DQN) algorithm.
 
@@ -114,21 +161,127 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
         clip = optax.clip_by_global_norm(self.max_grad_norm)
         self.optimizer = optax.chain(clip, adam)
 
-    def per_step(
-        self, step_state: AbstractOffPolicyStepState[PolicyType]
-    ) -> AbstractOffPolicyStepState[PolicyType]:
+    def num_iterations(self, total_timesteps: int) -> int:
+        return total_timesteps // (self.num_envs * self.num_steps)
+
+    # ── Step & rollout collection ──────────────────────────────────────
+
+    def step(
+        self,
+        env: AbstractEnvLike,
+        policy: PolicyType,
+        state: DQNStepState[PolicyType],
+        *,
+        key: Key[Array, ""],
+        callback: AbstractCallback,
+    ) -> DQNStepState[PolicyType]:
+        """Perform a single environment step and store in replay buffer."""
+        (
+            action_key,
+            transition_key,
+            observation_key,
+            reward_key,
+            terminal_key,
+            next_observation_key,
+            env_reset_key,
+            policy_reset_key,
+            callback_key,
+        ) = jr.split(key, 9)
+
+        observation = env.observation(state.env_state, key=observation_key)
+        policy_state, action = policy(state.policy_state, observation, key=action_key)
+
+        if isinstance(env.action_space, Box):
+            clipped_action = jnp.clip(
+                action,
+                env.action_space.low,
+                env.action_space.high,
+            )
+        else:
+            clipped_action = action
+
+        next_env_state = env.transition(
+            state.env_state, clipped_action, key=transition_key
+        )
+
+        reward = env.reward(state.env_state, action, next_env_state, key=reward_key)
+        termination = env.terminal(next_env_state, key=terminal_key)
+        truncation = env.truncate(next_env_state)
+        done = termination | truncation
+        timeout = truncation & ~termination
+        next_observation = env.observation(next_env_state, key=next_observation_key)
+
+        next_env_state = lax.cond(
+            done, lambda: env.initial(key=env_reset_key), lambda: next_env_state
+        )
+
+        next_policy_state = lax.cond(
+            done, lambda: policy.reset(key=policy_reset_key), lambda: policy_state
+        )
+
+        replay_buffer = state.buffer.add(
+            observation,
+            next_observation,
+            action,
+            reward,
+            done,
+            timeout,
+            state.policy_state,
+            policy_state,
+        )
+
+        callback_state = callback.on_step(
+            StepContext(state.callback_state, env, policy, done, reward, locals()),
+            key=callback_key,
+        )
+
+        return DQNStepState(
+            next_env_state, next_policy_state, callback_state, replay_buffer
+        )
+
+    def collect_learning_starts(
+        self,
+        env: AbstractEnvLike,
+        policy: PolicyType,
+        step_state: DQNStepState[PolicyType],
+        callback: AbstractCallback,
+        key: Key[Array, ""],
+    ) -> DQNStepState[PolicyType]:
+        """Collect random initial experience before training begins."""
+
+        def scan_step(
+            carry: DQNStepState, key: Key[Array, ""]
+        ) -> tuple[DQNStepState, None]:
+            carry = self.step(env, policy, carry, key=key, callback=callback)
+            return carry, None
+
+        step_state, _ = filter_scan(
+            scan_step, step_state, jr.split(key, self.learning_starts)
+        )
         return step_state
 
-    def per_iteration(
-        self, state: AbstractOffPolicyState[PolicyType]
-    ) -> AbstractOffPolicyState[PolicyType]:
-        should_update = state.iteration_count % self.target_update_interval == 0
-        target_policy = filter_cond(
-            should_update,
-            lambda: state.policy,
-            lambda: state.target_policy,  # type: ignore[attr-defined]
+    def collect_rollout(
+        self,
+        env: AbstractEnvLike,
+        policy: PolicyType,
+        step_state: DQNStepState[PolicyType],
+        callback: AbstractCallback,
+        key: Key[Array, ""],
+    ) -> DQNStepState[PolicyType]:
+        """Collect a rollout of experience into the replay buffer."""
+
+        def scan_step(
+            carry: DQNStepState, key: Key[Array, ""]
+        ) -> tuple[DQNStepState, None]:
+            carry = self.step(env, policy, carry, key=key, callback=callback)
+            return carry, None
+
+        step_state, _ = filter_scan(
+            scan_step, step_state, jr.split(key, self.num_steps)
         )
-        return eqx.tree_at(lambda s: s.target_policy, state, target_policy)
+        return step_state
+
+    # ── Reset & iteration ──────────────────────────────────────────────
 
     def reset(
         self,
@@ -138,24 +291,48 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
         key: Key[Array, ""],
         callback: AbstractCallback,
     ) -> DQNState[PolicyType]:
-        base_state = super().reset(env, policy, key=key, callback=callback)
+        init_key, starts_key, callback_key = jr.split(key, 3)
+
+        if self.num_envs == 1:
+            step_state = DQNStepState.initial(
+                self.buffer_size, env, policy, callback, init_key
+            )
+            step_state = self.collect_learning_starts(
+                env, policy, step_state, callback, starts_key
+            )
+        else:
+            step_state = jax.vmap(
+                DQNStepState.initial, in_axes=(None, None, None, None, 0)
+            )(
+                self.buffer_size // self.num_envs,
+                env,
+                policy,
+                callback,
+                jr.split(init_key, self.num_envs),
+            )
+            step_state = jax.vmap(
+                self.collect_learning_starts, in_axes=(None, None, 0, None, 0)
+            )(env, policy, step_state, callback, jr.split(starts_key, self.num_envs))
+
+        callback_state = callback.reset(ResetContext(locals()), key=callback_key)
+
         return DQNState(
-            base_state.iteration_count,
-            base_state.step_state,
-            base_state.env,
-            base_state.policy,
-            base_state.opt_state,
-            base_state.callback_state,
+            jnp.array(0, dtype=int),
+            step_state,
+            env,
+            policy,
+            self.optimizer.init(eqx.filter(policy, eqx.is_inexact_array)),
+            callback_state,
             target_policy=policy,
         )
 
     def iteration(
         self,
-        state: AbstractOffPolicyState[PolicyType],
+        state: DQNState[PolicyType],
         *,
         key: Key[Array, ""],
         callback: AbstractCallback,
-    ) -> AbstractOffPolicyState[PolicyType]:
+    ) -> DQNState[PolicyType]:
         rollout_key, train_key, callback_key = jr.split(key, 3)
 
         if self.num_envs == 1:
@@ -177,7 +354,7 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
             state.policy,
             state.opt_state,
             step_state.buffer,
-            state.target_policy,  # type: ignore[attr-defined]
+            state.target_policy,
             key=train_key,
         )
 
@@ -202,15 +379,17 @@ class DQN[PolicyType: AbstractQPolicy](AbstractOffPolicyAlgorithm[PolicyType]):
 
         return self.per_iteration(state)
 
-    def train(
-        self,
-        policy: PolicyType,
-        opt_state: optax.OptState,
-        buffer: ReplayBuffer,
-        *,
-        key: Key[Array, ""],
-    ) -> tuple[PolicyType, optax.OptState, dict[str, Scalar]]:
-        return self.dqn_train(policy, opt_state, buffer, policy, key=key)
+    def per_iteration(self, state: DQNState[PolicyType]) -> DQNState[PolicyType]:
+        """Periodically update the target network."""
+        should_update = state.iteration_count % self.target_update_interval == 0
+        target_policy = filter_cond(
+            should_update,
+            lambda: state.policy,
+            lambda: state.target_policy,
+        )
+        return eqx.tree_at(lambda s: s.target_policy, state, target_policy)
+
+    # ── Training ───────────────────────────────────────────────────────
 
     @staticmethod
     def dqn_loss(
