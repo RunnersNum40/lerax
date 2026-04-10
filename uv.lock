@@ -418,17 +418,13 @@ wheels = [
 
 [[package]]
 name = "equinox"
-version = "0.13.4"
-source = { registry = "https://pypi.org/simple" }
+version = "0.13.6"
+source = { git = "https://github.com/patrick-kidger/equinox.git?branch=main#e41cdacf73c324d22a74eb36e61ad992b39d695f" }
 dependencies = [
     { name = "jax" },
     { name = "jaxtyping" },
     { name = "typing-extensions" },
     { name = "wadler-lindig" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/2d/80/1704c3375a9c3cae4713a1be12b59dbd8ddff03808862264be622b333cd1/equinox-0.13.4.tar.gz", hash = "sha256:d4eed5d7f981a5ddcb7bc70e601707769fb4da20f777703cc6e01a6248af9758", size = 140981, upload-time = "2026-01-26T22:29:19.417Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/96/4c/eea4860010ba31d6793038073c66f2e1755c80d0adb704c4926d549e724a/equinox-0.13.4-py3-none-any.whl", hash = "sha256:8203b6b84c1641a58aad07c040c171fc5a38e2c3bc90c5feb2f221d398354378", size = 181231, upload-time = "2026-01-26T22:29:17.859Z" },
 ]
 
 [[package]]
@@ -1057,7 +1053,7 @@ requires-dist = [
     { name = "asciichartpy", specifier = ">=1.5.25" },
     { name = "diffrax", specifier = ">=0.7.0" },
     { name = "distreqx", specifier = ">=0.0.2" },
-    { name = "equinox", specifier = ">=0.13.3" },
+    { name = "equinox", git = "https://github.com/patrick-kidger/equinox.git?branch=main" },
     { name = "flax", specifier = ">=0.12.2" },
     { name = "gymnasium", specifier = ">=1.2.3" },
     { name = "gymnax", specifier = ">=0.0.9" },
