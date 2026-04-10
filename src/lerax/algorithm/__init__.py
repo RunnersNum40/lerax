@@ -5,6 +5,7 @@ from .dqn import DQN, DQNState
 from .ppo import PPO
 from .reinforce import REINFORCE
 from .sac import SAC, SACState, SoftQNetwork
+from .sac_discrete import SACDiscrete, SACDiscreteState
 from .td3 import TD3, TD3State
 
 __all__ = [
@@ -19,6 +20,8 @@ __all__ = [
     "PPO",
     "REINFORCE",
     "SAC",
+    "SACDiscrete",
+    "SACDiscreteState",
     "SACState",
     "SoftQNetwork",
     "TD3",
