@@ -101,6 +101,9 @@ extend-exclude = ["stubs"]
 [tool.uv]
 package = true
 
+[tool.uv.sources]
+equinox = { git = "https://github.com/patrick-kidger/equinox.git", branch = "main" }
+
 [[tool.uv.index]]
 name = "testpypi"
 url = "https://test.pypi.org/simple/"
