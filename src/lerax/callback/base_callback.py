@@ -12,7 +12,7 @@ from lerax.env import AbstractEnvLike
 from lerax.policy import AbstractPolicy
 
 if TYPE_CHECKING:
-    from lerax.algorithm import AbstractAlgorithm
+    from lerax.algorithm import AbstractAlgorithm, AbstractAlgorithmState
 
 
 class AbstractCallbackStepState(eqx.Module):
@@ -156,6 +156,29 @@ class AbstractCallback[
         self, ctx: IterationContext, *, key: Key[Array, ""]
     ) -> Bool[Array, ""]:
         """Called at the end of each iteration to determine whether to continue."""
+
+    def apply_curriculum[S: "AbstractAlgorithmState"](
+        self, state: S, callback_state: StateType
+    ) -> tuple[S, StateType]:
+        """
+        Modify the algorithm state for curriculum learning.
+
+        Called after ``on_iteration`` at the end of each training
+        iteration. Override to adjust environment parameters (via
+        ``eqx.tree_at`` on ``state.env``) based on ``callback_state``
+        metrics or ``state.iteration_count``.
+
+        The default implementation returns both inputs unchanged.
+
+        Args:
+            state: The current algorithm state.
+            callback_state: This callback's own state.
+
+        Returns:
+            A tuple of the (possibly modified) algorithm state and
+            the (possibly modified) callback state.
+        """
+        return state, callback_state
 
 
 class EmptyCallbackStepState(AbstractCallbackStepState):

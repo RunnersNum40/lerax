@@ -164,8 +164,6 @@ class DQN[PolicyType: AbstractQPolicy](
     def num_iterations(self, total_timesteps: int) -> int:
         return total_timesteps // (self.num_envs * self.num_steps)
 
-    # ── Step & rollout collection ──────────────────────────────────────
-
     def step(
         self,
         env: AbstractEnvLike,
@@ -281,8 +279,6 @@ class DQN[PolicyType: AbstractQPolicy](
         )
         return step_state
 
-    # ── Reset & iteration ──────────────────────────────────────────────
-
     def reset(
         self,
         env: AbstractEnvLike,
@@ -377,6 +373,8 @@ class DQN[PolicyType: AbstractQPolicy](
             )
         )
 
+        state, new_cb = callback.apply_curriculum(state, state.callback_state)
+        state = state.with_callback_states(new_cb)
         return self.per_iteration(state)
 
     def per_iteration(self, state: DQNState[PolicyType]) -> DQNState[PolicyType]:
@@ -388,8 +386,6 @@ class DQN[PolicyType: AbstractQPolicy](
             lambda: state.target_policy,
         )
         return eqx.tree_at(lambda s: s.target_policy, state, target_policy)
-
-    # ── Training ───────────────────────────────────────────────────────
 
     @staticmethod
     def dqn_loss(

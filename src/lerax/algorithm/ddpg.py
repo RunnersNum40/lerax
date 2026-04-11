@@ -224,8 +224,6 @@ class DDPG[PolicyType: AbstractDeterministicPolicy](
     def num_iterations(self, total_timesteps: int) -> int:
         return total_timesteps // (self.num_envs * self.num_steps)
 
-    # ── Step & rollout collection ──────────────────────────────────────
-
     def step(
         self,
         env: AbstractEnvLike,
@@ -337,8 +335,6 @@ class DDPG[PolicyType: AbstractDeterministicPolicy](
             scan_step, step_state, jr.split(key, self.num_steps)
         )
         return step_state
-
-    # ── Reset & iteration ──────────────────────────────────────────────
 
     def reset(
         self,
@@ -456,6 +452,8 @@ class DDPG[PolicyType: AbstractDeterministicPolicy](
             )
         )
 
+        state, new_cb = callback.apply_curriculum(state, state.callback_state)
+        state = state.with_callback_states(new_cb)
         return self.per_iteration(state)
 
     def per_iteration(self, state: DDPGState[PolicyType]) -> DDPGState[PolicyType]:
@@ -469,8 +467,6 @@ class DDPG[PolicyType: AbstractDeterministicPolicy](
                 polyak_average(state.qf, state.qf_target, self.tau),
             ),
         )
-
-    # ── Training ───────────────────────────────────────────────────────
 
     @staticmethod
     def q_loss(
