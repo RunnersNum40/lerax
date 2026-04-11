@@ -1,7 +1,8 @@
 from .adaptive import (
-    AdaptiveCurriculum,
+    AbstractAdaptiveCurriculum,
     AdaptiveCurriculumState,
     AdaptiveCurriculumStepState,
+    LevelCurriculum,
 )
 from .scheduled import (
     ScheduledCurriculum,
@@ -11,9 +12,10 @@ from .scheduled import (
 )
 
 __all__ = [
-    "AdaptiveCurriculum",
+    "AbstractAdaptiveCurriculum",
     "AdaptiveCurriculumState",
     "AdaptiveCurriculumStepState",
+    "LevelCurriculum",
     "ScheduledCurriculum",
     "cosine_schedule",
     "linear_schedule",

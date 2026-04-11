@@ -101,8 +101,7 @@ class ScheduledCurriculum(AbstractStatelessCallback):
     schedule.
 
     Uses ``eqx.tree_at`` to update a field on ``state.env`` each
-    iteration based on the current iteration count. Runs as pure JAX
-    inside JIT with zero overhead when not modifying the env.
+    iteration based on the current iteration count.
 
     Multiple ``ScheduledCurriculum`` instances can be composed via
     ``CallbackList`` to schedule multiple fields simultaneously.

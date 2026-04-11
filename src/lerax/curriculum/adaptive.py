@@ -1,7 +1,8 @@
-"""Adaptive curriculum callback that adjusts difficulty based on policy performance."""
+"""Adaptive curriculum callbacks that adjust environment parameters based on policy performance."""
 
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Callable
 
 import equinox as eqx
@@ -38,7 +39,7 @@ class AdaptiveCurriculumState(AbstractCallbackState):
     Iteration-level state for adaptive curriculum.
 
     Attributes:
-        level: Current curriculum difficulty level.
+        level: Current curriculum level (usage is subclass-defined).
         running_metric: Exponential moving average of the episode metric.
     """
 
@@ -46,70 +47,30 @@ class AdaptiveCurriculumState(AbstractCallbackState):
     running_metric: Float[Array, ""]
 
 
-class AdaptiveCurriculum(
+class AbstractAdaptiveCurriculum(
     AbstractCallback[AdaptiveCurriculumState, AdaptiveCurriculumStepState]
 ):
     """
-    Curriculum callback that advances difficulty when a performance
-    metric exceeds a threshold.
+    Abstract base for adaptive curricula that track a performance metric.
 
-    Tracks a user-defined per-step metric via ``on_step``, maintains an
-    exponential moving average across episodes, and advances to the next
-    difficulty level when the average crosses ``threshold``. Environment
-    parameters are updated via ``eqx.tree_at`` in ``apply_curriculum``.
+    Handles metric accumulation in ``on_step`` and EMA smoothing in
+    ``on_iteration``. Subclasses implement ``apply_curriculum`` to
+    decide how the metric drives environment changes.
 
     Attributes:
-        where: Selector for the env field to modify, e.g.
-            ``lambda env: env.max_speed``.
-        levels: Array of parameter values for each difficulty level.
         metric_fn: Function ``(done, reward, locals_dict) -> scalar``
             that extracts a per-step metric contribution. Called every
-            step; the value is accumulated per episode and averaged on
-            episode completion.
-        threshold: Advance to the next level when the running metric
-            exceeds this value.
+            step; the value is accumulated per episode.
         smoothing: EMA smoothing factor for the running metric.
             Higher values give more weight to recent episodes.
 
     Args:
-        where: Selector for the env field to modify.
-        levels: Parameter values per difficulty level.
         metric_fn: Per-step metric extraction function.
-        threshold: Advancement threshold.
         smoothing: EMA smoothing factor (default 0.05).
-
-    Example::
-
-        from lerax.curriculum import AdaptiveCurriculum
-
-        curriculum = AdaptiveCurriculum(
-            where=lambda env: env.max_speed,
-            levels=jnp.array([4.0, 6.0, 8.0]),
-            metric_fn=lambda done, reward, locals: reward,
-            threshold=100.0,
-        )
-        algo.learn(env, policy, total_timesteps=..., key=key, callback=curriculum)
     """
 
-    where: Callable = eqx.field(static=True)
-    levels: Float[Array, " num_levels"]
     metric_fn: Callable = eqx.field(static=True)
-    threshold: float
     smoothing: float
-
-    def __init__(
-        self,
-        where: Callable,
-        levels: Float[Array, " num_levels"],
-        metric_fn: Callable,
-        threshold: float,
-        smoothing: float = 0.05,
-    ):
-        self.where = where
-        self.levels = levels
-        self.metric_fn = metric_fn
-        self.threshold = threshold
-        self.smoothing = smoothing
 
     def reset(
         self, ctx: ResetContext, *, key: Key[Array, ""]
@@ -129,14 +90,12 @@ class AdaptiveCurriculum(
     ) -> AdaptiveCurriculumStepState:
         step_value = self.metric_fn(ctx.done, ctx.reward, ctx.locals)
         episode_metric = ctx.state.episode_metric + step_value
-        # Reset accumulator when episode ends
         episode_metric = jnp.where(ctx.done, jnp.array(0.0), episode_metric)
         return AdaptiveCurriculumStepState(episode_metric=episode_metric)
 
     def on_iteration(
         self, ctx: IterationContext, *, key: Key[Array, ""]
     ) -> AdaptiveCurriculumState:
-        # Update running metric EMA from the step-level episode metric
         step_metric = ctx.step_state.episode_metric
         running = ctx.state.running_metric
         updated_running = (1 - self.smoothing) * running + self.smoothing * step_metric
@@ -159,6 +118,83 @@ class AdaptiveCurriculum(
         self, ctx: IterationContext, *, key: Key[Array, ""]
     ) -> Bool[Array, ""]:
         return jnp.array(True)
+
+    @abstractmethod
+    def apply_curriculum[S: "AbstractAlgorithmState"](
+        self, state: S, callback_state: AdaptiveCurriculumState
+    ) -> tuple[S, AdaptiveCurriculumState]:
+        """
+        Modify the algorithm state based on the tracked metric.
+
+        Called after ``on_iteration`` at the end of each training
+        iteration. The running metric and current level are available
+        in ``callback_state``.
+
+        Args:
+            state: The current algorithm state.
+            callback_state: This callback's own state containing
+                ``running_metric`` and ``level``.
+
+        Returns:
+            A tuple of the (possibly modified) algorithm state and
+            the (possibly modified) callback state.
+        """
+
+
+class LevelCurriculum(AbstractAdaptiveCurriculum):
+    """
+    Adaptive curriculum with discrete parameter levels.
+
+    Advances to the next level when the running performance metric
+    exceeds ``threshold``. Each level maps to a specific value for
+    an environment field, applied via ``eqx.tree_at``.
+
+    Attributes:
+        where: Selector for the env field to modify, e.g.
+            ``lambda env: env.max_speed``.
+        levels: Array of parameter values for each level.
+        metric_fn: Per-step metric extraction function.
+        threshold: Advance to the next level when the running metric
+            exceeds this value.
+        smoothing: EMA smoothing factor for the running metric.
+
+    Args:
+        where: Selector for the env field to modify.
+        levels: Parameter values per level.
+        metric_fn: Per-step metric extraction function.
+        threshold: Advancement threshold.
+        smoothing: EMA smoothing factor (default 0.05).
+
+    Example::
+
+        from lerax.curriculum import LevelCurriculum
+
+        curriculum = LevelCurriculum(
+            where=lambda env: env.max_speed,
+            levels=jnp.array([4.0, 6.0, 8.0]),
+            metric_fn=lambda done, reward, locals: reward,
+            threshold=100.0,
+        )
+        algo.learn(env, policy, total_timesteps=..., key=key, callback=curriculum)
+    """
+
+    where: Callable = eqx.field(static=True)
+    levels: Float[Array, " num_levels"]
+    threshold: float
+
+    def __init__(
+        self,
+        where: Callable,
+        levels: Float[Array, " num_levels"],
+        metric_fn: Callable,
+        threshold: float,
+        smoothing: float = 0.05,
+    ):
+        self.where = where
+        self.levels = levels
+        self.metric_fn = metric_fn
+        self.threshold = threshold
+        self.smoothing = smoothing
 
     def apply_curriculum[S: "AbstractAlgorithmState"](
         self, state: S, callback_state: AdaptiveCurriculumState
