@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import equinox as eqx
 from jax import numpy as jnp
 from jax import random as jr
@@ -12,6 +16,9 @@ from .base_callback import (
     StepContext,
     TrainingContext,
 )
+
+if TYPE_CHECKING:
+    from lerax.algorithm import AbstractAlgorithmState
 
 
 class CallbackListStepState(AbstractCallbackStepState):
@@ -141,3 +148,12 @@ class CallbackList(AbstractCallback[CallbackListState, CallbackListStepState]):
             )
         ]
         return jnp.all(jnp.array(continue_flags))
+
+    def apply_curriculum[S: "AbstractAlgorithmState"](
+        self, state: S, callback_state: CallbackListState
+    ) -> tuple[S, CallbackListState]:
+        new_states = []
+        for callback, cb_state in zip(self.callbacks, callback_state.states):
+            state, cb_state = callback.apply_curriculum(state, cb_state)
+            new_states.append(cb_state)
+        return state, CallbackListState(states=new_states)

@@ -245,8 +245,6 @@ class TD3[PolicyType: AbstractDeterministicPolicy](
     def num_iterations(self, total_timesteps: int) -> int:
         return total_timesteps // (self.num_envs * self.num_steps)
 
-    # ── Step & rollout collection ──────────────────────────────────────
-
     def step(
         self,
         env: AbstractEnvLike,
@@ -358,8 +356,6 @@ class TD3[PolicyType: AbstractDeterministicPolicy](
             scan_step, step_state, jr.split(key, self.num_steps)
         )
         return step_state
-
-    # ── Reset & iteration ──────────────────────────────────────────────
 
     def reset(
         self,
@@ -494,6 +490,8 @@ class TD3[PolicyType: AbstractDeterministicPolicy](
             )
         )
 
+        state, new_cb = callback.apply_curriculum(state, state.callback_state)
+        state = state.with_callback_states(new_cb)
         return self.per_iteration(state)
 
     def per_iteration(self, state: TD3State[PolicyType]) -> TD3State[PolicyType]:
@@ -508,8 +506,6 @@ class TD3[PolicyType: AbstractDeterministicPolicy](
                 polyak_average(state.qf2, state.qf2_target, self.tau),
             ),
         )
-
-    # ── Training ───────────────────────────────────────────────────────
 
     @staticmethod
     def q_loss(
