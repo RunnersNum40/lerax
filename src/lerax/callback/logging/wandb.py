@@ -4,7 +4,6 @@ from typing import Any
 
 import equinox as eqx
 import numpy as np
-
 import wandb
 
 from .backend import AbstractLoggingBackend
