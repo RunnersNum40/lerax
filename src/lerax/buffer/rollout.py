@@ -4,11 +4,11 @@ from typing import Self
 
 import equinox as eqx
 import jax
-from jax import lax
 from jax import numpy as jnp
 from jax import random as jr
 from jaxtyping import Array, ArrayLike, Bool, Float, Key, PyTree
 
+from lerax.advantage import GAE
 from lerax.policy import AbstractPolicyState
 
 from .base_buffer import AbstractBuffer
@@ -66,26 +66,12 @@ class RolloutBuffer[StateType: AbstractPolicyState | None, ActType, ObsType, Mas
         gae_lambda: Float[ArrayLike, ""],
         gamma: Float[ArrayLike, ""],
     ) -> Self:
-        last_value = jnp.asarray(last_value)
-        gamma = jnp.asarray(gamma)
-        gae_lambda = jnp.asarray(gae_lambda)
-
-        next_values = jnp.concatenate([self.values[1:], last_value[None]], axis=0)
-        next_non_terminals = 1.0 - self.dones.astype(float)
-        deltas = self.rewards + gamma * next_values * next_non_terminals - self.values
-        discounts = gamma * gae_lambda * next_non_terminals
-
-        def scan_fn(
-            carry: Float[Array, ""], x: tuple[Float[Array, ""], Float[Array, ""]]
-        ) -> tuple[Float[Array, ""], Float[Array, ""]]:
-            delta, discount = x
-            advantage = delta + discount * carry
-            return advantage, advantage
-
-        _, advantages = lax.scan(
-            scan_fn, jnp.array(0.0), (deltas, discounts), reverse=True
+        advantages, returns = GAE(gamma=gamma, lam=gae_lambda)(
+            self.rewards,
+            self.values,
+            self.dones,
+            last_value,
         )
-        returns = advantages + self.values
 
         return eqx.tree_at(
             lambda x: (x.returns, x.advantages), self, (returns, advantages)
