@@ -14,7 +14,7 @@ from lerax.policy import AbstractPolicyState
 from .base_buffer import AbstractBuffer
 
 
-class RolloutBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
+class RolloutBuffer[StateType: AbstractPolicyState | None, ActType, ObsType, MaskType](
     AbstractBuffer
 ):
     observations: PyTree[ObsType]

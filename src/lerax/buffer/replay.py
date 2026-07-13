@@ -14,7 +14,7 @@ from lerax.space import AbstractSpace
 from .base_buffer import AbstractBuffer
 
 
-class ReplayBuffer[StateType: AbstractPolicyState, ActType, ObsType, MaskType](
+class ReplayBuffer[StateType: AbstractPolicyState | None, ActType, ObsType, MaskType](
     AbstractBuffer
 ):
     size: int = eqx.field(static=True)
