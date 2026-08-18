@@ -8,15 +8,12 @@ from .base_target import AbstractTargetUpdate
 
 
 class SoftUpdate(AbstractTargetUpdate):
-    """Polyak averaging
+    """Apply Polyak averaging.
 
     target = tau * online + (1 - tau) * target.
 
-    Args:
-        tau: Interpolation coefficient in [0, 1]. Default 0.005.
-
     Attributes:
-        tau: Interpolation coefficient in [0, 1].
+        tau: Interpolation coefficient in [0, 1]. Defaults to 0.005.
     """
 
     tau: float = 0.005

@@ -26,13 +26,13 @@ from lerax.space import (
 
 def gym_space_to_lerax_space(space: gym.Space) -> AbstractSpace:
     """
-    Returns a Lerax space corresponding to the given Gymnasium space.
+    Convert a Gymnasium space to a Lerax space.
 
     Args:
         space: Gymnasium space to convert.
 
     Returns:
-        The corresponding Lerax space.
+        Corresponding Lerax space.
     """
     if isinstance(space, gym.spaces.Discrete):
         if not space.start == 0:
@@ -56,13 +56,13 @@ def gym_space_to_lerax_space(space: gym.Space) -> AbstractSpace:
 
 def lerax_to_gym_space(space: AbstractSpace) -> gym.Space:
     """
-    Returns a Gymnasium space corresponding to the given Lerax space.
+    Convert a Lerax space to a Gymnasium space.
 
     Args:
         space: Lerax space to convert.
 
     Returns:
-        The corresponding Gymnasium space.
+        Corresponding Gymnasium space.
     """
 
     if isinstance(space, Discrete):
@@ -107,15 +107,12 @@ class GymEnvState(AbstractEnvState):
 
 class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
     """
-    Wrapper of a Gymnasium environment to make it compatible with Lerax.
+    Wrap a Gymnasium environment for Lerax.
 
     Note:
-        Uses jax's `io_callback` to wrap the env's `reset` and `step` functions.
-        In general, this will be slower than a native JAX environment and prevents
-        vmapped rollout. Also removes the info dict returned by Gymnasium envs since
-        the shape cannot be known ahead of time. Even more so than normal it is
-        important to only call methods in order since the state objects do not
-        contain all necessary information.
+        `io_callback` makes `reset` and `step` slower than native JAX and prevents
+        vmapped rollout. Gymnasium info is discarded because its shape is unknown.
+        Call methods in order because state objects omit required internal state.
 
     Args:
         env: Gymnasium environment to wrap.
@@ -139,18 +136,18 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
         self.action_space = gym_space_to_lerax_space(env.action_space)
         self.observation_space = gym_space_to_lerax_space(env.observation_space)
 
-    def initial(self, *args, key: Key[Array, ""], **kwargs) -> GymEnvState:
+    def initial(self, *args: Any, key: Key[Array, ""], **kwargs: Any) -> GymEnvState:
         """
-        Forwards to the Gymnasium reset.
+        Call the Gymnasium `reset` method.
 
         Note:
-            A seed is generated if none is provided to increase reproducibility.
+            The key generates a reproducible seed unless one is provided.
 
         Args:
             *args: Positional arguments to pass to `env.reset`.
-            key: JAX PRNG key, used to generate a seed if none is provided.
-            **kwargs: Key[Array, ""]word arguments to pass to `env.reset`. If "seed" is
-                provided here, it overrides the key-generated seed.
+            key: JAX PRNG key used to generate a seed when absent.
+            **kwargs: Keyword arguments to pass to `env.reset`. If `seed` is provided,
+                it overrides the generated seed.
 
         Returns:
             The initial environment state.
@@ -188,10 +185,9 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
         self, state: GymEnvState, action: Array, *, key: Key[Array, ""]
     ) -> GymEnvState:
         """
-        Forwards to the Gymnasium step.
+        Call the Gymnasium `step` method through `io_callback`.
 
-        In practice, this just calls the env's step function via io_callback.
-        This means that the state is ignored and order of operations is important.
+        The state is ignored, so call order matters.
 
         Args:
             state: Current environment state.
@@ -234,13 +230,13 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
 
     def observation(self, state: GymEnvState, *, key: Key[Array, ""]) -> Array:
         """
-        Forwards to the Gymnasium observation.
+        Return the stored Gymnasium observation.
 
         Args:
             state: Current environment state.
 
         Returns:
-            Observation corresponding to the environment state.
+            Stored observation.
         """
         return state.observation
 
@@ -253,9 +249,7 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
         key: Key[Array, ""],
     ) -> Float[Array, ""]:
         """
-        Forwards to the Gymnasium reward.
-
-        In practice, this just reads the reward from the next_state.
+        Return the reward stored in the next state.
 
         Args:
             state: Current environment state.
@@ -263,43 +257,43 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
             next_state: Next environment state.
 
         Returns:
-            Reward obtained from the transition.
+            Transition reward.
         """
         return next_state.reward
 
     def terminal(self, state: GymEnvState, *, key: Key[Array, ""]) -> Bool[Array, ""]:
         """
-        Forwards to the Gymnasium terminated flag.
+        Return the stored Gymnasium terminated flag.
 
         Args:
             state: Current environment state.
 
         Returns:
-            Boolean indicating whether the state is terminal.
+            Whether the state is terminal.
         """
         return state.terminal
 
     def truncate(self, state: GymEnvState) -> Bool[Array, ""]:
         """
-        Forwards to the Gymnasium truncated flag.
+        Return the stored Gymnasium truncated flag.
 
         Args:
             state: Current environment state.
 
         Returns:
-            Boolean indicating whether the state is truncated.
+            Whether the state is truncated.
         """
         return state.truncated
 
     def state_info(self, state: GymEnvState) -> dict:
         """
-        Empty info dict to ensure stable shapes for JIT compilation.
+        Return empty info to keep JIT shapes stable.
 
         Args:
             state: Current environment state.
 
         Returns:
-            Empty info dict.
+            Empty info.
         """
         return {}
 
@@ -307,7 +301,7 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
         self, state: GymEnvState, action: Array, next_state: GymEnvState
     ) -> dict:
         """
-        Empty info dict to ensure stable shapes for JIT compilation.
+        Return empty info to keep JIT shapes stable.
 
         Args:
             state: Current environment state.
@@ -315,13 +309,13 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
             next_state: Next environment state.
 
         Returns:
-            Empty info dict.
+            Empty info.
         """
         return {}
 
     def render(self, state: GymEnvState, renderer: AbstractRenderer):
         """
-        Not supported for Gymnasium environments.
+        Reject unsupported Gymnasium rendering.
 
         Raises:
             NotImplementedError: Always.
@@ -330,7 +324,7 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
 
     def default_renderer(self) -> AbstractRenderer:
         """
-        Not supported for Gymnasium environments.
+        Reject unsupported Gymnasium rendering.
 
         Raises:
             NotImplementedError: Always.
@@ -343,9 +337,9 @@ class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
 
 class LeraxToGymEnv[StateType: AbstractEnvState](gym.Env):
     """
-    Wrapper of an Lerax environment to make it compatible with Gymnasium.
+    Wrap a Lerax environment for Gymnasium.
 
-    Executes the Lerax env directly (Python side). Keeps an internal eqx state and PRNG.
+    Run Lerax in Python with internal environment state and a PRNG key.
 
     Attributes:
         metadata: Metadata for the Gym environment.
@@ -385,7 +379,6 @@ class LeraxToGymEnv[StateType: AbstractEnvState](gym.Env):
         self.observation_space = lerax_to_gym_space(env.observation_space)
 
         self.render_mode = render_mode
-        # TODO: Actually handle rendering
 
     def reset(self, *, seed: int | None = None, options: dict | None = None):
         if seed is not None:
@@ -411,7 +404,7 @@ class LeraxToGymEnv[StateType: AbstractEnvState](gym.Env):
 
     def render(self):
         """
-        Not supported yet.
+        Reject unsupported rendering.
 
         Raises:
             NotImplementedError: Always.
@@ -419,8 +412,4 @@ class LeraxToGymEnv[StateType: AbstractEnvState](gym.Env):
         raise NotImplementedError("Rendering not implemented for LeraxToGymEnv")
 
     def close(self):
-        """
-        Placeholder close method.
-
-        Does nothing but completes the Gymnasium Env interface.
-        """
+        """Implement the Gymnasium Env interface as a no-op."""

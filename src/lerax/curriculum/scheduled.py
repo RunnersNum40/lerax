@@ -1,5 +1,3 @@
-"""Scheduled curriculum callbacks that modify environment parameters over training."""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable
@@ -23,7 +21,7 @@ def linear_schedule(
     start: float, end: float, total: int
 ) -> Callable[[Int[Array, ""]], Float[Array, ""]]:
     """
-    Linear interpolation from ``start`` to ``end`` over ``total`` iterations.
+    Interpolate linearly from ``start`` to ``end`` over ``total`` iterations.
 
     Clamps to ``[start, end]`` outside the range.
 
@@ -49,14 +47,11 @@ def step_schedule(
     values: list[float], boundaries: list[int]
 ) -> Callable[[Int[Array, ""]], Float[Array, ""]]:
     """
-    Step-wise schedule that jumps between discrete values at specified
-    iteration boundaries.
+    Jump between values at specified iteration boundaries.
 
     Args:
-        values: Parameter values for each stage. Length must be
-            ``len(boundaries) + 1``.
-        boundaries: Iteration counts at which to transition to the next
-            value.
+        values: Stage values; length must be ``len(boundaries) + 1``.
+        boundaries: Iterations that transition to the next value.
 
     Returns:
         A function mapping iteration count to the scheduled value.
@@ -97,25 +92,13 @@ def cosine_schedule(
 
 class ScheduledCurriculum(AbstractStatelessCallback):
     """
-    Curriculum callback that modifies an environment field on a fixed
-    schedule.
+    Modify an environment field on a fixed schedule.
 
-    Uses ``eqx.tree_at`` to update a field on ``state.env`` each
-    iteration based on the current iteration count.
-
-    Multiple ``ScheduledCurriculum`` instances can be composed via
-    ``CallbackList`` to schedule multiple fields simultaneously.
+    Compose instances with ``CallbackList`` to schedule multiple fields.
 
     Attributes:
-        where: A function selecting the field to modify on the env,
-            e.g. ``lambda env: env.mass``.
-        schedule_fn: A function mapping iteration count to the
-            scheduled parameter value.
-
-    Args:
-        where: Selector for the env field to schedule.
-        schedule_fn: Schedule function (see ``linear_schedule``,
-            ``step_schedule``, ``cosine_schedule``).
+        where: Environment-field selector such as ``lambda env: env.mass``.
+        schedule_fn: Maps iteration count to the scheduled value.
 
     Example::
 

@@ -1,5 +1,3 @@
-"""Adaptive curriculum callbacks that adjust environment parameters based on policy performance."""
-
 from __future__ import annotations
 
 from abc import abstractmethod
@@ -24,25 +22,10 @@ if TYPE_CHECKING:
 
 
 class AdaptiveCurriculumStepState(AbstractCallbackStepState):
-    """
-    Per-step state for adaptive curriculum metric tracking.
-
-    Attributes:
-        episode_metric: Accumulated metric value for the current episode.
-    """
-
     episode_metric: Float[Array, ""]
 
 
 class AdaptiveCurriculumState(AbstractCallbackState):
-    """
-    Iteration-level state for adaptive curriculum.
-
-    Attributes:
-        level: Current curriculum level (usage is subclass-defined).
-        running_metric: Exponential moving average of the episode metric.
-    """
-
     level: Int[Array, ""]
     running_metric: Float[Array, ""]
 
@@ -51,22 +34,13 @@ class AbstractAdaptiveCurriculum(
     AbstractCallback[AdaptiveCurriculumState, AdaptiveCurriculumStepState]
 ):
     """
-    Abstract base for adaptive curricula that track a performance metric.
-
-    Handles metric accumulation in ``on_step`` and EMA smoothing in
-    ``on_iteration``. Subclasses implement ``apply_curriculum`` to
-    decide how the metric drives environment changes.
+    Abstract base for adaptive curricula tracking a performance metric.
 
     Attributes:
-        metric_fn: Function ``(done, reward, locals_dict) -> scalar``
-            that extracts a per-step metric contribution. Called every
-            step; the value is accumulated per episode.
-        smoothing: EMA smoothing factor for the running metric.
-            Higher values give more weight to recent episodes.
+        metric_fn: ``(done, reward, locals_dict) -> scalar`` function called each
+            step and accumulated per episode.
+        smoothing: Running-metric EMA factor; higher values favor recent episodes.
 
-    Args:
-        metric_fn: Per-step metric extraction function.
-        smoothing: EMA smoothing factor (default 0.05).
     """
 
     metric_fn: Callable = eqx.field(static=True)
@@ -124,46 +98,25 @@ class AbstractAdaptiveCurriculum(
         self, state: S, callback_state: AdaptiveCurriculumState
     ) -> tuple[S, AdaptiveCurriculumState]:
         """
-        Modify the algorithm state based on the tracked metric.
+        Modify algorithm state from the tracked metric.
 
-        Called after ``on_iteration`` at the end of each training
-        iteration. The running metric and current level are available
-        in ``callback_state``.
-
-        Args:
-            state: The current algorithm state.
-            callback_state: This callback's own state containing
-                ``running_metric`` and ``level``.
-
-        Returns:
-            A tuple of the (possibly modified) algorithm state and
-            the (possibly modified) callback state.
+        Called after ``on_iteration`` each iteration with the running metric and
+        current level in ``callback_state``.
         """
 
 
 class LevelCurriculum(AbstractAdaptiveCurriculum):
     """
-    Adaptive curriculum with discrete parameter levels.
+    Adapt an environment field through discrete parameter levels.
 
-    Advances to the next level when the running performance metric
-    exceeds ``threshold``. Each level maps to a specific value for
-    an environment field, applied via ``eqx.tree_at``.
-
-    Attributes:
-        where: Selector for the env field to modify, e.g.
-            ``lambda env: env.max_speed``.
-        levels: Array of parameter values for each level.
-        metric_fn: Per-step metric extraction function.
-        threshold: Advance to the next level when the running metric
-            exceeds this value.
-        smoothing: EMA smoothing factor for the running metric.
+    Advance when the running performance metric exceeds ``threshold``.
 
     Args:
         where: Selector for the env field to modify.
         levels: Parameter values per level.
         metric_fn: Per-step metric extraction function.
         threshold: Advancement threshold.
-        smoothing: EMA smoothing factor (default 0.05).
+        smoothing: EMA smoothing factor. Defaults to 0.05.
 
     Example::
 
