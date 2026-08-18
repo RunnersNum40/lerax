@@ -1,6 +1,6 @@
 ---
 title: Env
-description: Documentation for Lerax, Jax based reinforcement learning library.
+description: Functional environment interfaces and state types.
 ---
 
 # Env API

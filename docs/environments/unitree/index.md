@@ -1,4 +1,5 @@
 ---
+title: Unitree
 description: Unitree Robot Environments in the Lerax Reinforcement Learning Library
 ---
 

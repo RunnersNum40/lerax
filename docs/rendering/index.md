@@ -39,5 +39,5 @@ If `renderer="auto"`, the environment’s `default_renderer()` is used.
 
 For API details see:
 
-- [`lerax.render.AbstractRenderer` and concrete renderers](api/render/index.md)
-- [`Color`](api/render/color.md) and [`Transform`](api/render/transform.md)
+- [`lerax.render.AbstractRenderer`][] and concrete renderers
+- [`Color`][lerax.render.Color] and [`Transform`][lerax.render.Transform]

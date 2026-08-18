@@ -57,12 +57,12 @@ dev = [
   "setuptools<84",
   "stable-baselines3>=2.7.1",
   "ty>=0.0.13",
-  "zensical>=0.0.19",
+  "zensical>=0.0.56",
 ]
 
-# Kept for contributors that use pyright rather than ty
+# For contributors using pyright instead of ty
 [tool.pyright]
-reportIncompatibleVariableOverride = false  # Incompatible with eqx.AbstractVar
+reportIncompatibleVariableOverride = false  # Required by eqx.AbstractVar
 stubPath = "stubs"
 include = ["src/**", "examples/**", "tests/**"]
 

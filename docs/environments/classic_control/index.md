@@ -1,4 +1,5 @@
 ---
+title: Classic Control
 description: Classic Control Environments in the Lerax Reinforcement Learning Library
 ---
 
@@ -7,4 +8,4 @@ description: Classic Control Environments in the Lerax Reinforcement Learning Li
 Lerax versions of the [Gymnasium Classic Control Environments](https://gymnasium.farama.org/environments/classic_control/).
 In Lerax the dynamics are integrated using [Diffrax](https://docs.kidger.site/diffrax/) for more physically accurate results.
 During environment creation, you can specify the `dt: float`, `solver: diffrax.AbstractSolver` parameter, and `stepsize_controller: diffrax.AbstractStepSizeController` parameters to control the integration.
-To use the exact Gymnasium dynamics, leave the default `dt` and specify [`diffrax.Euler`](https://docs.kidger.site/diffrax/api/solvers/ode_solvers/#diffrax.Euler) for the solver.
+To use the exact Gymnasium dynamics, leave the default `dt` and specify [`diffrax.Euler`][] for the solver.

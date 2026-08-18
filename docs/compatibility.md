@@ -20,7 +20,7 @@ Lerax integrates with [Gymnasium](https://gymnasium.farama.org/) via the [`lerax
 
 `GymToLeraxEnv` adapts a Gymnasium `gym.Env` to the functional Lerax environment API and exposes it as an `AbstractEnv`.
 This is useful when you want to reuse existing Gymnasium environments with Lerax algorithms, accepting that you lose full JAX performance.
-The `GymToLeraxEnv` uses [`jax.experimental.io_callback`](https://docs.jax.dev/en/latest/external-callbacks.html#exploring-io-callback) to call the Python `reset` and `step` methods, which means you do not get the full benefits of JAX such as `jax.jit` and `jax.vmap` over vectorized environments.
+The `GymToLeraxEnv` uses [`jax.experimental.io_callback`][] to call the Python `reset` and `step` methods, which means you do not get the full benefits of JAX such as `jax.jit` and `jax.vmap` over vectorized environments.
 
 !!! warning
     Due to the use of `io_callback`, using `GymToLeraxEnv` is not compatible with `jax.vmap` or `jax.pmap` which may be used internally by some Lerax algorithms for vectorization.

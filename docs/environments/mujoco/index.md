@@ -1,4 +1,5 @@
 ---
+title: MuJoCo
 description: MuJoCo Environments in the Lerax Reinforcement Learning Library
 ---
 

@@ -5,20 +5,21 @@ repo_url = "https://github.com/RunnersNum40/lerax"
 repo_name = "RunnersNum40/lerax"
 site_description = "Lerax Library Documentation"
 site_author = "Theodore Pinkerton"
-copyright = "&copy; 2025 Theodore Pinkerton"
+copyright = "&copy; 2025-2026 Theodore Pinkerton"
 extra_css = ["stylesheets/extra.css"]
+strict = true
 
 [project.extra.status]
 draft = "Draft"
 
 [project.theme]
 language = "en"
+variant = "modern"
 features = [
   "announce.dismiss",
   "content.code.annotate",
   "content.code.copy",
   "content.code.select",
-  "content.code.annotate",
   "content.footnote.tooltips",
   "content.tabs.link",
   "content.tooltips",
@@ -51,7 +52,13 @@ logo = "lucide/book-x"
 repo = "fontawesome/brands/github"
 
 [project.plugins.mkdocstrings.handlers.python]
-inventories = ["https://docs.python.org/3/objects.inv"]
+inventories = [
+  "https://docs.python.org/3/objects.inv",
+  "https://docs.jax.dev/en/latest/objects.inv",
+  "https://docs.kidger.site/diffrax/objects.inv",
+  "https://docs.kidger.site/equinox/objects.inv",
+  "https://docs.kidger.site/jaxtyping/objects.inv",
+]
 paths = ["src", "examples"]
 
 [project.plugins.mkdocstrings.handlers.python.options]
@@ -81,6 +88,9 @@ pygments_lang_class = true
 [project.markdown_extensions.pymdownx.snippets]
 
 [project.markdown_extensions.pymdownx.superfences]
+
+[[project.markdown_extensions.zensical.extensions.preview.configurations]]
+targets.include = ["api/*"]
 
 [project.markdown_extensions.pymdownx.details]
 

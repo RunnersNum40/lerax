@@ -6,7 +6,7 @@ description: How to serialize and deserialize Lerax policies and other modules.
 # Saving and Loading Policies
 
 Lerax uses [Equinox](https://github.com/patrick-kidger/equinox) to store models as PyTrees on disk.
-Any class that inherits from [`lerax.utils.Serializable`](api/utils.md#lerax.utils.Serializable) gains:
+Any class that inherits from [`lerax.utils.Serializable`][] gains:
 
 - `serialize(path)` — save the object to a `.eqx` file.
 - `deserialize(path, ...)` (class method) — load the object back from disk.
@@ -51,7 +51,7 @@ Values that determine PyTree structure must match the original object (e.g. the 
 
 ## Serializable Mixin
 
-If you write your own modules and want the same save/load API, inherit from [`Serializable`](api/utils.md#lerax.utils.Serializable):
+If you write your own modules and want the same save/load API, inherit from [`Serializable`][lerax.utils.Serializable]:
 
 ```py
 import equinox as eqx

@@ -1,4 +1,5 @@
 ---
+title: Unitree G1
 description: Unitree G1 Humanoid Robot Environments
 ---
 

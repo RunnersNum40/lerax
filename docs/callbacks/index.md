@@ -8,7 +8,7 @@ description: Side-effect hooks for monitoring and controlling training.
 Callbacks let you monitor and control training without modifying algorithms.
 They are Equinox modules called from the training loop and are designed to be JAX-friendly (I/O goes through JAX debug callbacks).
 
-All callbacks subclass [`AbstractCallback`](../api/callback/index.md) and implement some or all of:
+All callbacks subclass [`AbstractCallback`][lerax.callback.AbstractCallback] and implement some or all of:
 
 - `reset` / `step_reset` — called before training and before each rollout.
 - `on_step` — called after each environment step.
