@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import Any, ClassVar, final
 
 import equinox as eqx
 import jax
@@ -14,6 +14,7 @@ from lerax.space import AbstractSpace, Discrete
 from .base_sac import AbstractSACPolicy
 
 
+@final
 class MLPDiscreteSACPolicy[ObsType: PyTree[Real[Array, "..."]]](
     AbstractSACPolicy[None, Integer[Array, ""], ObsType]
 ):

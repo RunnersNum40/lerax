@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 from jax import lax
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Bool, Float
@@ -7,6 +9,7 @@ from jaxtyping import Array, ArrayLike, Bool, Float
 from .base_advantage import AbstractAdvantageEstimator
 
 
+@final
 class GAE(AbstractAdvantageEstimator):
     """Generalized Advantage Estimation.
 

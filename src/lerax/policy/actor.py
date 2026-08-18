@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections.abc import Callable
-from typing import cast, overload
+from typing import cast, final, overload
 
 import equinox as eqx
 import jax
@@ -37,6 +37,7 @@ class AbstractActionDistribution[ActType, MaskType](eqx.Module):
         """Produce an action distribution given inputs."""
 
 
+@final
 class BoxAction(AbstractActionDistribution[Float[Array, " action_dim"], None]):
     scalar: bool
     mapping: eqx.nn.Linear
@@ -76,6 +77,7 @@ class BoxAction(AbstractActionDistribution[Float[Array, " action_dim"], None]):
             )
 
 
+@final
 class DiscreteAction(AbstractActionDistribution[Int[Array, ""], Bool[Array, " n"]]):
     mapping: eqx.nn.Linear
 
@@ -86,6 +88,7 @@ class DiscreteAction(AbstractActionDistribution[Int[Array, ""], Bool[Array, " n"
         return Categorical(logits=self.mapping(inputs))
 
 
+@final
 class MultiBinaryAction(AbstractActionDistribution[Int[Array, ""], None]):
     mapping: eqx.nn.Linear
     shape: tuple[int, ...]
@@ -100,6 +103,7 @@ class MultiBinaryAction(AbstractActionDistribution[Int[Array, ""], None]):
         return Bernoulli(logits=self.mapping(inputs).reshape(self.shape))
 
 
+@final
 class MultiDiscreteAction(AbstractActionDistribution[Int[Array, ""], None]):
     ns: tuple[int, ...]
     mappings: eqx.nn.Linear
@@ -187,6 +191,7 @@ def make_action_layer(
         raise NotImplementedError(f"Action space {type(action_space)} not supported.")
 
 
+@final
 class ActionLayer[ActType, MaskType](eqx.Module):
     """Model that produces action distributions from features.
 

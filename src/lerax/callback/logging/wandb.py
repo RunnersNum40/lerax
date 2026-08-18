@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, final
 
 import equinox as eqx
 import numpy as np
@@ -9,6 +9,7 @@ import wandb
 from .backend import AbstractLoggingBackend
 
 
+@final
 class WandbBackend(AbstractLoggingBackend):
     """
     Logging backend that writes to Weights & Biases.

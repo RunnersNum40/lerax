@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import Any, ClassVar, final
 
 import equinox as eqx
 from jax import numpy as jnp
@@ -13,6 +13,7 @@ from lerax.space import AbstractSpace, Box
 from .base_deterministic import AbstractDeterministicPolicy
 
 
+@final
 class MLPDeterministicPolicy[ObsType: PyTree[Real[Array, "..."]]](
     AbstractDeterministicPolicy[None, Float[Array, " action_dim"], ObsType]
 ):

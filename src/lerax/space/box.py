@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import operator
 from functools import reduce
-from typing import Any
+from typing import Any, final
 
 from jax import numpy as jnp
 from jax import random as jr
@@ -12,6 +12,7 @@ from .base_space import AbstractSpace
 from .utils import try_cast
 
 
+@final
 class Box(AbstractSpace[Float[Array, " ..."], None]):
     """
     A space of continuous values.

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, final
 
 import equinox as eqx
 from jax import numpy as jnp
@@ -11,6 +11,7 @@ from .base_space import AbstractSpace
 from .utils import try_cast
 
 
+@final
 class Discrete(AbstractSpace[Int[Array, ""], Bool[Array, " n"]]):
     """
     A space of finite discrete values.

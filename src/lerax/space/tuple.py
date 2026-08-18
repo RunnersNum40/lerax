@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, final
 
 from jax import numpy as jnp
 from jax import random as jr
@@ -9,6 +9,7 @@ from jaxtyping import Array, Bool, Float, Key
 from .base_space import AbstractSpace
 
 
+@final
 class Tuple(AbstractSpace[tuple[Any, ...], None]):
     """
     A cartesian product of spaces.

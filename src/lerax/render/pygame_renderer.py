@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import contextlib
-from typing import Any
+from typing import Any, final
 
 # Suppress PyGame's welcome message on import
 with contextlib.redirect_stdout(None):
@@ -14,6 +14,7 @@ from pygame import gfxdraw as gfx
 from .base_renderer import WHITE, Abstract2DRenderer, Color, Transform
 
 
+@final
 class PygameRenderer(Abstract2DRenderer):
     """
     PyGame renderer implementation.
@@ -202,6 +203,7 @@ class PygameRenderer(Abstract2DRenderer):
         return arr
 
 
+@final
 class HeadlessPygameRenderer(Abstract2DRenderer):
     """PyGame renderer for headless (off-screen) rendering.
 

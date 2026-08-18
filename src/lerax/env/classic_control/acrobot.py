@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import ClassVar, final
 
 import diffrax
 from jax import numpy as jnp
@@ -22,11 +22,13 @@ from .base_classic_control import (
 )
 
 
+@final
 class AcrobotState(AbstractClassicControlEnvState):
     y: Float[Array, "4"]
     t: Float[Array, ""]
 
 
+@final
 class Acrobot(
     AbstractClassicControlEnv[AcrobotState, Int[Array, ""], Float[Array, "4"]]
 ):

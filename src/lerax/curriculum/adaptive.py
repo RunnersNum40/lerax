@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, final
 
 import equinox as eqx
 from jax import numpy as jnp
@@ -21,10 +21,12 @@ if TYPE_CHECKING:
     from lerax.algorithm import AbstractAlgorithmState
 
 
+@final
 class AdaptiveCurriculumStepState(AbstractCallbackStepState):
     episode_metric: Float[Array, ""]
 
 
+@final
 class AdaptiveCurriculumState(AbstractCallbackState):
     level: Int[Array, ""]
     running_metric: Float[Array, ""]
@@ -105,6 +107,7 @@ class AbstractAdaptiveCurriculum(
         """
 
 
+@final
 class LevelCurriculum(AbstractAdaptiveCurriculum):
     """
     Adapt an environment field through discrete parameter levels.

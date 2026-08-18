@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Any, Callable
+from typing import Any, Callable, final
 
 import equinox as eqx
 from jax import numpy as jnp
@@ -12,6 +12,7 @@ from .base_wrapper import AbstractWrapper, AbstractWrapperState
 from .utils import rescale_box
 
 
+@final
 class PureObservationState[StateType: AbstractEnvLikeState](
     AbstractWrapperState[StateType]
 ):
@@ -102,6 +103,7 @@ class AbstractPureObservationWrapper[
         return self.env.transition_info(state.env_state, action, next_state.env_state)
 
 
+@final
 class TransformObservation[
     WrapperObsType,
     StateType: AbstractEnvLikeState,
@@ -140,6 +142,7 @@ class TransformObservation[
         self.observation_space = observation_space
 
 
+@final
 class ClipObservation[StateType: AbstractEnvLikeState, MaskType](
     AbstractPureObservationWrapper[
         Float[Array, " ..."],
@@ -186,6 +189,7 @@ class ClipObservation[StateType: AbstractEnvLikeState, MaskType](
         self.observation_space = env.observation_space
 
 
+@final
 class RescaleObservation[StateType: AbstractEnvLikeState, MaskType](
     AbstractPureObservationWrapper[
         Float[Array, " ..."],
@@ -234,6 +238,7 @@ class RescaleObservation[StateType: AbstractEnvLikeState, MaskType](
         self.observation_space = new_box
 
 
+@final
 class FlattenObservation[StateType: AbstractEnvLikeState, ObsType, MaskType](
     AbstractPureObservationWrapper[
         Float[Array, " flat"], StateType, Float[Array, " ..."], ObsType, MaskType

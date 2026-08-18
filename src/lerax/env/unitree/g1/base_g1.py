@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from pathlib import Path
+from typing import final
 
 import equinox as eqx
 import mujoco
@@ -31,6 +32,7 @@ NUM_ACTUATED_DOFS = 29
 NUM_FREE_DOFS = 6
 
 
+@final
 class G1EnvState(AbstractEnvState):
     """Environment state for all G1 tasks.
 

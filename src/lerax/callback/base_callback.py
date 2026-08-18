@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, final
 
 import equinox as eqx
 import optax
@@ -26,12 +26,14 @@ class AbstractCallbackState(eqx.Module):
     """Base class for callback states."""
 
 
+@final
 class ResetContext(eqx.Module):
     """Context passed to the reset method of callbacks."""
 
     locals: dict
 
 
+@final
 class StepContext[StepStateType: AbstractCallbackStepState](eqx.Module):
     """
     Values passed to step-related callback methods.
@@ -53,6 +55,7 @@ class StepContext[StepStateType: AbstractCallbackStepState](eqx.Module):
     locals: dict
 
 
+@final
 class IterationContext[
     StateType: AbstractCallbackState,
     StepStateType: AbstractCallbackStepState,
@@ -83,6 +86,7 @@ class IterationContext[
     locals: dict
 
 
+@final
 class TrainingContext[
     StateType: AbstractCallbackState,
     StepStateType: AbstractCallbackStepState,
@@ -181,10 +185,12 @@ class AbstractCallback[
         return state, callback_state
 
 
+@final
 class EmptyCallbackStepState(AbstractCallbackStepState):
     """Empty step state for stateless callbacks."""
 
 
+@final
 class EmptyCallbackState(AbstractCallbackState):
     """Empty state for stateless callbacks."""
 

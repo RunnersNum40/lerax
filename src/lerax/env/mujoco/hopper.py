@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, final
 
 import mujoco
 from jax import numpy as jnp
@@ -14,6 +14,7 @@ from lerax.space import Box
 from .base_mujoco import AbstractMujocoEnv, MujocoEnvState
 
 
+@final
 class Hopper(AbstractMujocoEnv[Float[Array, "..."], Float[Array, "..."]]):
     """MJX-based hopper environment matching Gymnasium's Hopper-v5."""
 

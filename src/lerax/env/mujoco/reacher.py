@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, final
 
 import mujoco
 from jax import lax
@@ -15,6 +15,7 @@ from lerax.space import Box
 from .base_mujoco import AbstractMujocoEnv, MujocoEnvState
 
 
+@final
 class Reacher(AbstractMujocoEnv[Float[Array, "..."], Float[Array, "..."]]):
     """MJX-based reacher environment matching Gymnasium's Reacher-v5."""
 

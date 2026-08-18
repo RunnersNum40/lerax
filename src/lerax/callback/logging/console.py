@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import Any, final
 
 import asciichartpy
 import equinox as eqx
@@ -32,6 +32,7 @@ class _DisplayState(eqx.Module):
     """Base class for display state."""
 
 
+@final
 class _InteractiveDisplayState(_DisplayState):
     """State for interactive terminal display."""
 
@@ -42,6 +43,7 @@ class _InteractiveDisplayState(_DisplayState):
     reward_history: list[float] = eqx.field(default_factory=list)
 
 
+@final
 class _NonInteractiveDisplayState(_DisplayState):
     """State for non-interactive terminal display."""
 
@@ -49,6 +51,7 @@ class _NonInteractiveDisplayState(_DisplayState):
     start_time: float
 
 
+@final
 class _InteractiveDisplay(eqx.Module):
     """Rich live display for interactive terminals."""
 
@@ -167,6 +170,7 @@ class _InteractiveDisplay(eqx.Module):
         state.live.stop()
 
 
+@final
 class _NonInteractiveDisplay(eqx.Module):
     """Simple text display for non-interactive terminals."""
 
@@ -231,6 +235,7 @@ class _NonInteractiveDisplay(eqx.Module):
         pass
 
 
+@final
 class ConsoleBackend(AbstractLoggingBackend):
     """
     Logging backend that displays a live metrics table and progress bar.

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 import equinox as eqx
 import jax
 import optax
@@ -25,6 +27,7 @@ from lerax.utils import filter_cond, filter_scan, polyak_average
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
 
 
+@final
 class QNetwork(eqx.Module):
     """
     Q-network for DDPG.
@@ -71,6 +74,7 @@ class QNetwork(eqx.Module):
         return self.mlp(inputs)
 
 
+@final
 class DDPGStepState[PolicyType: AbstractDeterministicPolicy](AbstractStepState):
     """
     Step-level state for DDPG.
@@ -107,6 +111,7 @@ class DDPGStepState[PolicyType: AbstractDeterministicPolicy](AbstractStepState):
         return cls(env_state, policy_state, callback_state, buffer)
 
 
+@final
 class DDPGState[PolicyType: AbstractDeterministicPolicy](
     AbstractAlgorithmState[PolicyType]
 ):
@@ -138,6 +143,7 @@ class DDPGState[PolicyType: AbstractDeterministicPolicy](
     q_opt_state: optax.OptState
 
 
+@final
 class DDPG[PolicyType: AbstractDeterministicPolicy](
     AbstractAlgorithm[PolicyType, DDPGState[PolicyType]]
 ):

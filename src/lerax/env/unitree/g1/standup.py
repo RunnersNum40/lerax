@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, final
 
 import equinox as eqx
 import mujoco
@@ -21,6 +21,7 @@ from .gait import initial_gait_phase
 OBSERVATION_SIZE = 99
 
 
+@final
 class G1Standup(AbstractG1Env):
     """Unitree G1 standup: stand up from a low starting position.
 

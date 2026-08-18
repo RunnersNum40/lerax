@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 import equinox as eqx
 import jax
 import optax
@@ -25,6 +27,7 @@ from lerax.utils import filter_cond, filter_scan
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
 
 
+@final
 class REINFORCEStepState[PolicyType: AbstractActorCriticPolicy](AbstractStepState):
     """
     Step-level state for REINFORCE.
@@ -55,6 +58,7 @@ class REINFORCEStepState[PolicyType: AbstractActorCriticPolicy](AbstractStepStat
         return cls(env_state, policy_state, callback_states)
 
 
+@final
 class REINFORCEState[PolicyType: AbstractActorCriticPolicy](
     AbstractAlgorithmState[PolicyType]
 ):
@@ -78,6 +82,7 @@ class REINFORCEState[PolicyType: AbstractActorCriticPolicy](
     callback_state: AbstractCallbackState
 
 
+@final
 class REINFORCEStats(eqx.Module):
     """
     REINFORCE training statistics.
@@ -93,6 +98,7 @@ class REINFORCEStats(eqx.Module):
     value_loss: Float[Array, ""]
 
 
+@final
 class REINFORCE[PolicyType: AbstractActorCriticPolicy](
     AbstractAlgorithm[PolicyType, REINFORCEState[PolicyType]]
 ):

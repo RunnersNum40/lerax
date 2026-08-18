@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, final
 
 import equinox as eqx
 import numpy as np
@@ -10,6 +10,7 @@ from tensorboardX import SummaryWriter
 from .backend import AbstractLoggingBackend
 
 
+@final
 class TensorBoardBackend(AbstractLoggingBackend):
     """
     Logging backend that writes to TensorBoard via ``tensorboardX``.

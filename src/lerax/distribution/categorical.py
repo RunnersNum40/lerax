@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 from distreqx import distributions
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Bool, Float, Integer
@@ -7,9 +9,10 @@ from jaxtyping import Array, ArrayLike, Bool, Float, Integer
 from .base_distribution import AbstractDistreqxWrapper, AbstractMaskableDistribution
 
 
+@final
 class Categorical(
-    AbstractMaskableDistribution[Integer[Array, ""], Bool[Array, " dims"]],
     AbstractDistreqxWrapper[Integer[Array, ""]],
+    AbstractMaskableDistribution[Integer[Array, ""], Bool[Array, " dims"]],
 ):
     """
     Categorical distribution.

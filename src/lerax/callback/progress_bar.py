@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 from jax import numpy as jnp
 from jaxtyping import Array, Bool, Int, Key
 from rich import console, progress, text
@@ -104,6 +106,7 @@ class JITProgressBar:
         self.progress_bar.update(self.task, advance=advance, completed=completed)
 
 
+@final
 class ProgressBarCallbackStepState(AbstractCallbackStepState):
     """
     State for ProgressBarCallback at each step.
@@ -115,6 +118,7 @@ class ProgressBarCallbackStepState(AbstractCallbackStepState):
     steps: Int[Array, ""]
 
 
+@final
 class ProgressBarCallback(
     AbstractCallback[EmptyCallbackState, ProgressBarCallbackStepState]
 ):

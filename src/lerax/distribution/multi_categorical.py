@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Sequence, final
 
 import jax
 from distreqx import distributions
@@ -10,6 +10,7 @@ from jaxtyping import Array, ArrayLike, Bool, Float, Integer, Key
 from .base_distribution import AbstractMaskableDistribution
 
 
+@final
 class MultiCategorical(
     AbstractMaskableDistribution[
         Integer[Array, " dims"],

@@ -197,7 +197,7 @@ class AbstractAlgorithm[PolicyType: AbstractPolicy, StateType: AbstractAlgorithm
         if callback is None:
             callback = CallbackList(callbacks=[])
         elif isinstance(callback, Sequence):
-            callback = CallbackList(callbacks=list(callback))  # ty: ignore[invalid-argument-type]
+            callback = CallbackList(callbacks=list(callback))
         elif isinstance(callback, AbstractCallback):
             callback = callback
         else:

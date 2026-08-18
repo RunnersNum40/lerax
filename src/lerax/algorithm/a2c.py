@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 import equinox as eqx
 import jax
 import optax
@@ -25,6 +27,7 @@ from lerax.utils import filter_cond, filter_scan
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
 
 
+@final
 class A2CStepState[PolicyType: AbstractActorCriticPolicy](AbstractStepState):
     """
     Step-level state for A2C.
@@ -55,6 +58,7 @@ class A2CStepState[PolicyType: AbstractActorCriticPolicy](AbstractStepState):
         return cls(env_state, policy_state, callback_states)
 
 
+@final
 class A2CState[PolicyType: AbstractActorCriticPolicy](
     AbstractAlgorithmState[PolicyType]
 ):
@@ -78,6 +82,7 @@ class A2CState[PolicyType: AbstractActorCriticPolicy](
     callback_state: AbstractCallbackState
 
 
+@final
 class A2CStats(eqx.Module):
     """
     A2C training statistics.
@@ -95,6 +100,7 @@ class A2CStats(eqx.Module):
     entropy_loss: Float[Array, ""]
 
 
+@final
 class A2C[PolicyType: AbstractActorCriticPolicy](
     AbstractAlgorithm[PolicyType, A2CState[PolicyType]]
 ):

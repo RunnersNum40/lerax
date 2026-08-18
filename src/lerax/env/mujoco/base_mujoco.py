@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import final
 
 import equinox as eqx
 import jax
@@ -36,6 +37,7 @@ def tree_fix_dtype(tree: PyTree) -> PyTree:
     return jax.tree.map(fix_dtype, tree)
 
 
+@final
 class MujocoEnvState(AbstractEnvState):
     sim_state: eqx.AbstractVar[mjx.Data] = eqx.field(converter=tree_fix_dtype)
     t: eqx.AbstractVar[Float[Array, ""]]

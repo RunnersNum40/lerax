@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 import equinox as eqx
 import jax
 import optax
@@ -26,6 +28,7 @@ from lerax.utils import filter_cond, filter_scan, polyak_average
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
 
 
+@final
 class SoftQNetwork(eqx.Module):
     """
     Soft Q-network for SAC.
@@ -75,6 +78,7 @@ class SoftQNetwork(eqx.Module):
         return self.mlp(inputs)
 
 
+@final
 class SACStepState[PolicyType: AbstractSACPolicy](AbstractStepState):
     """
     Step-level state for SAC.
@@ -111,6 +115,7 @@ class SACStepState[PolicyType: AbstractSACPolicy](AbstractStepState):
         return cls(env_state, policy_state, callback_state, buffer)
 
 
+@final
 class SACState[PolicyType: AbstractSACPolicy](AbstractAlgorithmState[PolicyType]):
     """
     Iteration-level state for SAC.
@@ -148,6 +153,7 @@ class SACState[PolicyType: AbstractSACPolicy](AbstractAlgorithmState[PolicyType]
     target_entropy: Float[Array, ""]
 
 
+@final
 class SAC[PolicyType: AbstractSACPolicy](
     AbstractAlgorithm[PolicyType, SACState[PolicyType]]
 ):

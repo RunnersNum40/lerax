@@ -1,4 +1,4 @@
-from typing import Any, Callable
+from typing import Any, Callable, final
 
 import equinox as eqx
 from jax import numpy as jnp
@@ -11,6 +11,7 @@ from .base_wrapper import AbstractWrapper, AbstractWrapperState
 from .utils import rescale_box
 
 
+@final
 class TransformActionState[StateType: AbstractEnvLikeState](
     AbstractWrapperState[StateType]
 ):
@@ -118,6 +119,7 @@ class AbstractPureTransformActionWrapper[
         )
 
 
+@final
 class TransformAction[
     WrapperActType,
     WrapperMaskType,
@@ -162,6 +164,7 @@ class TransformAction[
         self.action_space = action_space
 
 
+@final
 class ClipAction[StateType: AbstractEnvLikeState, ObsType, MaskType](
     AbstractPureTransformActionWrapper[
         Float[Array, " ..."],
@@ -215,6 +218,7 @@ class ClipAction[StateType: AbstractEnvLikeState, ObsType, MaskType](
         self.action_space = action_space
 
 
+@final
 class RescaleAction[StateType: AbstractEnvLikeState, ObsType, MaskType](
     AbstractPureTransformActionWrapper[
         Float[Array, " ..."],

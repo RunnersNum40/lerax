@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 import equinox as eqx
 from distreqx import bijectors, distributions
 from jax import numpy as jnp
@@ -8,6 +10,7 @@ from jaxtyping import Array, ArrayLike, Float
 from .base_distribution import AbstractTransformedDistribution
 
 
+@final
 class SquashedNormal(AbstractTransformedDistribution[Float[Array, " dims"]]):
     """
     Normal distribution with squashing bijector for bounded outputs.

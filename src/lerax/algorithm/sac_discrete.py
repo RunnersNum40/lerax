@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 import equinox as eqx
 import jax
 import optax
@@ -25,6 +27,7 @@ from lerax.utils import filter_scan, polyak_average
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
 
 
+@final
 class DiscreteQNetwork(eqx.Module):
     """
     Discrete Q-network for SAC-Discrete.
@@ -69,6 +72,7 @@ class DiscreteQNetwork(eqx.Module):
         return self.mlp(observation.ravel())
 
 
+@final
 class SACDiscreteStepState[PolicyType: MLPDiscreteSACPolicy](AbstractStepState):
     """
     Step-level state for SAC-Discrete.
@@ -108,6 +112,7 @@ class SACDiscreteStepState[PolicyType: MLPDiscreteSACPolicy](AbstractStepState):
         return cls(env_state, policy_state, callback_state, buffer)  # ty: ignore[invalid-argument-type]
 
 
+@final
 class SACDiscreteState[PolicyType: MLPDiscreteSACPolicy](
     AbstractAlgorithmState[PolicyType]
 ):
@@ -147,6 +152,7 @@ class SACDiscreteState[PolicyType: MLPDiscreteSACPolicy](
     target_entropy: Float[Array, ""]
 
 
+@final
 class SACDiscrete[PolicyType: MLPDiscreteSACPolicy](
     AbstractAlgorithm[PolicyType, SACDiscreteState[PolicyType]]
 ):

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, final
 
 import equinox as eqx
 from jax import numpy as jnp
@@ -90,6 +90,7 @@ def cosine_schedule(
     return schedule
 
 
+@final
 class ScheduledCurriculum(AbstractStatelessCallback):
     """
     Modify an environment field on a fixed schedule.

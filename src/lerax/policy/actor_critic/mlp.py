@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, ClassVar
+from typing import Any, ClassVar, final
 
 import equinox as eqx
 import jax
@@ -15,6 +15,7 @@ from ..actor import ActionLayer
 from .base_actor_critic import AbstractActorCriticPolicy
 
 
+@final
 class MLPActorCriticPolicy[
     ActType: (Float[Array, " dims"], Integer[Array, ""]),
     ObsType: PyTree[Real[Array, "..."]],

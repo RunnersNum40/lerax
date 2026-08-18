@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import Any, ClassVar, final
 
 import equinox as eqx
 from jaxtyping import Array, Float, Integer, Key, Real
@@ -11,6 +11,7 @@ from lerax.space import AbstractSpace, Discrete
 from .base_q import AbstractQPolicy
 
 
+@final
 class MLPQPolicy[ObsType: Real[Array, "..."]](AbstractQPolicy[None, ObsType]):
     """
     Q-learning policy with an MLP Q-network.

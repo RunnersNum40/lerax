@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 import equinox as eqx
 import jax
 import optax
@@ -26,6 +28,7 @@ from lerax.utils import filter_cond, filter_scan
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
 
 
+@final
 class DQNStepState[PolicyType: AbstractQPolicy](AbstractStepState):
     """
     Step-level state for DQN.
@@ -62,6 +65,7 @@ class DQNStepState[PolicyType: AbstractQPolicy](AbstractStepState):
         return cls(env_state, policy_state, callback_state, buffer)
 
 
+@final
 class DQNState[PolicyType: AbstractQPolicy](AbstractAlgorithmState[PolicyType]):
     """
     Iteration-level state for DQN.
@@ -85,6 +89,7 @@ class DQNState[PolicyType: AbstractQPolicy](AbstractAlgorithmState[PolicyType]):
     target_policy: PolicyType
 
 
+@final
 class DQN[PolicyType: AbstractQPolicy](
     AbstractAlgorithm[PolicyType, DQNState[PolicyType]]
 ):

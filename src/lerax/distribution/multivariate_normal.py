@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 from distreqx import distributions
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Float
@@ -7,6 +9,7 @@ from jaxtyping import Array, ArrayLike, Float
 from .base_distribution import AbstractDistreqxWrapper
 
 
+@final
 class MultivariateNormalDiag(AbstractDistreqxWrapper[Float[Array, " dims"]]):
     """
     Multivariate Normal distribution with diagonal covariance.

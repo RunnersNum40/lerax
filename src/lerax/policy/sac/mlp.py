@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import Any, ClassVar, final
 
 import equinox as eqx
 from jax import numpy as jnp
@@ -21,6 +21,7 @@ LOG_STD_MIN = -5
 LOG_STD_MAX = 2
 
 
+@final
 class MLPSACPolicy[ObsType: PyTree[Real[Array, "..."]]](
     AbstractSACPolicy[None, Float[Array, " action_dim"], ObsType]
 ):

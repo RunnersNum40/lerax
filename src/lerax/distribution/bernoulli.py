@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 from distreqx import distributions
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Bool, Float
@@ -7,9 +9,10 @@ from jaxtyping import Array, ArrayLike, Bool, Float
 from .base_distribution import AbstractDistreqxWrapper, AbstractMaskableDistribution
 
 
+@final
 class Bernoulli(
-    AbstractMaskableDistribution[Bool[Array, " dims"], Bool[Array, " dims"]],
     AbstractDistreqxWrapper[Bool[Array, " dims"]],
+    AbstractMaskableDistribution[Bool[Array, " dims"], Bool[Array, " dims"]],
 ):
     """
     Bernoulli distribution.

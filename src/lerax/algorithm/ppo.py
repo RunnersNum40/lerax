@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 import equinox as eqx
 import jax
 import optax
@@ -25,6 +27,7 @@ from lerax.utils import filter_cond, filter_scan
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
 
 
+@final
 class PPOStepState[PolicyType: AbstractActorCriticPolicy](AbstractStepState):
     """
     Step-level state for PPO.
@@ -55,6 +58,7 @@ class PPOStepState[PolicyType: AbstractActorCriticPolicy](AbstractStepState):
         return cls(env_state, policy_state, callback_states)
 
 
+@final
 class PPOState[PolicyType: AbstractActorCriticPolicy](
     AbstractAlgorithmState[PolicyType]
 ):
@@ -78,6 +82,7 @@ class PPOState[PolicyType: AbstractActorCriticPolicy](
     callback_state: AbstractCallbackState
 
 
+@final
 class PPOStats(eqx.Module):
     """
     PPO training statistics.
@@ -97,6 +102,7 @@ class PPOStats(eqx.Module):
     entropy_loss: Float[Array, ""]
 
 
+@final
 class PPO[PolicyType: AbstractActorCriticPolicy](
     AbstractAlgorithm[PolicyType, PPOState[PolicyType]]
 ):

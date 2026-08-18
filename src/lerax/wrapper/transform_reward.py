@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Callable
+from typing import Callable, final
 
 import equinox as eqx
 from jax import numpy as jnp
@@ -10,6 +10,7 @@ from lerax.env import AbstractEnvLike, AbstractEnvLikeState
 from .base_wrapper import AbstractWrapper, AbstractWrapperState
 
 
+@final
 class PureTransformRewardState[StateType: AbstractEnvLikeState](
     AbstractWrapperState[StateType]
 ):
@@ -97,6 +98,7 @@ class AbstractPureTransformRewardWrapper[
         return self.env.transition_info(state.env_state, action, next_state.env_state)
 
 
+@final
 class TransformReward[StateType: AbstractEnvLikeState, ActType, ObsType, MaskType](
     AbstractPureTransformRewardWrapper[StateType, ActType, ObsType, MaskType]
 ):
@@ -124,6 +126,7 @@ class TransformReward[StateType: AbstractEnvLikeState, ActType, ObsType, MaskTyp
         self.func = func
 
 
+@final
 class ClipReward[StateType: AbstractEnvLikeState, ActType, ObsType, MaskType](
     AbstractPureTransformRewardWrapper[StateType, ActType, ObsType, MaskType]
 ):

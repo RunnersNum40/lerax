@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 from jax import lax
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Bool, Float
@@ -45,6 +47,7 @@ def discounted_returns(
     return returns
 
 
+@final
 class BootstrappedReturn(AbstractAdvantageEstimator):
     """Discounted returns bootstrapped at an incomplete segment boundary.
 

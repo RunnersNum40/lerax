@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Self
+from typing import Any, Self, final
 
 import equinox as eqx
 import jax
@@ -14,6 +14,7 @@ from lerax.space import AbstractSpace
 from .base_buffer import AbstractBuffer
 
 
+@final
 class ReplayBuffer[StateType: AbstractPolicyState | None, ActType, ObsType, MaskType](
     AbstractBuffer
 ):

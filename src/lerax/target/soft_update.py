@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 import equinox as eqx
 
 from lerax.utils import polyak_average
@@ -7,6 +9,7 @@ from lerax.utils import polyak_average
 from .base_target import AbstractTargetUpdate
 
 
+@final
 class SoftUpdate(AbstractTargetUpdate):
     """Apply Polyak averaging.
 

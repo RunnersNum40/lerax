@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 import equinox as eqx
 import jax
 import optax
@@ -25,6 +27,7 @@ from lerax.utils import filter_cond, filter_scan, polyak_average
 from .base_algorithm import AbstractAlgorithm, AbstractAlgorithmState, AbstractStepState
 
 
+@final
 class QNetwork(eqx.Module):
     """
     Q-network for TD3.
@@ -71,6 +74,7 @@ class QNetwork(eqx.Module):
         return self.mlp(inputs)
 
 
+@final
 class TD3StepState[PolicyType: AbstractDeterministicPolicy](AbstractStepState):
     """
     Step-level state for TD3.
@@ -107,6 +111,7 @@ class TD3StepState[PolicyType: AbstractDeterministicPolicy](AbstractStepState):
         return cls(env_state, policy_state, callback_state, buffer)
 
 
+@final
 class TD3State[PolicyType: AbstractDeterministicPolicy](
     AbstractAlgorithmState[PolicyType]
 ):
@@ -142,6 +147,7 @@ class TD3State[PolicyType: AbstractDeterministicPolicy](
     q_opt_state: optax.OptState
 
 
+@final
 class TD3[PolicyType: AbstractDeterministicPolicy](
     AbstractAlgorithm[PolicyType, TD3State[PolicyType]]
 ):

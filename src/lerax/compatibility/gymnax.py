@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, final
 
 import jax
 from flax import struct
@@ -63,6 +63,7 @@ def lerax_to_gymnax_space(space: AbstractSpace) -> gym_spaces.Space:
         raise NotImplementedError(f"Space type {type(space)} not supported")
 
 
+@final
 class GymnaxEnvState(AbstractEnvState):
     env_state: gym.EnvState
     observation: Array
@@ -71,6 +72,7 @@ class GymnaxEnvState(AbstractEnvState):
     transition_info: dict
 
 
+@final
 class GymnaxToLeraxEnv(AbstractEnv[GymnaxEnvState, Array, Array, None]):
     """
     Wrapper of a Gymnax environment to make it compatible with Lerax.

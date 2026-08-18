@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Any, Mapping
+from typing import Any, Mapping, final
 
 from jax import numpy as jnp
 from jax import random as jr
@@ -10,6 +10,7 @@ from jaxtyping import Array, Bool, Float, Key
 from .base_space import AbstractSpace
 
 
+@final
 class Dict(AbstractSpace[OrderedDict[str, Any], None]):
     """
     A dictionary of spaces.

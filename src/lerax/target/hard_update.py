@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from typing import final
+
 import equinox as eqx
 
 from .base_target import AbstractTargetUpdate
 
 
+@final
 class HardUpdate(AbstractTargetUpdate):
     """Hard copy."""
 

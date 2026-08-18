@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, final
 
 import equinox as eqx
 from jax import numpy as jnp
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from lerax.algorithm import AbstractAlgorithmState
 
 
+@final
 class CallbackListStepState(AbstractCallbackStepState):
     """
     State for CallbackList callback step.
@@ -32,6 +33,7 @@ class CallbackListStepState(AbstractCallbackStepState):
     states: list[AbstractCallbackStepState]
 
 
+@final
 class CallbackListState(AbstractCallbackState):
     """
     State for CallbackList callback.
@@ -43,6 +45,7 @@ class CallbackListState(AbstractCallbackState):
     states: list[AbstractCallbackState]
 
 
+@final
 class CallbackList(AbstractCallback[CallbackListState, CallbackListStepState]):
     """
     Callback that aggregates multiple callbacks and forwards calls to them.

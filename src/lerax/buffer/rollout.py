@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Self
+from typing import Self, final
 
 import equinox as eqx
 import jax
@@ -14,6 +14,7 @@ from lerax.policy import AbstractPolicyState
 from .base_buffer import AbstractBuffer
 
 
+@final
 class RolloutBuffer[StateType: AbstractPolicyState | None, ActType, ObsType, MaskType](
     AbstractBuffer
 ):

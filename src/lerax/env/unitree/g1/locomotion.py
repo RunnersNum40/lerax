@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, final
 
 import equinox as eqx
 import mujoco
@@ -20,6 +20,7 @@ from .base_g1 import NUM_ACTUATED_DOFS, AbstractG1Env, G1EnvState
 OBSERVATION_SIZE = 103
 
 
+@final
 class G1Locomotion(AbstractG1Env):
     """Unitree G1 locomotion: track velocity commands with a natural gait.
 

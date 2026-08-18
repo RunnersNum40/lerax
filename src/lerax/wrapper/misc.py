@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, final
 
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Bool, Float, Int, Key
@@ -12,10 +12,12 @@ from .base_wrapper import (
 )
 
 
+@final
 class IdentityState[StateType: AbstractEnvLikeState](AbstractWrapperState[StateType]):
     env_state: StateType
 
 
+@final
 class Identity[StateType: AbstractEnvLikeState, ActType, ObsType, MaskType](
     AbstractWrapper[
         IdentityState[StateType],
@@ -99,6 +101,7 @@ class Identity[StateType: AbstractEnvLikeState, ActType, ObsType, MaskType](
         return self.env.transition_info(state.env_state, action, next_state.env_state)
 
 
+@final
 class TimeLimitState[StateType: AbstractEnvLikeState](AbstractWrapperState):
     env_state: StateType
     step_count: Int[Array, ""]
@@ -108,6 +111,7 @@ class TimeLimitState[StateType: AbstractEnvLikeState](AbstractWrapperState):
         self.env_state = env_state
 
 
+@final
 class TimeLimit[StateType: AbstractEnvLikeState, ActType, ObsType, MaskType](
     AbstractWrapper[
         TimeLimitState[StateType],

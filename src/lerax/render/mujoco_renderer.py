@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from typing import final
 
 import glfw
 import imageio.v2 as imageio
@@ -248,6 +249,7 @@ class AbstractMujocoRenderer(Abstract3DRenderer):
         """
 
 
+@final
 class MujocoRenderer(AbstractMujocoRenderer):
     """MuJoCo renderer supporting both windowed and headless modes.
 
@@ -341,6 +343,7 @@ class MujocoRenderer(AbstractMujocoRenderer):
         )
 
 
+@final
 class MujocoVideoRenderer(AbstractMujocoRenderer):
     """MuJoCo renderer that records frames to a video file.
 

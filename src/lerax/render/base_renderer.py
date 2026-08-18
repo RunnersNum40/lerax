@@ -1,10 +1,12 @@
 from abc import abstractmethod
+from typing import final
 
 import equinox as eqx
 from jax import numpy as jnp
 from jaxtyping import Array, ArrayLike, Float, Int
 
 
+@final
 class Color(eqx.Module):
     """RGB in [0,1]. Helpers to convert to pygame-friendly formats."""
 
@@ -61,6 +63,7 @@ GREEN = Color(0.24, 0.71, 0.29)
 BLUE = Color(0.26, 0.53, 0.96)
 
 
+@final
 class Transform(eqx.Module):
     """
     Affine mapping from world coords to screen pixels.

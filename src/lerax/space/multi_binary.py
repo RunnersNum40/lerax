@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import operator
 from functools import reduce
-from typing import Any
+from typing import Any, final
 
 import equinox as eqx
 from jax import numpy as jnp
@@ -13,6 +13,7 @@ from .base_space import AbstractSpace
 from .utils import try_cast
 
 
+@final
 class MultiBinary(AbstractSpace[Bool[Array, " n"], None]):
     """
     A space of binary values.

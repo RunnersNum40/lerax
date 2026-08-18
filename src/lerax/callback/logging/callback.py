@@ -6,7 +6,7 @@ import os
 from collections.abc import Callable, Sequence
 from datetime import datetime
 from functools import partial
-from typing import Any
+from typing import Any, final
 
 import equinox as eqx
 import jax
@@ -76,6 +76,7 @@ def _extract_hparams(module: eqx.Module, prefix: str = "") -> dict[str, Any]:
     return result
 
 
+@final
 class LoggingCallbackStepState(AbstractCallbackStepState):
     """
     Per-environment step state for `LoggingCallback`.
@@ -375,6 +376,7 @@ def _make_video_recorder(
     return record_video
 
 
+@final
 class LoggingCallback(AbstractCallback[EmptyCallbackState, LoggingCallbackStepState]):
     """
     Callback that collects training metrics and progress and logs to a backend.

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, ClassVar, Literal, cast
+from typing import Any, ClassVar, Literal, cast, final
 
 import gymnasium as gym
 import jax
@@ -98,6 +98,7 @@ def to_numpy_tree(x):
     return jax.tree.map(jax_to_numpy, x)
 
 
+@final
 class GymEnvState(AbstractEnvState):
     observation: Array
     reward: Float[Array, ""]
@@ -105,6 +106,7 @@ class GymEnvState(AbstractEnvState):
     truncated: Bool[Array, ""]
 
 
+@final
 class GymToLeraxEnv(AbstractEnv[GymEnvState, Array, Array, None]):
     """
     Wrap a Gymnasium environment for Lerax.

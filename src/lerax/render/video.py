@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import final
+
 import imageio.v2 as imageio
 import numpy as np
 from jax import numpy as jnp
@@ -8,6 +10,7 @@ from jaxtyping import ArrayLike, Float
 from .base_renderer import Abstract2DRenderer, Color, Transform
 
 
+@final
 class VideoRenderer(Abstract2DRenderer):
     """
     Renderer wrapper that records frames to a video file.
