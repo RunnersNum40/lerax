@@ -1,17 +1,17 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.13"
 resolution-markers = [
     "python_full_version >= '3.14' and platform_machine != 's390x' and sys_platform == 'linux'",
     "python_full_version >= '3.14' and platform_machine == 's390x' and sys_platform == 'linux'",
-    "python_full_version < '3.14' and platform_machine != 's390x' and sys_platform == 'linux'",
-    "python_full_version < '3.14' and platform_machine == 's390x' and sys_platform == 'linux'",
     "python_full_version >= '3.14' and platform_machine != 's390x' and sys_platform == 'win32'",
     "python_full_version >= '3.14' and platform_machine == 's390x' and sys_platform == 'win32'",
     "python_full_version >= '3.14' and platform_machine != 's390x' and sys_platform == 'emscripten'",
     "python_full_version >= '3.14' and platform_machine == 's390x' and sys_platform == 'emscripten'",
     "python_full_version >= '3.14' and platform_machine != 's390x' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32'",
     "python_full_version >= '3.14' and platform_machine == 's390x' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32'",
+    "python_full_version < '3.14' and platform_machine != 's390x' and sys_platform == 'linux'",
+    "python_full_version < '3.14' and platform_machine == 's390x' and sys_platform == 'linux'",
     "python_full_version < '3.14' and platform_machine != 's390x' and sys_platform == 'win32'",
     "python_full_version < '3.14' and platform_machine == 's390x' and sys_platform == 'win32'",
     "python_full_version < '3.14' and platform_machine != 's390x' and sys_platform == 'emscripten'",
@@ -1090,7 +1090,7 @@ dev = [
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-xdist", specifier = ">=3.8.0" },
     { name = "ruff", specifier = ">=0.14.14" },
-    { name = "setuptools", specifier = "<84" },
+    { name = "setuptools", specifier = "<85" },
     { name = "stable-baselines3", specifier = ">=2.7.1" },
     { name = "ty", specifier = ">=0.0.13" },
     { name = "zensical", specifier = ">=0.0.56" },
@@ -2438,11 +2438,11 @@ wheels = [
 
 [[package]]
 name = "setuptools"
-version = "70.3.0"
+version = "84.1.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/65/d8/10a70e86f6c28ae59f101a9de6d77bf70f147180fbf40c3af0f64080adc3/setuptools-70.3.0.tar.gz", hash = "sha256:f171bab1dfbc86b132997f26a119f6056a57950d058587841a0082e8830f9dc5", size = 2333112, upload-time = "2024-07-09T16:08:06.251Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/73/eb/7e5f628ee2eb168fecbf8026de7856b2543d6d609cc85f086b9a91ac93d6/setuptools-84.1.0.tar.gz", hash = "sha256:23657205b63d4d31395ab917815247f694aafad28cd21316bf5fd45a51048ea0", size = 1171783, upload-time = "2026-10-19T20:11:43.489Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ef/15/88e46eb9387e905704b69849618e699dc2f54407d8953cc4ec4b8b46528d/setuptools-70.3.0-py3-none-any.whl", hash = "sha256:fe384da74336c398e0d956d1cae0669bc02eed936cdb1d49b57de1990dc11ffc", size = 931070, upload-time = "2024-07-09T16:07:58.829Z" },
+    { url = "https://files.pythonhosted.org/packages/18/02/b4bbb90f8f29e334898ff45c6d9b1fffaa6f378017052b3023a06262b5f7/setuptools-84.1.0-py3-none-any.whl", hash = "sha256:5231689c6ac8156cd155cfb98c3fd6fb252c3e7e9bd3d78b64d3c55f132624c9", size = 819380, upload-time = "2026-10-19T20:11:41.684Z" },
 ]
 
 [[package]]
