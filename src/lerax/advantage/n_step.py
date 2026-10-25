@@ -24,7 +24,7 @@ class NStepReturn(AbstractAdvantageEstimator):
     """
 
     n: int = eqx.field(static=True)
-    gamma: Float[ArrayLike, ""] = 0.99
+    gamma: Float[ArrayLike, ""]
 
     def __init__(self, n: int, gamma: Float[ArrayLike, ""] = 0.99):
         if n < 1:

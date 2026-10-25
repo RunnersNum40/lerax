@@ -109,7 +109,7 @@ class SACDiscreteStepState[PolicyType: MLPDiscreteSACPolicy](AbstractStepState):
             env.action_space,
             policy_state,
         )
-        return cls(env_state, policy_state, callback_state, buffer)  # ty: ignore[invalid-argument-type]
+        return cls(env_state, policy_state, callback_state, buffer)
 
 
 @final

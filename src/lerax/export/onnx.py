@@ -22,7 +22,7 @@ from jaxtyping import Array, Float
 from ..policy.base_policy import AbstractPolicy
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
 
     import onnx as onnx_lib
 
@@ -98,7 +98,7 @@ def register_is_finite_plugin() -> None:
 
 
 @contextmanager
-def suppress_error_if() -> Iterator[None]:
+def suppress_error_if() -> Generator[None]:
     """
     Temporarily replace ``eqx.error_if`` with a no-op during ONNX tracing.
     """

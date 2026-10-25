@@ -12,9 +12,7 @@ def test_td3_trains():
     policy_key, learn_key = jr.split(jr.key(0), 2)
 
     env = Pendulum()
-    policy = MLPDeterministicPolicy(
-        env, width_size=32, depth=1, key=policy_key
-    )
+    policy = MLPDeterministicPolicy(env, width_size=32, depth=1, key=policy_key)
     algo = TD3(
         buffer_size=512,
         learning_starts=128,

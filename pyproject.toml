@@ -37,32 +37,33 @@ issues = "https://github.com/RunnersNum40/lerax/issues"
 source = "https://github.com/RunnersNum40/lerax.git"
 
 [project.optional-dependencies]
-onnx = ["jax2onnx>=0.12.0", "onnx>=1.17.0"]
+# jax2onnx <=0.17.1 imports `ClosedJaxpr` from `jax._src.core`, removed in jax 0.12.
+onnx = ["jax2onnx>=0.12.0", "onnx>=1.17.0", "jax<0.12"]
 
 [dependency-groups]
 dev = [
-  "gymnasium>=1.2.3",
+  "gymnasium>=1.4.0",
   "gymnax>=0.0.9",
-  "jax2onnx>=0.12.0",
-  "mkdocstrings-python>=2.0.1",
-  "mujoco-mjx>=3.4.0",
-  "onnx>=1.17.0",
-  "onnxruntime>=1.19.0",
-  "prek>=0.3.0",
+  "jax2onnx>=0.17.1",
+  "mkdocstrings-python>=2.0.10",
+  "mujoco-mjx>=3.17.0",
+  "onnx>=1.23.2",
+  "onnxruntime>=1.31.0",
+  "prek>=0.5.7",
   "pygame>=2.6.1",
-  "pytest>=9.0.2",
-  "pytest-cov>=7.0.0",
+  "pytest>=9.1.1",
+  "pytest-cov>=7.1.0",
   "pytest-xdist>=3.8.0",
-  "ruff>=0.14.14",
+  "ruff>=0.17.2",
   "setuptools<84",
-  "stable-baselines3>=2.7.1",
-  "ty>=0.0.13",
-  "zensical>=0.0.56",
+  "stable-baselines3>=2.9.0",
+  "ty>=0.0.91",
+  "zensical>=0.0.72",
 ]
 
 # For contributors using pyright instead of ty
 [tool.pyright]
-reportIncompatibleVariableOverride = false  # Required by eqx.AbstractVar
+reportIncompatibleVariableOverride = false      # Required by eqx.AbstractVar
 stubPath = "stubs"
 include = ["src/**", "examples/**", "tests/**"]
 
@@ -76,6 +77,7 @@ exclude = ["stubs"]
 
 [tool.ruff.format]
 docstring-code-format = true
+exclude = ["*.md"]
 
 [tool.ruff.lint]
 fixable = ["I001", "F401"]
@@ -87,6 +89,10 @@ lerax = ["env/mujoco/assets/**", "env/unitree/g1/assets/**"]
 
 [tool.ty]
 [tool.ty.rules]
+# Equinox AbstractVar fields are narrowed, or implemented as properties or ClassVars, by subclasses.
+invalid-attribute-override = "ignore"
+invalid-mutable-override = "ignore"
+invalid-property-type-override = "ignore"
 
 [tool.ty.src]
 include = ["src", "examples", "tests"]
@@ -100,6 +106,8 @@ extend-exclude = ["stubs"]
 
 [tool.uv]
 package = true
+# jaxtyping <=0.3.11 fails to import under numpy 2.5; fixed by patrick-kidger/jaxtyping@5123365d.
+constraint-dependencies = ["numpy<2.5"]
 
 [tool.uv.sources]
 equinox = { git = "https://github.com/patrick-kidger/equinox.git", branch = "main" }

@@ -125,7 +125,7 @@ class WindowMujocoRenderer:
 
     model: mujoco.MjModel
 
-    window: glfw._GLFWwindow
+    window: glfw._GLFWwindowPointerT
     width: int
     height: int
     max_geom: int
