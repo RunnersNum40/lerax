@@ -39,5 +39,3 @@ That's a complete training run — no separate config file, no custom training l
 ## Acknowledgements
 
 A large amount of the code is a translation of patterns from [Stable Baselines 3](https://github.com/DLR-RM/stable-baselines3) and [Gymnasium](https://github.com/Farama-Foundation/Gymnasium); both libraries are excellent foundations for RL in Python and Lerax owes a lot to their design.
-
-The NDE code is heavily inspired by the work of [Patrick Kidger](https://kidger.site/publications/), and the entire library is built on his [Equinox](https://github.com/patrick-kidger/equinox), [Diffrax](https://github.com/patrick-kidger/diffrax), and [jaxtyping](https://github.com/patrick-kidger/jaxtyping) libraries.
