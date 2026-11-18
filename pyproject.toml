@@ -109,9 +109,6 @@ package = true
 # jaxtyping <=0.3.11 fails to import under numpy 2.5; fixed by patrick-kidger/jaxtyping@5123365d.
 constraint-dependencies = ["numpy<2.5"]
 
-[tool.uv.sources]
-equinox = { git = "https://github.com/patrick-kidger/equinox.git", branch = "main" }
-
 [[tool.uv.index]]
 name = "testpypi"
 url = "https://test.pypi.org/simple/"
